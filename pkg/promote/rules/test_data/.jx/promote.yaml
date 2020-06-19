@@ -1,0 +1,7 @@
+apiVersion: promote.jenkins-x.io/v1alpha1
+kind: Promote
+spec:
+  makefileRule:
+    insertAfterPrefix: "kpt pkg get"
+    updatePrefixTemplate: "kpt pkg get {{.GitURL}}@"
+    commandTemplate: "kpt pkg get {{.GitURL}}/kubernetess@v{{.Version}} $(FETCH_DIR)/namespaces/jx"

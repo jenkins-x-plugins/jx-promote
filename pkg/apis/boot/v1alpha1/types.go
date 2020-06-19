@@ -45,9 +45,14 @@ type MakefileSpec struct {
 	// Path the path to the Makefile to modify. If none specified it defaults to `Makefile` in the root of the source repository
 	Path string `json:"path,omitempty"`
 
-	// Namespace specifies the namespace to deploy applications if using kpt. If specified this value will be used instead
-	// of the Environment.Spec.Namespace in the Environment CRD
-	Namespace string `json:"namespace,omitempty"`
+	// InsertAfterPrefix insert after the last command with this prefix
+	InsertAfterPrefix string `json:"insertAfterPrefix,omitempty"`
+
+	// UpdatePrefixTemplate the prefix command string to find to update if upgrading a version
+	UpdatePrefixTemplate string `json:"updatePrefixTemplate,omitempty"`
+
+	// CommandTemplate the command template
+	CommandTemplate string `json:"commandTemplate,omitempty"`
 }
 
 // PromoteList contains a list of Promote
