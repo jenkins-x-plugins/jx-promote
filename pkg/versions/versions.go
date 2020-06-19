@@ -39,7 +39,7 @@ func CreateVersionResolver(versionRepository string, versionRef string, git gits
 		return nil, errors.Wrapf(err, "failed to clone URL %s", versionRepository)
 	}
 	if versionRef != "" && versionRef != "master" && versionRef != "origin/master" && versionRef != "refs/heads/master" {
-		_, err = clone(versionsDir, versionRepository, versionRef, git)
+		_, err = checkoutRef(versionsDir, versionRepository, versionRef, git)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to checkout ref %s in repository %s", versionRef, versionRepository)
 		}
@@ -49,10 +49,12 @@ func CreateVersionResolver(versionRepository string, versionRef string, git gits
 	}, nil
 }
 
-func clone(wrkDir string, versionRepository string, referenceName string, gitter gits.Gitter) (string, error) {
-	if referenceName == "" || referenceName == "master" {
-		referenceName = "refs/heads/master"
-	} else if !strings.Contains(referenceName, "/") {
+func checkoutRef(wrkDir string, versionRepository string, referenceName string, gitter gits.Gitter) (string, error) {
+	if referenceName == "" || referenceName == "master" || referenceName == "refs/heads/master" {
+		return "", nil
+	}
+
+	if !strings.Contains(referenceName, "/") {
 		if strings.HasPrefix(referenceName, "PR-") {
 			prNumber := strings.TrimPrefix(referenceName, "PR-")
 
@@ -61,19 +63,6 @@ func clone(wrkDir string, versionRepository string, referenceName string, gitter
 		}
 		log.Logger().Debugf("Cloning the Jenkins X versions repo %s with revision %s to %s", util.ColorInfo(versionRepository), util.ColorInfo(referenceName), util.ColorInfo(wrkDir))
 
-		err := gitter.Clone(versionRepository, wrkDir)
-		if err != nil {
-			return "", errors.Wrapf(err, "failed to clone repository: %s to dir %s", versionRepository, wrkDir)
-		}
-		cmd := util.Command{
-			Dir:  wrkDir,
-			Name: "git",
-			Args: []string{"fetch", "origin", referenceName},
-		}
-		_, err = cmd.RunWithoutRetry()
-		if err != nil {
-			return "", errors.Wrapf(err, "failed to git fetch origin %s for repo: %s in dir %s", referenceName, versionRepository, wrkDir)
-		}
 		isBranch, err := gits.RefIsBranch(wrkDir, referenceName, gitter)
 		if err != nil {
 			return "", err
