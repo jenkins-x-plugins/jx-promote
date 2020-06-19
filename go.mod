@@ -27,6 +27,7 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/tektoncd/pipeline v0.8.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.3
+	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.2.8
 	gopkg.in/yaml.v3 v3.0.0-20200121175148-a6ecf24a6d71
 	k8s.io/api v0.0.0-20190718183219-b59d8169aab5
