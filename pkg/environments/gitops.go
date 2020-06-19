@@ -8,7 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-promote/pkg/apis/boot/v1alpha1"
+	"github.com/jenkins-x/jx-promote/pkg/githelpers"
 	"github.com/jenkins-x/jx-promote/pkg/promoteconfig"
 	jenkinsio "github.com/jenkins-x/jx/pkg/apis/jenkins.io"
 	"github.com/jenkins-x/jx/pkg/config"
@@ -19,42 +21,14 @@ import (
 
 	"k8s.io/helm/pkg/proto/hapi/chart"
 
+	"github.com/jenkins-x/jx-logging/pkg/log"
 	jenkinsv1 "github.com/jenkins-x/jx/pkg/apis/jenkins.io/v1"
 	"github.com/jenkins-x/jx/pkg/gits"
 	"github.com/jenkins-x/jx/pkg/helm"
-	"github.com/jenkins-x/jx/pkg/log"
 	"github.com/jenkins-x/jx/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	helmchart "k8s.io/helm/pkg/proto/hapi/chart"
 )
-
-//ValuesFiles is a wrapper for a slice of values files to allow them to be passed around as a pointer
-type ValuesFiles struct {
-	Items []string
-}
-
-// ModifyChartFn callback for modifying a chart, requirements, the chart metadata,
-// the values.yaml and all files in templates are unmarshaled, and the root dir for the chart is passed
-type ModifyChartFn func(requirements *helm.Requirements, metadata *chart.Metadata, existingValues map[string]interface{},
-	templates map[string]string, dir string, pullRequestDetails *gits.PullRequestDetails) error
-
-// ModifyAppsFn callback for modifying the `jx-apps.yml` in an environment git repository which is using helmfile and helm 3
-type ModifyAppsFn func(appsConfig *config.AppConfig, dir string, pullRequestDetails *gits.PullRequestDetails) error
-
-// ModifyKptFn callback for modifying the kpt based installations of resources
-type ModifyKptFn func(dir string, promoteConfig *v1alpha1.Promote, pullRequestDetails *gits.PullRequestDetails) error
-
-// EnvironmentPullRequestOptions are options for creating a pull request against an environment.
-// The provide a Gitter client for performing git operations, a GitProvider client for talking to the git provider,
-// a callback ModifyChartFn which is where the changes you want to make are defined,
-type EnvironmentPullRequestOptions struct {
-	Gitter        gits.Gitter
-	GitProvider   gits.GitProvider
-	ModifyChartFn ModifyChartFn
-	ModifyAppsFn  ModifyAppsFn
-	ModifyKptFn   ModifyKptFn
-	Labels        []string
-}
 
 // Create a pull request against the environment repository for env.
 // The EnvironmentPullRequestOptions are used to provide a Gitter client for performing git operations,
@@ -65,7 +39,7 @@ type EnvironmentPullRequestOptions struct {
 // and the pullRequestInfo for any existing PR that exists to modify the environment that we want to merge these
 // changes into.
 func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir string,
-	pullRequestDetails *gits.PullRequestDetails, filter *gits.PullRequestFilter, chartName string, autoMerge bool) (*gits.PullRequestInfo, error) {
+	pullRequestDetails *gits.PullRequestDetails, filter *gits.PullRequestFilter, chartName string, autoMerge bool) (*scm.PullRequest, error) {
 	if prDir == "" {
 		tempDir, err := ioutil.TempDir("", "create-pr")
 		if err != nil {
@@ -75,12 +49,23 @@ func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir
 		defer os.RemoveAll(tempDir)
 	}
 
-	dir, base, upstreamRepo, forkURL, err := gits.ForkAndPullRepo(env.Spec.Source.URL, prDir, env.Spec.Source.Ref, pullRequestDetails.BranchName, o.GitProvider, o.Gitter, "")
-
+	gitURL := env.Spec.Source.URL
+	dir, err := githelpers.GitCloneToTempDir(o.Git(), gitURL, "")
 	if err != nil {
-		return nil, errors.Wrapf(err, "pulling environment repo %s into %s", env.Spec.Source.URL,
-			prDir)
+		return nil, errors.Wrapf(err, "failed to clone environment %s URL %s", env.Spec.Label, gitURL)
 	}
+
+	// TODO fork if needed?
+
+	// TODO
+	/*
+		dir, base, upstreamRepo, forkURL, err := gits.ForkAndPullRepo(env.Spec.Source.URL, prDir, env.Spec.Source.Ref, pullRequestDetails.BranchName, o.GitProvider, o.Gitter, "")
+
+		if err != nil {
+			return nil, errors.Wrapf(err, "pulling environment repo %s into %s", env.Spec.Source.URL,
+				prDir)
+		}
+	*/
 
 	currentSha, err := o.Gitter.GetLatestCommitSha(dir)
 	if err != nil {
@@ -129,7 +114,8 @@ func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get current latest commit sha")
 	}
-	doCommit := true
+
+	doneCommit := true
 	if latestSha != currentSha {
 		changed, err := o.Gitter.HasChanges(dir)
 		if err != nil {
@@ -137,14 +123,26 @@ func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir
 		}
 		if !changed {
 			// lets avoid failing to create the PR as we really have made changes
-			doCommit = false
+			doneCommit = false
 		}
 	}
-	prInfo, err := gits.PushRepoAndCreatePullRequest(dir, upstreamRepo, forkURL, base, pullRequestDetails, filter, doCommit, pullRequestDetails.Message, true, false, false, o.Gitter, o.GitProvider)
+
+	prInfo, err := o.CreatePullRequest(dir, gitURL, o.GitKind, doneCommit)
 	if err != nil {
-		return nil, err
+		return prInfo, errors.Wrapf(err, "failed to create pull request in dir %s", dir)
 	}
 	return prInfo, nil
+
+	/*
+		TODO
+
+		prInfo, err := gits.PushRepoAndCreatePullRequest(dir, upstreamRepo, forkURL, base, pullRequestDetails, filter, doneCommit, pullRequestDetails.Message, true, false, false, o.Gitter, o.GitProvider)
+		if err != nil {
+			return nil, err
+		}
+		return prInfo, nil
+
+	*/
 }
 
 // ModifyChartFiles modifies the chart files in the given directory using the given modify function

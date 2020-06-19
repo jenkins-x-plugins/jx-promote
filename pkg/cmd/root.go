@@ -2,11 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/jenkins-x/jx-promote/pkg/common"
 	"github.com/jenkins-x/jx-promote/pkg/promote"
-	"github.com/jenkins-x/jx/pkg/cmd/clients"
 	"github.com/jenkins-x/jx/pkg/cmd/helper"
 	"github.com/jenkins-x/jx/pkg/cmd/opts"
 	"github.com/jenkins-x/jx/pkg/cmd/templates"
@@ -26,13 +24,13 @@ var (
 
 // Options the options for this command
 type Options struct {
-	Options   promote.PromoteOptions
+	Options   promote.Options
 	BatchMode bool
 }
 
 // Main creates a command object for the command
-func Main() (*cobra.Command, *Options) {
-	o := &Options{}
+func Main() (*cobra.Command, *promote.Options) {
+	options := &promote.Options{}
 
 	cmd := &cobra.Command{
 		Use:     "promote",
@@ -40,28 +38,17 @@ func Main() (*cobra.Command, *Options) {
 		Long:    promoteLong,
 		Example: fmt.Sprintf(promoteExample, common.BinaryName),
 		Run: func(cmd *cobra.Command, args []string) {
-			err := o.Run()
+			err := options.Run()
 			helper.CheckErr(err)
 		},
 	}
 
-	options := &o.Options
 	cmd.Flags().StringVarP(&options.Namespace, "namespace", "n", "", "The Namespace to promote to")
 	cmd.Flags().StringVarP(&options.Environment, opts.OptionEnvironment, "e", "", "The Environment to promote to")
 	cmd.Flags().BoolVarP(&options.AllAutomatic, "all-auto", "", false, "Promote to all automatic environments in order")
-	cmd.Flags().BoolVarP(&o.BatchMode, "batch-mode", "b", false, "Enables batch mode which avoids prompting for user input")
+	cmd.Flags().BoolVarP(&options.BatchMode, "batch-mode", "b", false, "Enables batch mode which avoids prompting for user input")
 
-	options.AddPromoteOptions(cmd)
-	return cmd, o
-}
+	options.AddOptions(cmd)
 
-// Run implements the command
-func (o *Options) Run() error {
-	po := &o.Options
-	if po.CommonOptions == nil {
-		f := clients.NewFactory()
-		po.CommonOptions = opts.NewCommonOptionsWithTerm(f, os.Stdin, os.Stdout, os.Stderr)
-		po.CommonOptions.BatchMode = o.BatchMode
-	}
-	return po.Run()
+	return cmd, options
 }

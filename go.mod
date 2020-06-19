@@ -7,6 +7,7 @@ require (
 	github.com/cli/cli v0.6.2
 	github.com/genkiroid/cert v0.0.0-20191007122723-897560fbbe50
 	github.com/ghodss/yaml v1.0.0
+	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/google/go-cmp v0.3.0
 	github.com/google/uuid v1.1.1
 	github.com/hashicorp/vault v1.1.2
@@ -15,13 +16,15 @@ require (
 	github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314
 	github.com/jenkins-x/helmboot v0.0.87
 	github.com/jenkins-x/jx v1.3.981-0.20200605070345-2c10fe601319
+	github.com/jenkins-x/jx-kube-client v0.0.3
+	github.com/jenkins-x/jx-logging v0.0.8
 	github.com/jetstack/cert-manager v0.5.2
 	github.com/knative/serving v0.7.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/petergtz/pegomock v2.7.0+incompatible
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v0.0.6
-	github.com/stretchr/testify v1.4.0
+	github.com/stretchr/testify v1.5.1
 	github.com/tektoncd/pipeline v0.8.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.3
 	gopkg.in/yaml.v2 v2.2.8
