@@ -13,6 +13,7 @@ import (
 
 	"github.com/jenkins-x/jx-kube-client/pkg/kubeclient"
 	"github.com/jenkins-x/jx-promote/pkg/envctx"
+	"github.com/jenkins-x/jx-promote/pkg/githelpers"
 	"k8s.io/client-go/rest"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -292,6 +293,13 @@ func (o *Options) Run() error {
 	err = o.DevEnvContext.LazyLoad(o.JXClient, o.Namespace, o.Git(), handles)
 	if err != nil {
 		return errors.Wrap(err, "failed to lazy load the EnvironmentContext")
+	}
+
+	if IsInCluster() {
+		err = o.InitGitConfigAndUser()
+		if err != nil {
+			return errors.Wrapf(err, "failed to init git")
+		}
 	}
 
 	prow := true
@@ -1512,6 +1520,30 @@ func (o *Options) SearchForChart(filter string) (string, error) {
 	o.Version = chart.ChartVersion
 	o.HelmRepositoryURL = repoUrl
 	return appName, nil
+}
+
+func (o *Options) InitGitConfigAndUser() error {
+	// lets make sure the home dir exists
+	dir := util.HomeDir()
+	err := os.MkdirAll(dir, util.DefaultWritePermissions)
+	if err != nil {
+		return errors.Wrapf(err, "failed to make sure the home directory %s was created", dir)
+	}
+
+	// lets validate we have git configured
+	_, _, err = gits.EnsureUserAndEmailSetup(o.Git())
+	if err != nil {
+		return err
+	}
+
+	err = githelpers.GitCommand(".", "git", "config", "--global", "credential.helper", "store")
+	if err != nil {
+		return errors.Wrapf(err, "failed to setup git")
+	}
+	if os.Getenv("XDG_CONFIG_HOME") == "" {
+		log.Logger().Warnf("Note that the environment variable $XDG_CONFIG_HOME is not defined so we may not be able to push to git!")
+	}
+	return nil
 }
 
 func (o *Options) GetEnvChartValues(targetNS string, env *v1.Environment) ([]string, []string) {
