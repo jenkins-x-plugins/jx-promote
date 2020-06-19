@@ -12,12 +12,12 @@ import (
 // Run runs the command, if args are not nil they will be set on the command
 func Run(args []string) error {
 	configureTerminalForAnsiEscapes()
-	cmd := cmd.Main()
+	c, _ := cmd.Main()
 	if len(args) > 0 {
 		args = args[1:]
-		cmd.SetArgs(args)
+		c.SetArgs(args)
 	}
-	return cmd.Execute()
+	return c.Execute()
 }
 
 const (
