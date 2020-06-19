@@ -5,10 +5,10 @@ import (
 	"os"
 
 	"github.com/jenkins-x/jx-promote/pkg/common"
+	"github.com/jenkins-x/jx-promote/pkg/promote"
 	"github.com/jenkins-x/jx/pkg/cmd/clients"
 	"github.com/jenkins-x/jx/pkg/cmd/helper"
 	"github.com/jenkins-x/jx/pkg/cmd/opts"
-	jxpromote "github.com/jenkins-x/jx/pkg/cmd/promote"
 	"github.com/jenkins-x/jx/pkg/cmd/templates"
 	"github.com/spf13/cobra"
 )
@@ -26,8 +26,8 @@ var (
 
 // Options the options for this command
 type Options struct {
-	Options jxpromote.PromoteOptions
-	BatchMode      bool
+	Options   promote.PromoteOptions
+	BatchMode bool
 }
 
 // Main creates a command object for the command
