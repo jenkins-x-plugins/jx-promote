@@ -3,6 +3,7 @@ package envctx
 import (
 	"fmt"
 
+	"github.com/jenkins-x/jx-logging/pkg/log"
 	"github.com/jenkins-x/jx-promote/pkg/versions"
 	"github.com/jenkins-x/jx/pkg/gits"
 	"github.com/jenkins-x/jx/pkg/util"
@@ -38,7 +39,14 @@ func (e *EnvironmentContext) LazyLoad(jxClient versioned.Interface, ns string, g
 	}
 
 	if e.VersionResolver == nil {
-		e.VersionResolver, err = versions.CreateVersionResolver(e.Requirements.VersionStream.URL, e.Requirements.VersionStream.Ref, gitter, handles)
+		url := e.Requirements.VersionStream.URL
+		ref := e.Requirements.VersionStream.Ref
+		if ref == "" {
+			ref = "master"
+		}
+		log.Logger().Infof("loading version stream URL %s ref %s", util.ColorInfo(url), util.ColorInfo(ref))
+
+		e.VersionResolver, err = versions.CreateVersionResolver(url, ref, gitter, handles)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create VersionResolver")
 		}

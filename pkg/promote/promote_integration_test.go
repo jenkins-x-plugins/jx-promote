@@ -28,18 +28,30 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPromoteIntegration(t *testing.T) {
-	testCases := []struct {
-		name   string
-		gitURL string
-		gitRef string
-		remote bool
-	}{
-		{
-			gitURL: "https://github.com/jstrachan/environment-fake-dev",
-		},
-	}
+// PromoteTestCase a test case of promote
+type PromoteTestCase struct {
+	name   string
+	gitURL string
+	gitRef string
+	remote bool
+}
 
+func TestPromoteIntegrationJXApps(t *testing.T) {
+	AssertPromoteIntegration(t, PromoteTestCase{
+		gitURL: "https://github.com/jstrachan/environment-fake-dev",
+	})
+}
+
+func TestPromoteIntegrationMakefileKpt(t *testing.T) {
+	// TODO
+	t.SkipNow()
+	AssertPromoteIntegration(t, PromoteTestCase{
+		gitURL: "https://github.com/jstrachan/env-configsync-bootv3-scratch3",
+	})
+}
+
+// AssertPromoteIntegration asserts the test cases work
+func AssertPromoteIntegration(t *testing.T, testCases ...PromoteTestCase) {
 	version := "1.2.3"
 	appName := "myapp"
 	envName := "staging"
