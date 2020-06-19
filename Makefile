@@ -112,18 +112,18 @@ install: $(GO_DEPENDENCIES) ## Install the binary
 
 linux: ## Build for Linux
 	CGO_ENABLED=$(CGO_ENABLED) GOOS=linux GOARCH=amd64 $(GO) $(BUILD_TARGET) $(BUILDFLAGS) -o build/linux/$(BINARY_NAME) $(MAIN_SRC_FILE)
-	chmod +x build/linux/$(NAME)
+	chmod +x build/linux/$(BINARY_NAME)
 
 arm: ## Build for ARM
 	CGO_ENABLED=$(CGO_ENABLED) GOOS=linux GOARCH=arm $(GO) $(BUILD_TARGET) $(BUILDFLAGS) -o build/arm/$(BINARY_NAME) $(MAIN_SRC_FILE)
-	chmod +x build/arm/$(NAME)
+	chmod +x build/arm/$(BINARY_NAME)
 
 win: ## Build for Windows
 	CGO_ENABLED=$(CGO_ENABLED) GOOS=windows GOARCH=amd64 $(GO) $(BUILD_TARGET) $(BUILDFLAGS) -o build/win/$(BINARY_NAME)-windows-amd64.exe $(MAIN_SRC_FILE)
 
 darwin: ## Build for OSX
 	CGO_ENABLED=$(CGO_ENABLED) GOOS=darwin GOARCH=amd64 $(GO) $(BUILD_TARGET) $(BUILDFLAGS) -o build/darwin/$(BINARY_NAME) $(MAIN_SRC_FILE)
-	chmod +x build/darwin/$(NAME)
+	chmod +x build/darwin/$(BINARY_NAME)
 
 .PHONY: release
 release: clean linux test
