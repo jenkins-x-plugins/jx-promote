@@ -55,6 +55,8 @@ func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir
 		return nil, errors.Wrapf(err, "failed to clone environment %s URL %s", env.Spec.Label, gitURL)
 	}
 
+	log.Logger().Infof("cloned %s to %s", util.ColorInfo(gitURL), util.ColorInfo(dir))
+
 	// TODO fork if needed?
 
 	// TODO

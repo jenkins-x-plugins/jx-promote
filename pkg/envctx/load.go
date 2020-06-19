@@ -46,7 +46,7 @@ func (e *EnvironmentContext) LazyLoad(jxClient versioned.Interface, ns string, g
 		}
 		log.Logger().Infof("loading version stream URL %s ref %s", util.ColorInfo(url), util.ColorInfo(ref))
 
-		e.VersionResolver, err = versions.CreateVersionResolver(url, ref, gitter, handles)
+		e.VersionResolver, err = versions.CreateVersionResolver(url, ref, gitter)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create VersionResolver")
 		}

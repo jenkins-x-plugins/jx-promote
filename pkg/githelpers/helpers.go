@@ -13,6 +13,11 @@ import (
 	"github.com/jenkins-x/jx/pkg/gits"
 	"github.com/jenkins-x/jx/pkg/util"
 	"github.com/pkg/errors"
+	"gopkg.in/src-d/go-git.v4"
+)
+
+var (
+	pathSeparator = string(os.PathSeparator)
 )
 
 // AddAndCommitFiles add and commits files
@@ -70,11 +75,100 @@ func GitCloneToTempDir(gitter gits.Gitter, gitURL string, dir string) (string, e
 
 	log.Logger().Debugf("cloning %s to directory %s", util.ColorInfo(gitURL), util.ColorInfo(dir))
 
+	/* TODO this causes issues
 	err = gitter.Clone(gitURL, dir)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to clone repository %s to directory: %s", gitURL, dir)
 	}
 	return dir, nil
+	*/
+
+	parentDir, name := filepath.Split(dir)
+	parentDir = strings.TrimSuffix(parentDir, pathSeparator)
+
+	err = GitCommand(parentDir, "git", "clone", gitURL, name)
+	if err != nil {
+		return dir, errors.Wrapf(err, "failed to ")
+	}
+	return dir, nil
+}
+
+// GitCommand runs a git command
+func GitCommand(dir string, command string, args ...string) error {
+	c := util.Command{
+		Dir:  dir,
+		Name: command,
+		Args: args,
+		In:   os.Stdin,
+		Out:  os.Stdout,
+		Err:  os.Stderr,
+	}
+	log.Logger().Infof("running command: %s", c.String())
+	_, err := c.RunWithoutRetry()
+	if err != nil {
+		return errors.Wrap(err, "failed to run command")
+	}
+	return nil
+}
+
+// GitCloneToDir clones the git repository to a given or temporary directory
+func GitCloneToDir(gitter gits.Gitter, gitURL string, gitRef string, dir string) (string, error) {
+	var err error
+	if dir != "" {
+		err = os.MkdirAll(dir, util.DefaultWritePermissions)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to create directory %s", dir)
+		}
+	} else {
+		dir, err = ioutil.TempDir("", "jx-promote-")
+		if err != nil {
+			return "", errors.Wrap(err, "failed to create temporary directory")
+		}
+	}
+
+	log.Logger().Debugf("cloning %s to directory %s", util.ColorInfo(gitURL), util.ColorInfo(dir))
+
+	_, err = git.PlainClone(dir, false, &git.CloneOptions{
+		URL:               gitURL,
+		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
+	})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to clone repository %s to directory: %s", gitURL, dir)
+	}
+
+	return CheckoutRef(dir, gitter, gitURL, gitRef)
+}
+
+// CheckoutRef checks out the given reference
+func CheckoutRef(dir string, gitter gits.Gitter, gitURL string, gitRef string) (string, error) {
+	if gitRef != "" && gitRef != "master" && gitRef != "origin/master" && gitRef != "refs/heads/master" {
+		_, err := checkoutRef(dir, gitRef, gitter)
+		if err != nil {
+			return dir, errors.Wrapf(err, "failed to checkout ref %s in repository %s", gitRef, gitURL)
+		}
+	}
+	return dir, nil
+}
+
+func checkoutRef(wrkDir string, referenceName string, gitter gits.Gitter) (string, error) {
+	if referenceName == "" || referenceName == "master" || referenceName == "refs/heads/master" {
+		return "", nil
+	}
+
+	log.Logger().Infof("checking out ref %s", util.ColorInfo(referenceName))
+	err := gitter.Checkout(wrkDir, referenceName)
+	if err != nil {
+		// lets see if its a tag
+		if strings.HasPrefix(referenceName, "v") {
+			referenceName = "tags/" + referenceName
+			log.Logger().Infof("checking out ref %s", util.ColorInfo(referenceName))
+			err = gitter.Checkout(wrkDir, referenceName)
+		}
+	}
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to clone ref %s", referenceName)
+	}
+	return "", nil
 }
 
 // AddUserTokenToURLIfRequired ensures we have a user and token in the given git URL
