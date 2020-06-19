@@ -107,17 +107,17 @@ var (
 	promote_example = templates.Examples(`
 		# Promote a version of the current application to staging
         # discovering the application name from the source code
-		jx promote --version 1.2.3 --env staging
+		jx alpha promote --version 1.2.3 --env staging
 
 		# Promote a version of the myapp application to production
-		jx promote --app myapp --version 1.2.3 --env production
+		jx alpha promote --app myapp --version 1.2.3 --env production
 
 		# To search for all the available charts for a given name use -f.
 		# e.g. to find a redis chart to install
-		jx promote -f redis
+		jx alpha promote -f redis
 
 		# To promote a postgres chart using an alias
-		jx promote -f postgres --alias mydb
+		jx alpha promote -f postgres --alias mydb
 
 		# To create or update a Preview Environment please see the 'jx preview' command if you are inside a git clone of a repo
 		jx preview
@@ -416,7 +416,7 @@ func (o *PromoteOptions) Promote(targetNS string, env *v1.Environment, warnIfAut
 	surveyOpts := survey.WithStdio(o.In, o.Out, o.Err)
 	app := o.Application
 	if app == "" {
-		log.Logger().Warnf("No application name could be detected so cannot promote via Helm. If the detection of the helm chart name is not working consider adding it with the --%s argument on the 'jx promote' command", opts.OptionApplication)
+		log.Logger().Warnf("No application name could be detected so cannot promote via Helm. If the detection of the helm chart name is not working consider adding it with the --%s argument on the 'jx alpha promote' command", opts.OptionApplication)
 		return nil, nil
 	}
 	version := o.Version
@@ -818,11 +818,11 @@ func (o *PromoteOptions) GetTargetNamespace(ns string, env string) (string, *v1.
 
 func (o *PromoteOptions) WaitForPromotion(ns string, env *v1.Environment, releaseInfo *ReleaseInfo) error {
 	if o.TimeoutDuration == nil {
-		log.Logger().Infof("No --%s option specified on the 'jx promote' command so not waiting for the promotion to succeed", opts.OptionTimeout)
+		log.Logger().Infof("No --%s option specified on the 'jx alpha promote' command so not waiting for the promotion to succeed", opts.OptionTimeout)
 		return nil
 	}
 	if o.PullRequestPollDuration == nil {
-		log.Logger().Infof("No --%s option specified on the 'jx promote' command so not waiting for the promotion to succeed", optionPullRequestPollTime)
+		log.Logger().Infof("No --%s option specified on the 'jx alpha promote' command so not waiting for the promotion to succeed", optionPullRequestPollTime)
 		return nil
 	}
 	duration := *o.TimeoutDuration
@@ -1014,7 +1014,7 @@ func (o *PromoteOptions) waitForGitOpsPullRequest(ns string, env *v1.Environment
 									}
 								}
 								if !tideMerge {
-									err = gitProvider.MergePullRequest(pr, "jx promote automatically merged promotion PR")
+									err = gitProvider.MergePullRequest(pr, "jx alpha promote automatically merged promotion PR")
 									if err != nil {
 										if !logMergeFailure {
 											logMergeFailure = true
