@@ -273,6 +273,12 @@ func (o *Options) EnsureApplicationNameIsDefined(sf searchForChartFn, df discove
 
 // Run implements this command
 func (o *Options) Run() error {
+	if o.Version == "" {
+		o.Version = os.Getenv("VERSION")
+		if o.Version != "" {
+			log.Logger().Infof("defaulting to the version %s from $VERSION", util.ColorInfo(o.Version))
+		}
+	}
 	var err error
 	err = o.EnsureApplicationNameIsDefined(o.SearchForChart, o.DiscoverAppName)
 	if err != nil {
