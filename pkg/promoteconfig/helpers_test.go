@@ -9,15 +9,44 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPromoteFind(t *testing.T) {
-	dir := filepath.Join("test_data", "config-root", "namespaces")
-	cfg, fileName, err := promoteconfig.LoadPromote(dir, true)
+func TestDiscoverPromoteConfigKpt(t *testing.T) {
+	dir := filepath.Join("test_data", "custom", "cfg-root", "namespaces")
+	cfg, fileName, err := promoteconfig.Discover(dir)
 	require.NoError(t, err)
 	require.NotEmpty(t, fileName, "no fileName returned")
-	require.NotNil(t, cfg, "config not returned")
+	require.NotNil(t, cfg, "cfg not returned")
 
-	assert.Equal(t, "namespaces/apps", cfg.Spec.KptPath, "spec.kptPath for dir %s", dir)
-	assert.Equal(t, "myapps", cfg.Spec.Namespace, "spec.namespace for dir %s", dir)
+	require.NotNil(t, cfg.Spec.FileRule, "cfg.Spec.FileRule for %s", dir)
+	require.NotEmpty(t, cfg.Spec.FileRule.Path, "cfg.Spec.FileRule.Path for %s", dir)
+	require.NotEmpty(t, cfg.Spec.FileRule.InsertAfter, "cfg.Spec.FileRule.InsertAfter for %s", dir)
+	require.NotEmpty(t, cfg.Spec.FileRule.UpdateTemplate, "cfg.Spec.FileRule.UpdateTemplate for %s", dir)
+	require.NotEmpty(t, cfg.Spec.FileRule.CommandTemplate, "cfg.Spec.FileRule.CommandTemplate for %s", dir)
 
-	t.Logf("loaded file %s with promote config %#v", fileName, cfg)
+	t.Logf("loaded file %s with promote cfg %#v", fileName, cfg)
+}
+
+func TestDiscoverPromoteConfigHelm(t *testing.T) {
+	dir := filepath.Join("test_data", "helm")
+	cfg, fileName, err := promoteconfig.Discover(dir)
+	require.NoError(t, err, "for dir %s", dir)
+	require.NotNil(t, cfg, "config not returned for %s", dir)
+	assert.Empty(t, fileName, "fileName for %s", dir)
+
+	assert.NotNil(t, cfg.Spec.ChartRule, "cfg.Spec.ChartRule for %s", dir)
+	assert.Equal(t, "env", cfg.Spec.ChartRule.Path, "cfg.Spec.ChartRule.Path for %s", dir)
+
+	t.Logf("discovered config %#v for dir %s", cfg, dir)
+}
+
+func TestDiscoverPromoteConfigHelmfile(t *testing.T) {
+	dir := filepath.Join("test_data", "helmfile")
+	cfg, fileName, err := promoteconfig.Discover(dir)
+	require.NoError(t, err, "for dir %s", dir)
+	require.NotNil(t, cfg, "config not returned for %s", dir)
+	assert.Empty(t, fileName, "fileName for %s", dir)
+
+	assert.NotNil(t, cfg.Spec.HelmfileRule, "cfg.Spec.HelmfileRule for %s", dir)
+	assert.Equal(t, "helmfile.yaml", cfg.Spec.HelmfileRule.Path, "cfg.Spec.HelmfileRule.Path for %s", dir)
+
+	t.Logf("discovered config %#v for dir %s", cfg, dir)
 }

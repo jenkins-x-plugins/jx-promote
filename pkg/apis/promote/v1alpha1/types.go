@@ -27,13 +27,35 @@ type PromoteSpec struct {
 	// File specifies a promotion rule for a File such as for a Makefile or shell script
 	FileRule *FileRule `json:"fileRule,omitempty"`
 
-	// TODO OLD
+	// ChartRule specifies a composite helm chart to promote to by adding the app to the charts
+	// 'requirements.yaml' file
+	ChartRule *ChartRule `json:"chartRule,omitempty"`
 
-	// KptPath if using kpt to deploy applications into a GitOps repository specify the folder to deploy into.
-	// For example if the root directory contains a Config Sync git layout we may want applications to be deployed into the
-	// `namespaces/myapps` folder. If the `myconfig` folder is used as the root of the Config Sync configuration you may want
-	// to configure something like `myconfig/namespaces/mysystem` or whatever.
-	KptPath string `json:"kptPath,omitempty"`
+	// HelmfileRule specifies the location of the helmfile to promote into
+	HelmfileRule *HelmfileRule `json:"helmfileRule,omitempty"`
+
+	// KptRule specifies to fetch the apps resource via kpt : https://googlecontainertools.github.io/kpt/
+	KptRule *KptRule `json:"helmfileRule,omitempty"`
+}
+
+// ChartRule specifies which chart to add the app to the Chart's 'requirements.yaml' file
+type ChartRule struct {
+	// Path to the chart folder (which should contain Chart.yaml and requirements.yaml)
+	Path string `json:"path"`
+}
+
+// HelmfileRule specifies which 'helmfile.yaml' file to use to promote the app into
+type HelmfileRule struct {
+	// Path to the helmfile to modify
+	Path string `json:"path"`
+}
+
+// KptRule specifies to fetch the apps resource via kpt : https://googlecontainertools.github.io/kpt/
+type KptRule struct {
+	// Path specifies the folder to fetch kpt resources into.
+	// For example if the 'config-root'' directory contains a Config Sync git layout we may want applications to be deployed into the
+	// `config-root/namespaces/myapps` folder. If so set the path to `config-root/namespaces/myapps`
+	Path string `json:"path,omitempty"`
 
 	// Namespace specifies the namespace to deploy applications if using kpt. If specified this value will be used instead
 	// of the Environment.Spec.Namespace in the Environment CRD

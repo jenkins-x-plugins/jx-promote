@@ -83,14 +83,14 @@ func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir
 	}
 	if !hasAppsFile {
 		// lets check if we have a DeployConfig
-		promoteConfig, promoteConfigFile, err := promoteconfig.LoadPromote(dir, false)
+		promoteConfig, promoteConfigFile, err := promoteconfig.Discover(dir)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to load DeployConfig in dir %s", dir)
+			return nil, errors.Wrapf(err, "failed to discover the PromoteConfig in dir %s", dir)
 		}
 
-		if promoteConfig != nil {
-			if promoteConfig.Spec.KptPath == "" {
-				log.Logger().Warnf("the deploy config file %s does not contain a kptPath property so cannot use kpt to promote to this repository", promoteConfigFile)
+		if promoteConfig != nil && promoteConfig.Spec.KptRule != nil {
+			if promoteConfig.Spec.KptRule.Path == "" {
+				log.Logger().Warnf("the promote config file %s does not contain a spec.kptRule.Path property so cannot use kpt to promote to this repository", promoteConfigFile)
 			} else {
 				err = ModifyKptFiles(dir, promoteConfig, pullRequestDetails, o.ModifyKptFn)
 				if err != nil {

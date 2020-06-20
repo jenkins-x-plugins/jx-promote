@@ -1,5 +1,0 @@
-apiVersion: promote.jenkins-x.io/v1alpha1
-kind: Promote
-spec:
-  kptPath: namespaces/apps
-  namespace: myapps

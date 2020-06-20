@@ -8,8 +8,61 @@ import (
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x/jx/pkg/util"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 )
+
+// Discover discovers the promote configuration.
+//
+// if an explicit configuration is found (in a current or parent directory of '.jx/promote.yaml' then that is used.
+// otherwise the env/Chart.yaml or 'jx-apps.yaml' are detected
+func Discover(dir string) (*v1alpha1.Promote, string, error) {
+	config, fileName, err := LoadPromote(dir, false)
+	if err != nil {
+		return config, fileName, errors.Wrapf(err, "failed to load Promote configuration from %s", dir)
+	}
+	if config != nil {
+		return config, fileName, nil
+	}
+
+	envChart := filepath.Join(dir, "env", "Chart.yaml")
+	exists, err := util.FileExists(envChart)
+	if err != nil {
+		return nil, "", errors.Wrapf(err, "failed to check if file exists %s", envChart)
+	}
+	if exists {
+		config := v1alpha1.Promote{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "generated",
+			},
+			Spec: v1alpha1.PromoteSpec{
+				ChartRule: &v1alpha1.ChartRule{
+					Path: "env",
+				},
+			},
+		}
+		return &config, "", nil
+	}
+	hf := filepath.Join(dir, "helmfile.yaml")
+	exists, err = util.FileExists(hf)
+	if err != nil {
+		return nil, "", errors.Wrapf(err, "failed to check if file exists %s", hf)
+	}
+	if exists {
+		config := v1alpha1.Promote{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "generated",
+			},
+			Spec: v1alpha1.PromoteSpec{
+				HelmfileRule: &v1alpha1.HelmfileRule{
+					Path: "helmfile.yaml",
+				},
+			},
+		}
+		return &config, "", nil
+	}
+	return nil, "", errors.Errorf("no '.jx/promote.yaml' file found and could not discover env/Chart.yaml in directory %s", dir)
+}
 
 // LoadPromote loads the boot config from the given directory
 func LoadPromote(dir string, failIfMissing bool) (*v1alpha1.Promote, string, error) {

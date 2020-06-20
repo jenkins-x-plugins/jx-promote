@@ -643,8 +643,11 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 
 	modifyKptFn := func(dir string, promoteConfig *v1alpha1.Promote, pullRequestDetails *gits.PullRequestDetails) error {
 		namespaceDir := dir
-		if promoteConfig.Spec.KptPath != "" {
-			namespaceDir = filepath.Join(dir, promoteConfig.Spec.KptPath)
+		if promoteConfig.Spec.KptRule != nil {
+			kptPath := promoteConfig.Spec.KptRule.Path
+			if kptPath != "" {
+				namespaceDir = filepath.Join(dir, kptPath)
+			}
 		}
 
 		if o.GitInfo == nil {
