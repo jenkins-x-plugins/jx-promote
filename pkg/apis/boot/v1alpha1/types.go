@@ -24,8 +24,8 @@ type Promote struct {
 // PromoteSpec defines the desired state of Promote.
 type PromoteSpec struct {
 
-	// MakefileRule lets promote using a makefile
-	MakefileRule *MakefileSpec `json:"makefileRule,omitempty"`
+	// File specifies a promotion rule for a File such as for a Makefile or shell script
+	FileRule *FileRule `json:"fileRule,omitempty"`
 
 	// TODO OLD
 
@@ -40,19 +40,31 @@ type PromoteSpec struct {
 	Namespace string `json:"namespace,omitempty"`
 }
 
-// MakefileSpec specifies how to modify a 'Makefile` to add a new helm/kpt style command
-type MakefileSpec struct {
-	// Path the path to the Makefile to modify. If none specified it defaults to `Makefile` in the root of the source repository
-	Path string `json:"path,omitempty"`
+// FileRule specifies how to modify a 'Makefile` or shell script to add a new helm/kpt style command
+type FileRule struct {
+	// Path the path to the Makefile or shell script to modify. This is mandatory
+	Path string `json:"path"`
 
-	// InsertAfterPrefix insert after the last command with this prefix
-	InsertAfterPrefix string `json:"insertAfterPrefix,omitempty"`
+	// LinePrefix adds a prefix to lines. e.g. for a Makefile that is typically "\t"
+	LinePrefix string `json:"linePrefix,omitempty"`
+
+	// InsertAfter finds the last line to match against to find where to insert
+	InsertAfter []LineMatcher `json:"insertAfter,omitempty"`
 
 	// UpdatePrefixTemplate the prefix command string to find to update if upgrading a version
 	UpdatePrefixTemplate string `json:"updatePrefixTemplate,omitempty"`
 
 	// CommandTemplate the command template
 	CommandTemplate string `json:"commandTemplate,omitempty"`
+}
+
+// LineMatcher specifies a rule on how to find a line to match
+type LineMatcher struct {
+	// Prefix the prefix of a line to match
+	Prefix string `json:"prefix,omitempty"`
+
+	// Regex the regex of a line to match
+	Regex string `json:"regex,omitempty"`
 }
 
 // PromoteList contains a list of Promote
