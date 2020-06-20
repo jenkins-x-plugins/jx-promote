@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/jenkins-x/jx/pkg/helm"
+	"github.com/jenkins-x/jx/pkg/util"
 	"github.com/pkg/errors"
 )
 
@@ -33,9 +34,18 @@ func modifyChartFiles(r *PromoteRule, dir string) error {
 	if err != nil {
 		return err
 	}
-	requirements, err := helm.LoadRequirementsFile(requirementsFile)
+
+	exists, err := util.FileExists(requirementsFile)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to detect file %s", requirementsFile)
+	}
+
+	requirements := &helm.Requirements{}
+	if exists {
+		requirements, err = helm.LoadRequirementsFile(requirementsFile)
+		if err != nil {
+			return err
+		}
 	}
 
 	chartFile, err := helm.FindChartFileName(dir)

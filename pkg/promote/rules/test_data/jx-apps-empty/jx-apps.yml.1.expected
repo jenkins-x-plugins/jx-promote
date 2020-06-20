@@ -1,0 +1,7 @@
+apps:
+- name: jx-labs/jenkins-x-crds
+- name: dev/myapp
+  version: 1.2.3
+repositories:
+- name: dev
+  url: http://chartmuseum-jx.34.78.195.22.nip.io

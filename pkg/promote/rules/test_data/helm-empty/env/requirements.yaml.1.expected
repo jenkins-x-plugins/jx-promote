@@ -1,0 +1,4 @@
+dependencies:
+- name: myapp
+  repository: ""
+  version: 1.2.3

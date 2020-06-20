@@ -42,10 +42,6 @@ func TestRuleFactory(t *testing.T) {
 			require.NoError(t, err, "failed to load cfg dir %s", dir)
 			require.NotNil(t, cfg, "no project cfg found in dir %s", dir)
 
-			fileName := ruleFileName(cfg)
-			target := filepath.Join(dir, fileName)
-			assert.FileExists(t, target)
-
 			r := &rules.PromoteRule{
 				TemplateContext: rules.TemplateContext{
 					GitURL:    "https://github.com/myorg/myapp.git",
@@ -66,6 +62,10 @@ func TestRuleFactory(t *testing.T) {
 
 			err = fn(r)
 			require.NoError(t, err, "failed to invoke RuleFunction %v at dir %s", fn, dir)
+
+			fileName := ruleFileName(cfg)
+			target := filepath.Join(dir, fileName)
+			assert.FileExists(t, target)
 
 			testhelpers.AssertTextFilesEqual(t, filepath.Join(src, fileName+".1.expected"), target, fileName)
 
