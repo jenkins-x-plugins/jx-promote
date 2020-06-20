@@ -59,10 +59,9 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(dir string, gitURL str
 		return nil, errors.Wrapf(err, "failed to commit changes in dir %s", dir)
 	}
 
-	remote := "origin"
-	err = gitter.Push(dir, remote, false)
+	err = gitter.ForcePushBranch(dir, o.BranchName, o.BranchName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to push to remote %s from dir %s", remote, dir)
+		return nil, errors.Wrapf(err, "failed to push to branch %s from dir %s", o.BranchName, dir)
 	}
 
 	gitInfo, err := gits.ParseGitURL(gitURL)
