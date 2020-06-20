@@ -7,6 +7,7 @@ require (
 	github.com/cli/cli v0.6.2
 	github.com/genkiroid/cert v0.0.0-20191007122723-897560fbbe50
 	github.com/ghodss/yaml v1.0.0
+	github.com/go-errors/errors v1.0.1
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/google/go-cmp v0.3.0
 	github.com/google/uuid v1.1.1

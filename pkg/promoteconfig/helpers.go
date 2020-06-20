@@ -61,6 +61,24 @@ func Discover(dir string) (*v1alpha1.Promote, string, error) {
 		}
 		return &config, "", nil
 	}
+	ja := filepath.Join(dir, "jx-apps.yml")
+	exists, err = util.FileExists(ja)
+	if err != nil {
+		return nil, "", errors.Wrapf(err, "failed to check if file exists %s", ja)
+	}
+	if exists {
+		config := v1alpha1.Promote{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "generated",
+			},
+			Spec: v1alpha1.PromoteSpec{
+				AppsRule: &v1alpha1.AppsRule{
+					Path: "jx-apps.yml",
+				},
+			},
+		}
+		return &config, "", nil
+	}
 	return nil, "", errors.Errorf("no '.jx/promote.yaml' file found and could not discover env/Chart.yaml in directory %s", dir)
 }
 

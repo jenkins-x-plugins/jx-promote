@@ -172,7 +172,7 @@ func (o *Options) AddOptions(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.Alias, "alias", "", "", "The optional alias used in the 'requirements.yaml' file")
 	cmd.Flags().StringVarP(&o.Pipeline, "pipeline", "", "", "The Pipeline string in the form 'folderName/repoName/branch' which is used to update the PipelineActivity. If not specified its defaulted from  the '$BUILD_NUMBER' environment variable")
 	cmd.Flags().StringVarP(&o.Build, "build", "", "", "The Build number which is used to update the PipelineActivity. If not specified its defaulted from  the '$BUILD_NUMBER' environment variable")
-	cmd.Flags().StringVarP(&o.Version, "version", "v", "", "The Version to promote")
+	cmd.Flags().StringVarP(&o.Version, "version", "v", "", "The Version to promote. If no version is specified it defaults to $VERSION which is usually populated in a pipeline. If no value can be found you will be prompted to pick the version")
 	cmd.Flags().StringVarP(&o.LocalHelmRepoName, "helm-repo-name", "r", kube.LocalHelmRepoName, "The name of the helm repository that contains the app")
 	cmd.Flags().StringVarP(&o.HelmRepositoryURL, "helm-repo-url", "u", "", "The Helm Repository URL to use for the App")
 	cmd.Flags().StringVarP(&o.ReleaseName, "release", "", "", "The name of the helm release")
@@ -256,7 +256,6 @@ func (o *Options) EnsureApplicationNameIsDefined(sf searchForChartFn, df discove
 	if !o.hasApplicationFlag() && o.hasArgs() {
 		o.setApplicationNameFromArgs()
 	}
-
 	if !o.hasApplicationFlag() && o.hasFilterFlag() {
 		err := o.setApplicationNameFromFilter(sf)
 		if err != nil {
@@ -267,22 +266,28 @@ func (o *Options) EnsureApplicationNameIsDefined(sf searchForChartFn, df discove
 	if !o.hasApplicationFlag() {
 		return o.setApplicationNameFromDiscoveredAppName(df)
 	}
-
 	return nil
 }
 
 // Run implements this command
 func (o *Options) Run() error {
+	var err error
+	err = o.EnsureApplicationNameIsDefined(o.SearchForChart, o.DiscoverAppName)
+	if err != nil {
+		return err
+	}
+
 	if o.Version == "" {
 		o.Version = os.Getenv("VERSION")
 		if o.Version != "" {
 			log.Logger().Infof("defaulting to the version %s from $VERSION", util.ColorInfo(o.Version))
 		}
-	}
-	var err error
-	err = o.EnsureApplicationNameIsDefined(o.SearchForChart, o.DiscoverAppName)
-	if err != nil {
-		return err
+		if o.Version == "" && o.Application != "" {
+			o.Version, err = o.findLatestVersion(o.Application)
+			if err != nil {
+				return errors.Wrapf(err, "failed to find latest version of app %s", o.Application)
+			}
+		}
 	}
 
 	err = o.lazyCreateKubeClients()
@@ -733,7 +738,7 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 	return err
 }
 
-// ResolveChartMuseumURL resolves the current Chart Museum URL so we can pass it into a remote Environment's
+// ResolveChartRepositoryURL resolves the current Chart Museum URL so we can pass it into a remote Environment's
 // git repository
 func (o *Options) ResolveChartMuseumURL() (string, error) {
 	kubeClient := o.KubeClient

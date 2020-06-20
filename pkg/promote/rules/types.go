@@ -1,21 +1,30 @@
 package rules
 
-import "github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
+import (
+	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
+	"github.com/jenkins-x/jx-promote/pkg/envctx"
+)
 
 // PromoteRule represents a profile rule
 type PromoteRule struct {
-	Dir       string
-	Config    v1alpha1.Promote
-	GitURL    string
-	Version   string
-	AppName   string
-	Namespace string
+	TemplateContext
+	Dir           string
+	Config        v1alpha1.Promote
+	DevEnvContext *envctx.EnvironmentContext
+
+	// ResolveChartRepositoryURL resolves the chart repository URL
+	ResolveChartRepositoryURL func() (string, error)
 }
 
 // TemplateContext expressions used in templates
 type TemplateContext struct {
-	GitURL    string
-	Version   string
-	AppName   string
-	Namespace string
+	GitURL            string
+	Version           string
+	AppName           string
+	ChartAlias        string
+	Namespace         string
+	HelmRepositoryURL string
 }
+
+// RuleFunction a rule function for evaluating the rule
+type RuleFunction func(*PromoteRule) error

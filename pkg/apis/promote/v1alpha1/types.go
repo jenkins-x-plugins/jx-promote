@@ -31,11 +31,20 @@ type PromoteSpec struct {
 	// 'requirements.yaml' file
 	ChartRule *ChartRule `json:"chartRule,omitempty"`
 
+	// AppsRule uses a 'jx-apps.yml` file to store apps to be deployed
+	AppsRule *AppsRule `json:"appsRule,omitempty"`
+
 	// HelmfileRule specifies the location of the helmfile to promote into
 	HelmfileRule *HelmfileRule `json:"helmfileRule,omitempty"`
 
 	// KptRule specifies to fetch the apps resource via kpt : https://googlecontainertools.github.io/kpt/
 	KptRule *KptRule `json:"helmfileRule,omitempty"`
+}
+
+// AppsRule uses a 'jx-apps.yml` file to store apps to be deployed
+type AppsRule struct {
+	// Path to the apps file to modify. Defaults to `jx-apps.yml`
+	Path string `json:"path"`
 }
 
 // ChartRule specifies which chart to add the app to the Chart's 'requirements.yaml' file

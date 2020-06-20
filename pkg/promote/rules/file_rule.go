@@ -17,7 +17,7 @@ import (
 func FileRule(r *PromoteRule) error {
 	config := r.Config
 	if config.Spec.FileRule == nil {
-		return errors.Errorf("no makefile rule configured")
+		return errors.Errorf("no fileRule configured")
 	}
 	rule := config.Spec.FileRule
 	path := rule.Path
@@ -151,12 +151,7 @@ func evaluateTemplate(r *PromoteRule, templateText string, linePrefix string) (s
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse go template: %s", templateText)
 	}
-	ctx := TemplateContext{
-		GitURL:    r.GitURL,
-		Version:   r.Version,
-		AppName:   r.AppName,
-		Namespace: r.Namespace,
-	}
+	ctx := r.TemplateContext
 	buf := &strings.Builder{}
 	if linePrefix != "" {
 		buf.WriteString(linePrefix)
