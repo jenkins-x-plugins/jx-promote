@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx-promote/pkg/apis/boot/v1alpha1"
+	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x/jx-promote/pkg/githelpers"
 	"github.com/jenkins-x/jx-promote/pkg/promoteconfig"
 	jenkinsio "github.com/jenkins-x/jx/pkg/apis/jenkins.io"

@@ -3,11 +3,12 @@ package rules
 import (
 	"io/ioutil"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 
 	"github.com/jenkins-x/jx-logging/pkg/log"
-	"github.com/jenkins-x/jx-promote/pkg/apis/boot/v1alpha1"
+	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x/jx/pkg/util"
 	"github.com/pkg/errors"
 )
@@ -39,27 +40,31 @@ func FileRule(r *PromoteRule) error {
 
 	lines := strings.Split(string(data), "\n")
 
-	commandLine, err := evaluateTemplate(r, rule.CommandTemplate)
+	commandLine, err := evaluateTemplate(r, rule.CommandTemplate, rule.LinePrefix)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create Makefile statement")
 	}
-	updatePrefix, err := evaluateTemplate(r, rule.UpdatePrefixTemplate)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create update prefix")
-	}
-
-	linePrefix := rule.LinePrefix
-	if linePrefix != "" {
-		commandLine = linePrefix + commandLine
-		if updatePrefix != "" {
-			updatePrefix = linePrefix + updatePrefix
-		}
-	}
 
 	updated := false
-	if updatePrefix != "" {
+	updateTemplate := rule.UpdateTemplate
+	if updateTemplate != nil {
+		lineMatcher := v1alpha1.LineMatcher{}
+		lineMatcher.Prefix, err = evaluateTemplate(r, updateTemplate.Prefix, "")
+		if err != nil {
+			return errors.Wrapf(err, "failed to evaluate updateTemplate.prefix")
+		}
+		lineMatcher.Regex, err = evaluateTemplate(r, updateTemplate.Regex, "")
+		if err != nil {
+			return errors.Wrapf(err, "failed to evaluate updateTemplate.regex")
+		}
+
+		m, err := createMatcher(rule, lineMatcher)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create line matcher for updateTemplate")
+		}
+
 		for i, line := range lines {
-			if strings.HasPrefix(line, updatePrefix) {
+			if m(line) {
 				updated = true
 				lines[i] = commandLine
 				break
@@ -71,13 +76,15 @@ func FileRule(r *PromoteRule) error {
 		for _, insertAfter := range rule.InsertAfter {
 			m, err := createMatcher(rule, insertAfter)
 			if err != nil {
-				return errors.Wrapf(err, "failed to create matcher")
+				return errors.Wrapf(err, "failed to create line matcher for insertAfter")
 			}
-
 			for i, line := range lines {
 				if m(line) {
 					insertIdx = i
 				}
+			}
+			if insertIdx >= 0 {
+				break
 			}
 		}
 		if insertIdx >= 0 {
@@ -123,20 +130,37 @@ func createMatcher(rule *v1alpha1.FileRule, lineMatcher v1alpha1.LineMatcher) (f
 			return false
 		}, nil
 	}
+	regText := lineMatcher.Regex
+	if regText != "" {
+		r, err := regexp.Compile(regText)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse line match regex: %s", regText)
+		}
+		return func(line string) bool {
+			return r.MatchString(line)
+		}, nil
+	}
 	return nil, errors.Errorf("not supported lime matcher %#v", lineMatcher)
 }
 
-func evaluateTemplate(r *PromoteRule, templateText string) (string, error) {
+func evaluateTemplate(r *PromoteRule, templateText string, linePrefix string) (string, error) {
+	if templateText == "" {
+		return "", nil
+	}
 	tmpl, err := template.New("test").Parse(templateText)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse go template: %s", templateText)
 	}
 	ctx := TemplateContext{
-		GitURL:  r.GitURL,
-		Version: r.Version,
-		AppName: r.AppName,
+		GitURL:    r.GitURL,
+		Version:   r.Version,
+		AppName:   r.AppName,
+		Namespace: r.Namespace,
 	}
 	buf := &strings.Builder{}
+	if linePrefix != "" {
+		buf.WriteString(linePrefix)
+	}
 	err = tmpl.Execute(buf, &ctx)
 	if err != nil {
 		return buf.String(), errors.Wrapf(err, "failed to evaluate template with %#v", ctx)

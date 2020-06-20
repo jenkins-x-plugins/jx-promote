@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# fetch resources
+kpt pkg get https://github.com/myorg/myapp.git/kubernetes@v1.2.3 $(FETCH_DIR)/namespaces/jx
+
+echo "DONE"

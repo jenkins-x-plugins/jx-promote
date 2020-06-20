@@ -17,7 +17,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx-promote/pkg/apis/boot/v1alpha1"
+	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x/jx-promote/pkg/common"
 	"github.com/jenkins-x/jx-promote/pkg/environments"
 	"github.com/jenkins-x/jx-promote/pkg/helmer"

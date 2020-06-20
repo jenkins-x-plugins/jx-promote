@@ -22,11 +22,11 @@ func TestFileRules(t *testing.T) {
 	files, err := ioutil.ReadDir(sourceData)
 	assert.NoError(t, err)
 
+	ns := "jx"
+
 	for _, f := range files {
 		if f.IsDir() {
 			name := f.Name()
-
-			fileName := "Makefile"
 
 			dir := filepath.Join(tmpDir, name)
 
@@ -34,24 +34,26 @@ func TestFileRules(t *testing.T) {
 			err = util.CopyDirOverwrite(src, dir)
 			require.NoError(t, err, "could not copy source data in %s to %s", src, dir)
 
-			target := filepath.Join(dir, fileName)
-			assert.FileExists(t, target)
-
 			config, _, err := promoteconfig.LoadPromote(dir, true)
 			require.NoError(t, err, "failed to load config dir %s", dir)
 			require.NotNil(t, config, "no project config found in dir %s", dir)
 			require.NotNil(t, config.Spec.FileRule, "config.Spec.FileRule for %s", name)
 			require.NotEmpty(t, config.Spec.FileRule.Path, "config.Spec.FileRule.Path for %s", name)
 			require.NotEmpty(t, config.Spec.FileRule.InsertAfter, "config.Spec.FileRule.InsertAfter for %s", name)
-			require.NotEmpty(t, config.Spec.FileRule.UpdatePrefixTemplate, "config.Spec.FileRule.UpdatePrefixTemplate for %s", name)
+			require.NotEmpty(t, config.Spec.FileRule.UpdateTemplate, "config.Spec.FileRule.UpdateTemplate for %s", name)
 			require.NotEmpty(t, config.Spec.FileRule.CommandTemplate, "config.Spec.FileRule.CommandTemplate for %s", name)
 
+			fileName := config.Spec.FileRule.Path
+			target := filepath.Join(dir, fileName)
+			assert.FileExists(t, target)
+
 			r := &PromoteRule{
-				Dir:     dir,
-				Config:  *config,
-				GitURL:  "https://github.com/myorg/myapp.git",
-				Version: "1.2.3",
-				AppName: "myapp",
+				Dir:       dir,
+				Config:    *config,
+				GitURL:    "https://github.com/myorg/myapp.git",
+				Version:   "1.2.3",
+				AppName:   "myapp",
+				Namespace: ns,
 			}
 
 			err = FileRule(r)
@@ -61,11 +63,12 @@ func TestFileRules(t *testing.T) {
 
 			// now lets modify to new version
 			r = &PromoteRule{
-				Dir:     dir,
-				Config:  *config,
-				GitURL:  "https://github.com/myorg/myapp.git",
-				Version: "1.2.4",
-				AppName: "myapp",
+				Dir:       dir,
+				Config:    *config,
+				GitURL:    "https://github.com/myorg/myapp.git",
+				Version:   "1.2.4",
+				AppName:   "myapp",
+				Namespace: ns,
 			}
 
 			err = FileRule(r)

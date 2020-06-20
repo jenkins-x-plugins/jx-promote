@@ -1,0 +1,12 @@
+apiVersion: promote.jenkins-x.io/v1alpha1
+kind: Promote
+spec:
+  fileRule:
+    path: Makefile
+    linePrefix: "\t"
+    insertAfter:
+    - prefix: "helm template"
+    - prefix: "fetch:"
+    updateTemplate:
+      regex: "helm template --namespace {{.Namespace}} --version .* {{.AppName}} .*"
+    commandTemplate: "helm template --namespace {{.Namespace}} --version {{.Version}} {{.AppName}} dev/{{.AppName}}"

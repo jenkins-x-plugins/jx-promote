@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx-promote/pkg/apis/boot/v1alpha1"
+	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x/jx/pkg/auth"
 	"github.com/jenkins-x/jx/pkg/config"
 	"github.com/jenkins-x/jx/pkg/gits"

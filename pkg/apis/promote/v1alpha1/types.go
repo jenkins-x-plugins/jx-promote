@@ -51,10 +51,10 @@ type FileRule struct {
 	// InsertAfter finds the last line to match against to find where to insert
 	InsertAfter []LineMatcher `json:"insertAfter,omitempty"`
 
-	// UpdatePrefixTemplate the prefix command string to find to update if upgrading a version
-	UpdatePrefixTemplate string `json:"updatePrefixTemplate,omitempty"`
+	// UpdateTemplate matches line to perform upgrades to an app
+	UpdateTemplate *LineMatcher `json:"updateTemplate,omitempty"`
 
-	// CommandTemplate the command template
+	// CommandTemplate the command template for the promote command
 	CommandTemplate string `json:"commandTemplate,omitempty"`
 }
 
