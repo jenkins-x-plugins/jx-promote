@@ -12,12 +12,12 @@ import (
 	"time"
 
 	"github.com/jenkins-x/jx-kube-client/pkg/kubeclient"
-	"github.com/jenkins-x/jx-promote/pkg/envctx"
 	"github.com/jenkins-x/jx-promote/pkg/githelpers"
+	"github.com/jenkins-x/jx-promote/pkg/promote/rules"
+	"github.com/jenkins-x/jx-promote/pkg/promoteconfig"
 	"k8s.io/client-go/rest"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x/jx-promote/pkg/common"
 	"github.com/jenkins-x/jx-promote/pkg/environments"
 	"github.com/jenkins-x/jx-promote/pkg/helmer"
@@ -33,8 +33,6 @@ import (
 	"gopkg.in/AlecAivazis/survey.v1"
 
 	v1 "github.com/jenkins-x/jx/pkg/apis/jenkins.io/v1"
-
-	"k8s.io/helm/pkg/proto/hapi/chart"
 
 	"github.com/jenkins-x/jx/pkg/kube/services"
 
@@ -89,10 +87,9 @@ type Options struct {
 	Filter                  string
 	Alias                   string
 
-	KubeClient    kubernetes.Interface
-	JXClient      versioned.Interface
-	Helmer        helmer.Helmer
-	DevEnvContext envctx.EnvironmentContext
+	KubeClient kubernetes.Interface
+	JXClient   versioned.Interface
+	Helmer     helmer.Helmer
 
 	// calculated fields
 	TimeoutDuration         *time.Duration
@@ -601,133 +598,38 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 	o.EnvironmentPullRequestOptions.CommitTitle = details.Title
 	o.EnvironmentPullRequestOptions.CommitMessage = details.Message
 
-	modifyChartFn := func(requirements *helm.Requirements, metadata *chart.Metadata, values map[string]interface{},
-		templates map[string]string, dir string, details *gits.PullRequestDetails) error {
-		var err error
-		if version == "" {
-			version, err = o.findLatestVersion(app)
-			if err != nil {
-				return err
-			}
-		}
-		requirements.SetAppVersion(app, version, o.HelmRepositoryURL, o.Alias)
-		return nil
-	}
-	modifyAppsFn := func(appsConfig *config.AppConfig, dir string, pullRequestDetails *gits.PullRequestDetails) error {
-		var err error
-		if version == "" {
-			version, err = o.findLatestVersion(app)
-			if err != nil {
-				return err
-			}
-		}
-		chartMuseumURL, err := o.ResolveChartMuseumURL()
-		if err != nil {
-			return errors.Wrap(err, "failed to resolve chart museum URL")
-		}
-
-		details, err := o.DevEnvContext.ChartDetails(app, chartMuseumURL)
-		if err != nil {
-			return err
-		}
-		details.DefaultPrefix(appsConfig, "dev")
-
-		for i := range appsConfig.Apps {
-			appConfig := &appsConfig.Apps[i]
-			if appConfig.Name == app || appConfig.Name == details.Name {
-				appConfig.Version = version
-				return nil
-			}
-		}
-		appsConfig.Apps = append(appsConfig.Apps, config.App{
-			Name:    details.Name,
-			Version: version,
-		})
-		return nil
-	}
-
-	modifyKptFn := func(dir string, promoteConfig *v1alpha1.Promote, pullRequestDetails *gits.PullRequestDetails) error {
-		namespaceDir := dir
-		if promoteConfig.Spec.KptRule != nil {
-			kptPath := promoteConfig.Spec.KptRule.Path
-			if kptPath != "" {
-				namespaceDir = filepath.Join(dir, kptPath)
-			}
-		}
-
-		if o.GitInfo == nil {
-			return errors.Errorf("could not find git URL for the app so cannot promote via kpt")
-		}
-		gitURL := o.GitInfo.HttpCloneURL()
-		if gitURL == "" {
-			return errors.Errorf("gitInfo has no clone URL for the app so cannot promote via kpt")
-		}
-
-		appDir := filepath.Join(namespaceDir, app)
-		// if the dir exists lets upgrade otherwise lets add it
-		exists, err := util.DirExists(appDir)
-		if err != nil {
-			return errors.Wrapf(err, "failed to check if the app dir exists %s", appDir)
-		}
-
-		if version == "" {
-			version, err = o.findLatestVersion(app)
-			if err != nil {
-				return err
-			}
-		}
-		if version != "" && !strings.HasPrefix(version, "v") {
-			version = "v" + version
-		}
-		if version == "" {
-			version = "master"
-		}
-		if exists {
-			// lets upgrade the version via kpt
-			args := []string{"pkg", "update", fmt.Sprintf("%s@%s", app, version), "--strategy=alpha-git-patch"}
-			c := util.Command{
-				Name: "kpt",
-				Args: args,
-				Dir:  namespaceDir,
-			}
-			log.Logger().Infof("running command: %s", c.String())
-			_, err = c.RunWithoutRetry()
-			if err != nil {
-				return errors.Wrapf(err, "failed to update kpt app %s", app)
-			}
-		} else {
-			if gitURL == "" {
-				return errors.Errorf("no gitURL")
-			}
-			gitURL = strings.TrimSuffix(gitURL, "/")
-			if !strings.HasSuffix(gitURL, ".git") {
-				gitURL += ".git"
-			}
-			// lets add the path to the released kubernetes resources
-			gitURL += fmt.Sprintf("/charts/%s/resources", app)
-			args := []string{"pkg", "get", fmt.Sprintf("%s@%s", gitURL, version), app}
-			c := util.Command{
-				Name: "kpt",
-				Args: args,
-				Dir:  namespaceDir,
-			}
-			log.Logger().Infof("running command: %s", c.String())
-			_, err = c.RunWithoutRetry()
-			if err != nil {
-				return errors.Wrapf(err, "failed to get the app %s via kpt", app)
-			}
-		}
-		return nil
-	}
-
 	envDir := ""
 	if o.CloneDir != "" {
 		envDir = o.CloneDir
 	}
 
-	o.ModifyAppsFn = modifyAppsFn
-	o.ModifyChartFn = modifyChartFn
-	o.ModifyKptFn = modifyKptFn
+	o.Function = func() error {
+		dir := o.OutDir
+		promoteConfig, _, err := promoteconfig.Discover(dir)
+		if err != nil {
+			return errors.Wrapf(err, "failed to discover the PromoteConfig in dir %s", dir)
+		}
+		r := &rules.PromoteRule{
+			TemplateContext: rules.TemplateContext{
+				GitURL:  env.Spec.Source.URL,
+				Version: o.Version,
+				AppName: o.Application,
+
+				// TODO
+				ChartAlias:        "",
+				Namespace:         o.Namespace,
+				HelmRepositoryURL: o.HelmRepositoryURL,
+			},
+			Dir:           dir,
+			Config:        *promoteConfig,
+			DevEnvContext: &o.DevEnvContext,
+		}
+		fn := rules.NewFunction(r)
+		if fn == nil {
+			return errors.Errorf("could not create rule function ")
+		}
+		return fn(r)
+	}
 
 	filter := &gits.PullRequestFilter{}
 	if releaseInfo.PullRequestInfo != nil {

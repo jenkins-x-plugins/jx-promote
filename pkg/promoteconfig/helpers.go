@@ -43,24 +43,6 @@ func Discover(dir string) (*v1alpha1.Promote, string, error) {
 		}
 		return &config, "", nil
 	}
-	hf := filepath.Join(dir, "helmfile.yaml")
-	exists, err = util.FileExists(hf)
-	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to check if file exists %s", hf)
-	}
-	if exists {
-		config := v1alpha1.Promote{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "generated",
-			},
-			Spec: v1alpha1.PromoteSpec{
-				HelmfileRule: &v1alpha1.HelmfileRule{
-					Path: "helmfile.yaml",
-				},
-			},
-		}
-		return &config, "", nil
-	}
 	ja := filepath.Join(dir, "jx-apps.yml")
 	exists, err = util.FileExists(ja)
 	if err != nil {
@@ -74,6 +56,24 @@ func Discover(dir string) (*v1alpha1.Promote, string, error) {
 			Spec: v1alpha1.PromoteSpec{
 				AppsRule: &v1alpha1.AppsRule{
 					Path: "jx-apps.yml",
+				},
+			},
+		}
+		return &config, "", nil
+	}
+	hf := filepath.Join(dir, "helmfile.yaml")
+	exists, err = util.FileExists(hf)
+	if err != nil {
+		return nil, "", errors.Wrapf(err, "failed to check if file exists %s", hf)
+	}
+	if exists {
+		config := v1alpha1.Promote{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "generated",
+			},
+			Spec: v1alpha1.PromoteSpec{
+				HelmfileRule: &v1alpha1.HelmfileRule{
+					Path: "helmfile.yaml",
 				},
 			},
 		}

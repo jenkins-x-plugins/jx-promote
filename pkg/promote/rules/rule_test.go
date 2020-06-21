@@ -44,17 +44,15 @@ func TestRuleFactory(t *testing.T) {
 
 			r := &rules.PromoteRule{
 				TemplateContext: rules.TemplateContext{
-					GitURL:    "https://github.com/myorg/myapp.git",
-					Version:   "1.2.3",
-					AppName:   "myapp",
-					Namespace: ns,
+					GitURL:            "https://github.com/myorg/myapp.git",
+					Version:           "1.2.3",
+					AppName:           "myapp",
+					Namespace:         ns,
+					HelmRepositoryURL: "http://chartmuseum-jx.34.78.195.22.nip.io",
 				},
 				Dir:           dir,
 				Config:        *cfg,
 				DevEnvContext: testhelpers.CreateTestDevEnvironmentContext(t, ns),
-				ResolveChartRepositoryURL: func() (string, error) {
-					return "http://chartmuseum-jx.34.78.195.22.nip.io", nil
-				},
 			}
 
 			fn := rules.NewFunction(r)

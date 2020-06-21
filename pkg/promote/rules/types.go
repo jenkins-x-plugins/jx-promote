@@ -11,9 +11,6 @@ type PromoteRule struct {
 	Dir           string
 	Config        v1alpha1.Promote
 	DevEnvContext *envctx.EnvironmentContext
-
-	// ResolveChartRepositoryURL resolves the chart repository URL
-	ResolveChartRepositoryURL func() (string, error)
 }
 
 // TemplateContext expressions used in templates

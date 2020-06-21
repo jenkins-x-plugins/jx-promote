@@ -5,6 +5,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
+	"github.com/jenkins-x/jx-promote/pkg/envctx"
 	"github.com/jenkins-x/jx/pkg/auth"
 	"github.com/jenkins-x/jx/pkg/config"
 	"github.com/jenkins-x/jx/pkg/gits"
@@ -33,8 +34,11 @@ type ModifyKptFn func(dir string, promoteConfig *v1alpha1.Promote, pullRequestDe
 // The provide a Gitter client for performing git operations, a GitProvider client for talking to the git provider,
 // a callback ModifyChartFn which is where the changes you want to make are defined,
 type EnvironmentPullRequestOptions struct {
+	DevEnvContext     envctx.EnvironmentContext
 	Gitter            gits.Gitter
 	GitKind           string
+	OutDir            string
+	Function          func() error
 	ModifyChartFn     ModifyChartFn
 	ModifyAppsFn      ModifyAppsFn
 	ModifyKptFn       ModifyKptFn

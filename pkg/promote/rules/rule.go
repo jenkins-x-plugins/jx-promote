@@ -12,5 +12,8 @@ func NewFunction(r *PromoteRule) RuleFunction {
 	if spec.FileRule != nil {
 		return FileRule
 	}
+	if spec.KptRule != nil {
+		return KptRule
+	}
 	return nil
 }

@@ -11,7 +11,6 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x/jx-promote/pkg/githelpers"
-	"github.com/jenkins-x/jx-promote/pkg/promoteconfig"
 	jenkinsio "github.com/jenkins-x/jx/pkg/apis/jenkins.io"
 	"github.com/jenkins-x/jx/pkg/config"
 
@@ -55,55 +54,23 @@ func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir
 		return nil, errors.Wrapf(err, "failed to clone environment %s URL %s", env.Spec.Label, gitURL)
 	}
 
+	o.OutDir = dir
 	log.Logger().Infof("cloned %s to %s", util.ColorInfo(gitURL), util.ColorInfo(dir))
 
 	// TODO fork if needed?
-
-	// TODO
-	/*
-		dir, base, upstreamRepo, forkURL, err := gits.ForkAndPullRepo(env.Spec.Source.URL, prDir, env.Spec.Source.Ref, pullRequestDetails.BranchName, o.GitProvider, o.Gitter, "")
-
-		if err != nil {
-			return nil, errors.Wrapf(err, "pulling environment repo %s into %s", env.Spec.Source.URL,
-				prDir)
-		}
-	*/
-
 	currentSha, err := o.Gitter.GetLatestCommitSha(dir)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get current commit sha")
 	}
 
-	hasAppsFile := false
-	if o.ModifyAppsFn != nil {
-		hasAppsFile, err = ModifyAppsFile(dir, nil, o.ModifyAppsFn)
-		if err != nil {
-			return nil, err
-		}
+	if o.Function == nil {
+		return nil, errors.Errorf("no change function configured")
 	}
-	if !hasAppsFile {
-		// lets check if we have a DeployConfig
-		promoteConfig, promoteConfigFile, err := promoteconfig.Discover(dir)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to discover the PromoteConfig in dir %s", dir)
-		}
+	err = o.Function()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to invoke change function in dir %s", dir)
+	}
 
-		if promoteConfig != nil && promoteConfig.Spec.KptRule != nil {
-			if promoteConfig.Spec.KptRule.Path == "" {
-				log.Logger().Warnf("the promote config file %s does not contain a spec.kptRule.Path property so cannot use kpt to promote to this repository", promoteConfigFile)
-			} else {
-				err = ModifyKptFiles(dir, promoteConfig, pullRequestDetails, o.ModifyKptFn)
-				if err != nil {
-					return nil, err
-				}
-			}
-		} else {
-			err = ModifyChartFiles(dir, pullRequestDetails, o.ModifyChartFn, chartName)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
 	labels := make([]string, 0)
 	labels = append(labels, pullRequestDetails.Labels...)
 	labels = append(labels, o.Labels...)
@@ -134,17 +101,6 @@ func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir
 		return prInfo, errors.Wrapf(err, "failed to create pull request in dir %s", dir)
 	}
 	return prInfo, nil
-
-	/*
-		TODO
-
-		prInfo, err := gits.PushRepoAndCreatePullRequest(dir, upstreamRepo, forkURL, base, pullRequestDetails, filter, doneCommit, pullRequestDetails.Message, true, false, false, o.Gitter, o.GitProvider)
-		if err != nil {
-			return nil, err
-		}
-		return prInfo, nil
-
-	*/
 }
 
 // ModifyChartFiles modifies the chart files in the given directory using the given modify function

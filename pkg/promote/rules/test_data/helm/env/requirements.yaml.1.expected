@@ -8,5 +8,5 @@ dependencies:
   repository: http://chartmuseum.jenkins-x.io
   version: 2.3.118
 - name: myapp
-  repository: ""
+  repository: http://chartmuseum-jx.34.78.195.22.nip.io
   version: 1.2.3

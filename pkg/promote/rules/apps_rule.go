@@ -42,22 +42,14 @@ func modifyAppsFile(r *PromoteRule, dir string, file string) error {
 }
 
 func modifyApps(r *PromoteRule, appsConfig *config.AppConfig) error {
-	if r.ResolveChartRepositoryURL == nil {
-		return errors.Errorf("no ResolveChartRepositoryURL()")
-	}
-	repositoryURL, err := r.ResolveChartRepositoryURL()
-	if err != nil {
-		return errors.Wrap(err, "failed to resolve chart museum URL")
-	}
-
 	if r.DevEnvContext == nil {
 		return errors.Errorf("no devEnvContext")
 	}
 	app := r.AppName
 	version := r.Version
-	details, err := r.DevEnvContext.ChartDetails(app, repositoryURL)
+	details, err := r.DevEnvContext.ChartDetails(app, r.HelmRepositoryURL)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get chart details for %s repo %s", app, repositoryURL)
+		return errors.Wrapf(err, "failed to get chart details for %s repo %s", app, r.HelmRepositoryURL)
 	}
 	details.DefaultPrefix(appsConfig, "dev")
 
