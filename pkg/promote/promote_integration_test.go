@@ -38,7 +38,7 @@ func TestPromoteIntegrationJXApps(t *testing.T) {
 
 func TestPromoteIntegrationMakefileKpt(t *testing.T) {
 	AssertPromoteIntegration(t, PromoteTestCase{
-		gitURL: "https://github.com/jstrachan/env-configsync-bootv3-scratch3",
+		gitURL: "https://github.com/jstrachan/env-test-promote-makefile",
 	})
 }
 
