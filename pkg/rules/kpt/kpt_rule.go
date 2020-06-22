@@ -1,4 +1,4 @@
-package rules
+package kpt
 
 import (
 	"fmt"
@@ -6,12 +6,13 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/jx-logging/pkg/log"
+	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/jenkins-x/jx/pkg/util"
 	"github.com/pkg/errors"
 )
 
 // KptRule uses a jx-apps.yml file
-func KptRule(r *PromoteRule) error {
+func KptRule(r *rules.PromoteRule) error {
 	config := r.Config
 	if config.Spec.KptRule == nil {
 		return errors.Errorf("no appsRule configured")

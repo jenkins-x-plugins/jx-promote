@@ -3,8 +3,9 @@ package promote
 import (
 	"fmt"
 
-	"github.com/jenkins-x/jx-promote/pkg/promote/rules"
 	"github.com/jenkins-x/jx-promote/pkg/promoteconfig"
+	"github.com/jenkins-x/jx-promote/pkg/rules"
+	"github.com/jenkins-x/jx-promote/pkg/rules/factory"
 	v1 "github.com/jenkins-x/jx/pkg/apis/jenkins.io/v1"
 	"github.com/pkg/errors"
 
@@ -54,7 +55,7 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 			Config:        *promoteConfig,
 			DevEnvContext: &o.DevEnvContext,
 		}
-		fn := rules.NewFunction(r)
+		fn := factory.NewFunction(r)
 		if fn == nil {
 			return errors.Errorf("could not create rule function ")
 		}

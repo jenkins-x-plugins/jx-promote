@@ -1,4 +1,4 @@
-package rules_test
+package factory_test
 
 import (
 	"io/ioutil"
@@ -6,8 +6,9 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
-	"github.com/jenkins-x/jx-promote/pkg/promote/rules"
 	"github.com/jenkins-x/jx-promote/pkg/promoteconfig"
+	"github.com/jenkins-x/jx-promote/pkg/rules"
+	"github.com/jenkins-x/jx-promote/pkg/rules/factory"
 	"github.com/jenkins-x/jx-promote/pkg/testhelpers"
 	"github.com/jenkins-x/jx/pkg/util"
 	"github.com/stretchr/testify/assert"
@@ -55,7 +56,7 @@ func TestRuleFactory(t *testing.T) {
 				DevEnvContext: testhelpers.CreateTestDevEnvironmentContext(t, ns),
 			}
 
-			fn := rules.NewFunction(r)
+			fn := factory.NewFunction(r)
 			require.NotNil(t, fn, "failed to create RuleFunction at dir %s", dir)
 
 			err = fn(r)

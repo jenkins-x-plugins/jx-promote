@@ -1,4 +1,4 @@
-package rules
+package file
 
 import (
 	"io/ioutil"
@@ -9,12 +9,13 @@ import (
 
 	"github.com/jenkins-x/jx-logging/pkg/log"
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
+	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/jenkins-x/jx/pkg/util"
 	"github.com/pkg/errors"
 )
 
 // FileRule uses a file rule to create promote pull requests
-func FileRule(r *PromoteRule) error {
+func FileRule(r *rules.PromoteRule) error {
 	config := r.Config
 	if config.Spec.FileRule == nil {
 		return errors.Errorf("no fileRule configured")
@@ -143,7 +144,7 @@ func createMatcher(rule *v1alpha1.FileRule, lineMatcher v1alpha1.LineMatcher) (f
 	return nil, errors.Errorf("not supported lime matcher %#v", lineMatcher)
 }
 
-func evaluateTemplate(r *PromoteRule, templateText string, linePrefix string) (string, error) {
+func evaluateTemplate(r *rules.PromoteRule, templateText string, linePrefix string) (string, error) {
 	if templateText == "" {
 		return "", nil
 	}

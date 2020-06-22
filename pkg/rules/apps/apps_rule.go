@@ -1,12 +1,13 @@
-package rules
+package apps
 
 import (
+	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/jenkins-x/jx/pkg/config"
 	"github.com/pkg/errors"
 )
 
 // AppsRule uses a jx-apps.yml file
-func AppsRule(r *PromoteRule) error {
+func AppsRule(r *rules.PromoteRule) error {
 	config := r.Config
 	if config.Spec.AppsRule == nil {
 		return errors.Errorf("no appsRule configured")
@@ -20,7 +21,7 @@ func AppsRule(r *PromoteRule) error {
 }
 
 // ModifyAppsFile modifies the 'jx-apps.yml' file to add/update/remove apps
-func modifyAppsFile(r *PromoteRule, dir string, file string) error {
+func modifyAppsFile(r *rules.PromoteRule, dir string, file string) error {
 	appsConfig, fileName, err := config.LoadAppConfig(dir)
 	if fileName == "" {
 		// if we don't have a `jx-apps.yml` then just return immediately
@@ -41,7 +42,7 @@ func modifyAppsFile(r *PromoteRule, dir string, file string) error {
 	return nil
 }
 
-func modifyApps(r *PromoteRule, appsConfig *config.AppConfig) error {
+func modifyApps(r *rules.PromoteRule, appsConfig *config.AppConfig) error {
 	if r.DevEnvContext == nil {
 		return errors.Errorf("no devEnvContext")
 	}

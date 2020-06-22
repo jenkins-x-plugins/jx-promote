@@ -1,15 +1,16 @@
-package rules
+package helm
 
 import (
 	"path/filepath"
 
+	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/jenkins-x/jx/pkg/helm"
 	"github.com/jenkins-x/jx/pkg/util"
 	"github.com/pkg/errors"
 )
 
 // HelmRule uses a helm rule to create promote pull requests
-func HelmRule(r *PromoteRule) error {
+func HelmRule(r *rules.PromoteRule) error {
 	config := r.Config
 	if config.Spec.ChartRule == nil {
 		return errors.Errorf("no chartRule configured")
@@ -29,7 +30,7 @@ func HelmRule(r *PromoteRule) error {
 }
 
 // modifyChartFiles modifies the chart files in the given directory using the given modify function
-func modifyChartFiles(r *PromoteRule, dir string) error {
+func modifyChartFiles(r *rules.PromoteRule, dir string) error {
 	requirementsFile, err := helm.FindRequirementsFileName(dir)
 	if err != nil {
 		return err
@@ -75,7 +76,7 @@ func modifyChartFiles(r *PromoteRule, dir string) error {
 	return nil
 }
 
-func modifyRequirements(r *PromoteRule, requirements *helm.Requirements) error {
+func modifyRequirements(r *rules.PromoteRule, requirements *helm.Requirements) error {
 	requirements.SetAppVersion(r.AppName, r.Version, r.HelmRepositoryURL, r.ChartAlias)
 	return nil
 }
