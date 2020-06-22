@@ -49,7 +49,7 @@ func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir
 	}
 
 	gitURL := env.Spec.Source.URL
-	dir, err := githelpers.GitCloneToTempDir(o.Git(), gitURL, "")
+	dir, err := githelpers.GitCloneToTempDir(gitURL, "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to clone environment %s URL %s", env.Spec.Label, gitURL)
 	}

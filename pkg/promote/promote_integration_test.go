@@ -37,8 +37,6 @@ func TestPromoteIntegrationJXApps(t *testing.T) {
 }
 
 func TestPromoteIntegrationMakefileKpt(t *testing.T) {
-	// TODO
-	t.SkipNow()
 	AssertPromoteIntegration(t, PromoteTestCase{
 		gitURL: "https://github.com/jstrachan/env-configsync-bootv3-scratch3",
 	})
@@ -66,6 +64,7 @@ func AssertPromoteIntegration(t *testing.T, testCases ...PromoteTestCase) {
 		po.AuthConfigService = fakeauth.NewFakeAuthConfigService(t, "jstrachan", "dummytoken", "https://github.com")
 		po.GitKind = "fake"
 		po.Gitter = fakegit.NewGitFakeClone()
+		po.AppGitURL = "https://github.com/myorg/myapp.git"
 
 		targetFullName := "jenkins-x/default-environment-helmfile"
 

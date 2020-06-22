@@ -65,6 +65,7 @@ type Options struct {
 	Namespace               string
 	Environment             string
 	Application             string
+	AppGitURL               string
 	Pipeline                string
 	Build                   string
 	Version                 string
@@ -161,6 +162,7 @@ func NewCmdPromote() (*cobra.Command, *Options) {
 // AddOptions adds command level options to `promote`
 func (o *Options) AddOptions(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.Application, opts.OptionApplication, "a", "", "The Application to promote")
+	cmd.Flags().StringVarP(&o.AppGitURL, "app-git-url", "", "", "The Git URL of the application being promoted. Only required if using file or kpt rules")
 	cmd.Flags().StringVarP(&o.Filter, "filter", "f", "", "The search filter to find charts to promote")
 	cmd.Flags().StringVarP(&o.Alias, "alias", "", "", "The optional alias used in the 'requirements.yaml' file")
 	cmd.Flags().StringVarP(&o.Pipeline, "pipeline", "", "", "The Pipeline string in the form 'folderName/repoName/branch' which is used to update the PipelineActivity. If not specified its defaulted from  the '$BUILD_NUMBER' environment variable")

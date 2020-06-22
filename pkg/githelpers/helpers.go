@@ -59,7 +59,7 @@ func CreateBranch(gitter gits.Gitter, dir string) (string, error) {
 }
 
 // GitCloneToTempDir clones the git repository to either the given directory or create a temporary
-func GitCloneToTempDir(gitter gits.Gitter, gitURL string, dir string) (string, error) {
+func GitCloneToTempDir(gitURL string, dir string) (string, error) {
 	var err error
 	if dir != "" {
 		err = os.MkdirAll(dir, util.DefaultWritePermissions)
@@ -74,14 +74,6 @@ func GitCloneToTempDir(gitter gits.Gitter, gitURL string, dir string) (string, e
 	}
 
 	log.Logger().Debugf("cloning %s to directory %s", util.ColorInfo(gitURL), util.ColorInfo(dir))
-
-	/* TODO this causes issues
-	err = gitter.Clone(gitURL, dir)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to clone repository %s to directory: %s", gitURL, dir)
-	}
-	return dir, nil
-	*/
 
 	parentDir, name := filepath.Split(dir)
 	parentDir = strings.TrimSuffix(parentDir, pathSeparator)

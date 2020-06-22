@@ -40,9 +40,10 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 		if err != nil {
 			return errors.Wrapf(err, "failed to discover the PromoteConfig in dir %s", dir)
 		}
+
 		r := &rules.PromoteRule{
 			TemplateContext: rules.TemplateContext{
-				GitURL:  env.Spec.Source.URL,
+				GitURL:  "",
 				Version: o.Version,
 				AppName: o.Application,
 
@@ -55,6 +56,25 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 			Config:        *promoteConfig,
 			DevEnvContext: &o.DevEnvContext,
 		}
+
+		// lets check if we need the apps git URL
+		if promoteConfig.Spec.FileRule != nil || promoteConfig.Spec.KptRule != nil {
+			if o.AppGitURL == "" {
+				_, gitConf, err := o.Git().FindGitConfigDir("")
+				if err != nil {
+					return errors.Wrapf(err, "failed to find git config dir")
+				}
+				o.AppGitURL, err = o.Git().DiscoverUpstreamGitURL(gitConf)
+				if err != nil {
+					return errors.Wrapf(err, "failed to discover application git URL")
+				}
+				if o.AppGitURL == "" {
+					return errors.Errorf("could not to discover application git URL")
+				}
+			}
+			r.TemplateContext.GitURL = o.AppGitURL
+		}
+
 		fn := factory.NewFunction(r)
 		if fn == nil {
 			return errors.Errorf("could not create rule function ")
