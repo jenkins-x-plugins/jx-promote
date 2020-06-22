@@ -18,6 +18,7 @@ require (
 	github.com/petergtz/pegomock v2.7.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/satori/go.uuid v1.2.1-0.20180103174451-36e9d2ebbde5
+	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v0.0.6
 	github.com/stretchr/testify v1.6.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.3

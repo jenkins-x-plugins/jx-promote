@@ -14,14 +14,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jenkins-x/jx/v2/pkg/versionstream"
+	"github.com/jenkins-x/jx-promote/pkg/versionstream"
 
 	survey "gopkg.in/AlecAivazis/survey.v1"
 
 	"github.com/pborman/uuid"
 
+	"github.com/jenkins-x/jx-logging/pkg/log"
 	"github.com/jenkins-x/jx-promote/pkg/kube"
-	"github.com/jenkins-x/jx/v2/pkg/log"
 	"github.com/jenkins-x/jx/v2/pkg/secreturl"
 	"github.com/jenkins-x/jx/v2/pkg/table"
 	"github.com/jenkins-x/jx/v2/pkg/util"

@@ -8,7 +8,7 @@ import (
 
 	"github.com/jenkins-x/jx-promote/pkg/envctx"
 	"github.com/jenkins-x/jx-promote/pkg/jxapps"
-	"github.com/jenkins-x/jx/v2/pkg/versionstream"
+	"github.com/jenkins-x/jx-promote/pkg/versionstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
