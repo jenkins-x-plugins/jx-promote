@@ -16,7 +16,6 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-promote/pkg/common"
 	"github.com/jenkins-x/jx-promote/pkg/environments"
-	"github.com/jenkins-x/jx-promote/pkg/helmer"
 	"github.com/jenkins-x/jx-promote/pkg/kube/services"
 	"github.com/jenkins-x/jx/v2/pkg/builds"
 	"github.com/jenkins-x/jx/v2/pkg/client/clientset/versioned"
@@ -33,12 +32,12 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/jenkins-x/jx-logging/pkg/log"
+	helm "github.com/jenkins-x/jx-promote/pkg/helmer"
 	"github.com/jenkins-x/jx-promote/pkg/kube"
 	typev1 "github.com/jenkins-x/jx/v2/pkg/client/clientset/versioned/typed/jenkins.io/v1"
 	"github.com/jenkins-x/jx/v2/pkg/cmd/opts"
 	"github.com/jenkins-x/jx/v2/pkg/cmd/templates"
 	"github.com/jenkins-x/jx/v2/pkg/gits"
-	"github.com/jenkins-x/jx/v2/pkg/helm"
 	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/spf13/cobra"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -85,7 +84,7 @@ type Options struct {
 
 	KubeClient kubernetes.Interface
 	JXClient   versioned.Interface
-	Helmer     helmer.Helmer
+	Helmer     helm.Helmer
 
 	// calculated fields
 	TimeoutDuration         *time.Duration
@@ -430,9 +429,9 @@ func (o *Options) FindHelmChartInDir(dir string) (string, error) {
 			return "", errors.Wrap(err, "failed to get the current working directory")
 		}
 	}
-	helmer := o.Helm()
-	helmer.SetCWD(dir)
-	return helmer.FindChart()
+	h := o.Helm()
+	h.SetCWD(dir)
+	return h.FindChart()
 }
 
 // DefaultChartRepositoryURL returns the default chart repository URL
@@ -998,9 +997,9 @@ func (o *Options) findLatestVersion(app string) (string, error) {
 }
 
 // Helm lazily create a helmer
-func (o *Options) Helm() helmer.Helmer {
+func (o *Options) Helm() helm.Helmer {
 	if o.Helmer == nil {
-		o.Helmer = helmer.NewHelmCLI("")
+		o.Helmer = helm.NewHelmCLI("")
 	}
 	return o.Helmer
 }
@@ -1281,7 +1280,7 @@ func (o *Options) SearchForChart(filter string) (string, error) {
 	if len(charts) == 0 {
 		return answer, fmt.Errorf("No charts available for search filter: %s", filter)
 	}
-	m := map[string]*helmer.ChartSummary{}
+	m := map[string]*helm.ChartSummary{}
 	names := []string{}
 	for i, chart := range charts {
 		text := chart.Name

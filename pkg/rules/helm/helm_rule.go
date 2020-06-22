@@ -3,8 +3,8 @@ package helm
 import (
 	"path/filepath"
 
+	"github.com/jenkins-x/jx-promote/pkg/helmer"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
-	"github.com/jenkins-x/jx/v2/pkg/helm"
 	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/pkg/errors"
 )
@@ -31,7 +31,7 @@ func HelmRule(r *rules.PromoteRule) error {
 
 // modifyChartFiles modifies the chart files in the given directory using the given modify function
 func modifyChartFiles(r *rules.PromoteRule, dir string) error {
-	requirementsFile, err := helm.FindRequirementsFileName(dir)
+	requirementsFile, err := helmer.FindRequirementsFileName(dir)
 	if err != nil {
 		return err
 	}
@@ -41,20 +41,20 @@ func modifyChartFiles(r *rules.PromoteRule, dir string) error {
 		return errors.Wrapf(err, "failed to detect file %s", requirementsFile)
 	}
 
-	requirements := &helm.Requirements{}
+	requirements := &helmer.Requirements{}
 	if exists {
-		requirements, err = helm.LoadRequirementsFile(requirementsFile)
+		requirements, err = helmer.LoadRequirementsFile(requirementsFile)
 		if err != nil {
 			return err
 		}
 	}
 
-	chartFile, err := helm.FindChartFileName(dir)
+	chartFile, err := helmer.FindChartFileName(dir)
 	if err != nil {
 		return err
 	}
 
-	chart, err := helm.LoadChartFile(chartFile)
+	chart, err := helmer.LoadChartFile(chartFile)
 	if err != nil {
 		return err
 	}
@@ -64,19 +64,19 @@ func modifyChartFiles(r *rules.PromoteRule, dir string) error {
 		return err
 	}
 
-	err = helm.SaveFile(requirementsFile, requirements)
+	err = helmer.SaveFile(requirementsFile, requirements)
 	if err != nil {
 		return err
 	}
 
-	err = helm.SaveFile(chartFile, chart)
+	err = helmer.SaveFile(chartFile, chart)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func modifyRequirements(r *rules.PromoteRule, requirements *helm.Requirements) error {
+func modifyRequirements(r *rules.PromoteRule, requirements *helmer.Requirements) error {
 	requirements.SetAppVersion(r.AppName, r.Version, r.HelmRepositoryURL, r.ChartAlias)
 	return nil
 }
