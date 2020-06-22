@@ -12,10 +12,10 @@ import (
 // HelmRule uses a helm rule to create promote pull requests
 func HelmRule(r *rules.PromoteRule) error {
 	config := r.Config
-	if config.Spec.ChartRule == nil {
-		return errors.Errorf("no chartRule configured")
+	if config.Spec.HelmRule == nil {
+		return errors.Errorf("no helmRule configured")
 	}
-	rule := config.Spec.ChartRule
+	rule := config.Spec.HelmRule
 
 	dir := r.Dir
 	if rule.Path != "" {

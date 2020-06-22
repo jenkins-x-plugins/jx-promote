@@ -24,18 +24,18 @@ type Promote struct {
 // PromoteSpec defines the desired state of Promote.
 type PromoteSpec struct {
 
-	// File specifies a promotion rule for a File such as for a Makefile or shell script
-	FileRule *FileRule `json:"fileRule,omitempty"`
-
-	// ChartRule specifies a composite helm chart to promote to by adding the app to the charts
-	// 'requirements.yaml' file
-	ChartRule *ChartRule `json:"chartRule,omitempty"`
-
 	// AppsRule uses a 'jx-apps.yml` file to store apps to be deployed
 	AppsRule *AppsRule `json:"appsRule,omitempty"`
 
+	// File specifies a promotion rule for a File such as for a Makefile or shell script
+	FileRule *FileRule `json:"fileRule,omitempty"`
+
 	// HelmfileRule specifies the location of the helmfile to promote into
 	HelmfileRule *HelmfileRule `json:"helmfileRule,omitempty"`
+
+	// HelmRule specifies a composite helm chart to promote to by adding the app to the charts
+	// 'requirements.yaml' file
+	HelmRule *HelmRule `json:"helmRule,omitempty"`
 
 	// KptRule specifies to fetch the apps resource via kpt : https://googlecontainertools.github.io/kpt/
 	KptRule *KptRule `json:"helmfileRule,omitempty"`
@@ -47,8 +47,8 @@ type AppsRule struct {
 	Path string `json:"path"`
 }
 
-// ChartRule specifies which chart to add the app to the Chart's 'requirements.yaml' file
-type ChartRule struct {
+// HelmRule specifies which chart to add the app to the Chart's 'requirements.yaml' file
+type HelmRule struct {
 	// Path to the chart folder (which should contain Chart.yaml and requirements.yaml)
 	Path string `json:"path"`
 }

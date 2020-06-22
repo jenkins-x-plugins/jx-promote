@@ -36,7 +36,7 @@ func Discover(dir string) (*v1alpha1.Promote, string, error) {
 				Name: "generated",
 			},
 			Spec: v1alpha1.PromoteSpec{
-				ChartRule: &v1alpha1.ChartRule{
+				HelmRule: &v1alpha1.HelmRule{
 					Path: "env",
 				},
 			},

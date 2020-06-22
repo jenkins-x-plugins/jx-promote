@@ -83,8 +83,8 @@ func ruleFileName(cfg *v1alpha1.Promote) string {
 	if cfg.Spec.AppsRule != nil {
 		return cfg.Spec.AppsRule.Path
 	}
-	if cfg.Spec.ChartRule != nil {
-		path := cfg.Spec.ChartRule.Path
+	if cfg.Spec.HelmRule != nil {
+		path := cfg.Spec.HelmRule.Path
 		if path == "" {
 			path = "."
 		}

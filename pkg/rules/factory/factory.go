@@ -14,7 +14,7 @@ func NewFunction(r *rules.PromoteRule) rules.RuleFunction {
 	if spec.AppsRule != nil {
 		return apps.AppsRule
 	}
-	if spec.ChartRule != nil {
+	if spec.HelmRule != nil {
 		return helm.HelmRule
 	}
 	if spec.FileRule != nil {

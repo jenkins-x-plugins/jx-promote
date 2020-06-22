@@ -32,8 +32,8 @@ func TestDiscoverPromoteConfigHelm(t *testing.T) {
 	require.NotNil(t, cfg, "config not returned for %s", dir)
 	assert.Empty(t, fileName, "fileName for %s", dir)
 
-	assert.NotNil(t, cfg.Spec.ChartRule, "cfg.Spec.ChartRule for %s", dir)
-	assert.Equal(t, "env", cfg.Spec.ChartRule.Path, "cfg.Spec.ChartRule.Path for %s", dir)
+	assert.NotNil(t, cfg.Spec.HelmRule, "cfg.Spec.HelmRule for %s", dir)
+	assert.Equal(t, "env", cfg.Spec.HelmRule.Path, "cfg.Spec.HelmRule.Path for %s", dir)
 
 	t.Logf("discovered config %#v for dir %s", cfg, dir)
 }
