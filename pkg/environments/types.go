@@ -6,11 +6,11 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x/jx-promote/pkg/envctx"
-	"github.com/jenkins-x/jx/pkg/auth"
-	"github.com/jenkins-x/jx/pkg/config"
-	"github.com/jenkins-x/jx/pkg/gits"
-	"github.com/jenkins-x/jx/pkg/helm"
-	"github.com/jenkins-x/jx/pkg/util"
+	"github.com/jenkins-x/jx-promote/pkg/jxapps"
+	"github.com/jenkins-x/jx/v2/pkg/auth"
+	"github.com/jenkins-x/jx/v2/pkg/gits"
+	"github.com/jenkins-x/jx/v2/pkg/helm"
+	"github.com/jenkins-x/jx/v2/pkg/util"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 )
 
@@ -25,7 +25,7 @@ type ModifyChartFn func(requirements *helm.Requirements, metadata *chart.Metadat
 	templates map[string]string, dir string, pullRequestDetails *gits.PullRequestDetails) error
 
 // ModifyAppsFn callback for modifying the `jx-apps.yml` in an environment git repository which is using helmfile and helm 3
-type ModifyAppsFn func(appsConfig *config.AppConfig, dir string, pullRequestDetails *gits.PullRequestDetails) error
+type ModifyAppsFn func(appsConfig *jxapps.AppConfig, dir string, pullRequestDetails *gits.PullRequestDetails) error
 
 // ModifyKptFn callback for modifying the kpt based installations of resources
 type ModifyKptFn func(dir string, promoteConfig *v1alpha1.Promote, pullRequestDetails *gits.PullRequestDetails) error

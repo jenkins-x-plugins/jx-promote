@@ -1,8 +1,8 @@
 package apps
 
 import (
+	"github.com/jenkins-x/jx-promote/pkg/jxapps"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
-	"github.com/jenkins-x/jx/pkg/config"
 	"github.com/pkg/errors"
 )
 
@@ -22,7 +22,7 @@ func AppsRule(r *rules.PromoteRule) error {
 
 // ModifyAppsFile modifies the 'jx-apps.yml' file to add/update/remove apps
 func modifyAppsFile(r *rules.PromoteRule, dir string, file string) error {
-	appsConfig, fileName, err := config.LoadAppConfig(dir)
+	appsConfig, fileName, err := jxapps.LoadAppConfig(dir)
 	if fileName == "" {
 		// if we don't have a `jx-apps.yml` then just return immediately
 		return nil
@@ -42,7 +42,7 @@ func modifyAppsFile(r *rules.PromoteRule, dir string, file string) error {
 	return nil
 }
 
-func modifyApps(r *rules.PromoteRule, appsConfig *config.AppConfig) error {
+func modifyApps(r *rules.PromoteRule, appsConfig *jxapps.AppConfig) error {
 	if r.DevEnvContext == nil {
 		return errors.Errorf("no devEnvContext")
 	}
@@ -61,7 +61,7 @@ func modifyApps(r *rules.PromoteRule, appsConfig *config.AppConfig) error {
 			return nil
 		}
 	}
-	appsConfig.Apps = append(appsConfig.Apps, config.App{
+	appsConfig.Apps = append(appsConfig.Apps, jxapps.App{
 		Name:    details.Name,
 		Version: version,
 	})

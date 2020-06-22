@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 
 	"github.com/jenkins-x/jx-promote/pkg/rules"
-	"github.com/jenkins-x/jx/pkg/helm"
-	"github.com/jenkins-x/jx/pkg/util"
+	"github.com/jenkins-x/jx/v2/pkg/helm"
+	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/pkg/errors"
 )
 

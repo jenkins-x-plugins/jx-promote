@@ -3,10 +3,10 @@ package versions
 import (
 	"github.com/jenkins-x/jx-promote/pkg/common"
 	"github.com/jenkins-x/jx-promote/pkg/githelpers"
-	"github.com/jenkins-x/jx/pkg/config"
-	"github.com/jenkins-x/jx/pkg/gits"
-	"github.com/jenkins-x/jx/pkg/util"
-	"github.com/jenkins-x/jx/pkg/versionstream"
+	"github.com/jenkins-x/jx/v2/pkg/config"
+	"github.com/jenkins-x/jx/v2/pkg/gits"
+	"github.com/jenkins-x/jx/v2/pkg/util"
+	"github.com/jenkins-x/jx/v2/pkg/versionstream"
 	"github.com/pkg/errors"
 )
 

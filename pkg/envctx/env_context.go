@@ -5,12 +5,17 @@ import (
 	"path/filepath"
 	"strings"
 
-	v1 "github.com/jenkins-x/jx/pkg/apis/jenkins.io/v1"
-	"github.com/jenkins-x/jx/pkg/config"
-	"github.com/jenkins-x/jx/pkg/helmfile"
-	"github.com/jenkins-x/jx/pkg/kube"
-	"github.com/jenkins-x/jx/pkg/util"
-	"github.com/jenkins-x/jx/pkg/versionstream"
+	"github.com/jenkins-x/jx-promote/pkg/helmfile"
+	"github.com/jenkins-x/jx-promote/pkg/jxapps"
+	v1 "github.com/jenkins-x/jx/v2/pkg/apis/jenkins.io/v1"
+	"github.com/jenkins-x/jx/v2/pkg/config"
+	"github.com/jenkins-x/jx/v2/pkg/kube"
+	"github.com/jenkins-x/jx/v2/pkg/util"
+	"github.com/jenkins-x/jx/v2/pkg/versionstream"
+)
+
+const (
+	KindApp = "apps"
 )
 
 var (
@@ -104,7 +109,7 @@ func (c *EnvironmentContext) ChartDetails(chartName string, repo string) (*Chart
 // DefaultPrefix if the chart has no prefix lets default it based on the apps config
 // for helmfile by finding the appConfig.repository entry. If this is a new repository
 // lets add it into the appsConfig.repository using the given default prefix.
-func (d *ChartDetails) DefaultPrefix(appsConfig *config.AppConfig, defaultPrefix string) {
+func (d *ChartDetails) DefaultPrefix(appsConfig *jxapps.AppConfig, defaultPrefix string) {
 	if d.Prefix != "" {
 		return
 	}
@@ -155,10 +160,10 @@ func (d *ChartDetails) SetPrefix(value string) {
 }
 
 // ResolveApplicationDefaults resolves the application defaults in the version stream if there are any
-func (c *EnvironmentContext) ResolveApplicationDefaults(chartName string) (*config.AppDefaultsConfig, []string, error) {
+func (c *EnvironmentContext) ResolveApplicationDefaults(chartName string) (*jxapps.AppDefaultsConfig, []string, error) {
 	valueFiles := []string{}
-	dir := filepath.Join(c.VersionResolver.VersionsDir, string(versionstream.KindApp), chartName)
-	defaults, _, err := config.LoadAppDefaultsConfig(dir)
+	dir := filepath.Join(c.VersionResolver.VersionsDir, KindApp, chartName)
+	defaults, _, err := jxapps.LoadAppDefaultsConfig(dir)
 	if err != nil {
 		return defaults, valueFiles, err
 	}

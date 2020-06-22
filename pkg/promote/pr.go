@@ -6,10 +6,10 @@ import (
 	"github.com/jenkins-x/jx-promote/pkg/promoteconfig"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/jenkins-x/jx-promote/pkg/rules/factory"
-	v1 "github.com/jenkins-x/jx/pkg/apis/jenkins.io/v1"
+	v1 "github.com/jenkins-x/jx/v2/pkg/apis/jenkins.io/v1"
 	"github.com/pkg/errors"
 
-	"github.com/jenkins-x/jx/pkg/gits"
+	"github.com/jenkins-x/jx/v2/pkg/gits"
 )
 
 func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *ReleaseInfo) error {

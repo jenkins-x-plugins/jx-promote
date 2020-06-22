@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	helm "github.com/jenkins-x/helmboot/pkg/helmer"
+	helm "github.com/jenkins-x/jx-promote/pkg/helmer"
 	"github.com/stretchr/testify/assert"
 
-	mocks "github.com/jenkins-x/jx/pkg/util/mocks"
+	mocks "github.com/jenkins-x/jx/v2/pkg/util/mocks"
 	. "github.com/petergtz/pegomock"
 )
 

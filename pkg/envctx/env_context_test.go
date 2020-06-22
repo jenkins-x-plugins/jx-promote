@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/jx-promote/pkg/envctx"
-	"github.com/jenkins-x/jx/pkg/config"
-	"github.com/jenkins-x/jx/pkg/versionstream"
+	"github.com/jenkins-x/jx-promote/pkg/jxapps"
+	"github.com/jenkins-x/jx/v2/pkg/versionstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,14 +18,14 @@ func TestEnvironmentContextResolveChartDetails(t *testing.T) {
 
 	ec := createTestEnvironmentContext(t)
 
-	appsConfig := &config.AppConfig{}
+	appsConfig := &jxapps.AppConfig{}
 
 	type testData struct {
 		Test       string
 		Name       string
 		Repository string
 		Expected   envctx.ChartDetails
-		AppsConfig *config.AppConfig
+		AppsConfig *jxapps.AppConfig
 	}
 	tests := []testData{
 		{

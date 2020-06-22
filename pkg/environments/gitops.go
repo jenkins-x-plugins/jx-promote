@@ -8,23 +8,22 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ghodss/yaml"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x/jx-promote/pkg/githelpers"
-	jenkinsio "github.com/jenkins-x/jx/pkg/apis/jenkins.io"
-	"github.com/jenkins-x/jx/pkg/config"
-
-	"github.com/ghodss/yaml"
+	"github.com/jenkins-x/jx-promote/pkg/jxapps"
+	jenkinsio "github.com/jenkins-x/jx/v2/pkg/apis/jenkins.io"
 
 	"github.com/pkg/errors"
 
 	"k8s.io/helm/pkg/proto/hapi/chart"
 
 	"github.com/jenkins-x/jx-logging/pkg/log"
-	jenkinsv1 "github.com/jenkins-x/jx/pkg/apis/jenkins.io/v1"
-	"github.com/jenkins-x/jx/pkg/gits"
-	"github.com/jenkins-x/jx/pkg/helm"
-	"github.com/jenkins-x/jx/pkg/util"
+	jenkinsv1 "github.com/jenkins-x/jx/v2/pkg/apis/jenkins.io/v1"
+	"github.com/jenkins-x/jx/v2/pkg/gits"
+	"github.com/jenkins-x/jx/v2/pkg/helm"
+	"github.com/jenkins-x/jx/v2/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	helmchart "k8s.io/helm/pkg/proto/hapi/chart"
 )
@@ -174,7 +173,7 @@ func ModifyKptFiles(dir string, promoteConfig *v1alpha1.Promote, details *gits.P
 
 // ModifyAppsFile modifies the 'jx-apps.yml' file to add/update/remove apps
 func ModifyAppsFile(dir string, details *gits.PullRequestDetails, modifyFn ModifyAppsFn) (bool, error) {
-	appsConfig, fileName, err := config.LoadAppConfig(dir)
+	appsConfig, fileName, err := jxapps.LoadAppConfig(dir)
 	if fileName == "" {
 		// if we don't have a `jx-apps.yml` then just return immediately
 		return false, nil
@@ -275,7 +274,7 @@ func CreateUpgradeRequirementsFn(all bool, chartName string, alias string, versi
 // alias and version can be specified.
 func CreateUpgradeAppConfigFn(all bool, chartName string, version string) ModifyAppsFn {
 	upgraded := false
-	return func(appsConfig *config.AppConfig, dir string, details *gits.PullRequestDetails) error {
+	return func(appsConfig *jxapps.AppConfig, dir string, details *gits.PullRequestDetails) error {
 
 		// Work through the upgrades
 		for _, d := range appsConfig.Apps {
@@ -356,7 +355,7 @@ func CreateAddRequirementFn(chartName string, alias string, version string, repo
 
 // CreateAddAppConfigFn create the ModifyAppsFn that adds an app to the AppConfig
 func CreateAddAppConfigFn(chartName string, version string, repo string) ModifyAppsFn {
-	return func(appsConfig *config.AppConfig, dir string, pullRequestDetails *gits.PullRequestDetails) error {
+	return func(appsConfig *jxapps.AppConfig, dir string, pullRequestDetails *gits.PullRequestDetails) error {
 		// See if the chart already exists in config
 		found := false
 		for _, d := range appsConfig.Apps {
@@ -375,7 +374,7 @@ func CreateAddAppConfigFn(chartName string, version string, repo string) ModifyA
 
 		// If app not found, add it
 		if !found {
-			appsConfig.Apps = append(appsConfig.Apps, config.App{
+			appsConfig.Apps = append(appsConfig.Apps, jxapps.App{
 				Name: chartName,
 			})
 			// TODO lets default the namespace by looking up the configuration in the version stream
