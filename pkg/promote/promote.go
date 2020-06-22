@@ -3,9 +3,7 @@ package promote
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -13,8 +11,6 @@ import (
 
 	"github.com/jenkins-x/jx-kube-client/pkg/kubeclient"
 	"github.com/jenkins-x/jx-promote/pkg/githelpers"
-	"github.com/jenkins-x/jx-promote/pkg/promote/rules"
-	"github.com/jenkins-x/jx-promote/pkg/promoteconfig"
 	"k8s.io/client-go/rest"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -319,7 +315,10 @@ func (o *Options) Run() error {
 	}
 
 	if o.HelmRepositoryURL == "" {
-		o.HelmRepositoryURL = o.DefaultChartRepositoryURL()
+		o.HelmRepositoryURL, err = o.ResolveChartRepositoryURL()
+		if err != nil {
+			return errors.Wrapf(err, "failed to resolve helm repository URL")
+		}
 	}
 	if o.Environment == "" && !o.BatchMode {
 		names := []string{}
@@ -581,68 +580,9 @@ func (o *Options) Promote(targetNS string, env *v1.Environment, warnIfAuto bool)
 	return nil, errors.Errorf("no source repository URL available on  environment %s", o.Environment)
 }
 
-func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *ReleaseInfo) error {
-	version := o.Version
-	versionName := version
-	if versionName == "" {
-		versionName = "latest"
-	}
-	app := o.Application
-
-	details := gits.PullRequestDetails{
-		BranchName: "promote-" + app + "-" + versionName,
-		Title:      "chore: " + app + " to " + versionName,
-		Message:    fmt.Sprintf("chore: Promote %s to version %s", app, versionName),
-	}
-
-	o.EnvironmentPullRequestOptions.CommitTitle = details.Title
-	o.EnvironmentPullRequestOptions.CommitMessage = details.Message
-
-	envDir := ""
-	if o.CloneDir != "" {
-		envDir = o.CloneDir
-	}
-
-	o.Function = func() error {
-		dir := o.OutDir
-		promoteConfig, _, err := promoteconfig.Discover(dir)
-		if err != nil {
-			return errors.Wrapf(err, "failed to discover the PromoteConfig in dir %s", dir)
-		}
-		r := &rules.PromoteRule{
-			TemplateContext: rules.TemplateContext{
-				GitURL:  env.Spec.Source.URL,
-				Version: o.Version,
-				AppName: o.Application,
-
-				// TODO
-				ChartAlias:        "",
-				Namespace:         o.Namespace,
-				HelmRepositoryURL: o.HelmRepositoryURL,
-			},
-			Dir:           dir,
-			Config:        *promoteConfig,
-			DevEnvContext: &o.DevEnvContext,
-		}
-		fn := rules.NewFunction(r)
-		if fn == nil {
-			return errors.Errorf("could not create rule function ")
-		}
-		return fn(r)
-	}
-
-	filter := &gits.PullRequestFilter{}
-	if releaseInfo.PullRequestInfo != nil {
-		filter.Number = &releaseInfo.PullRequestInfo.Number
-	}
-	info, err := o.Create(env, envDir, &details, filter, "", true)
-	releaseInfo.PullRequestInfo = info
-	return err
-}
-
 // ResolveChartRepositoryURL resolves the current Chart Museum URL so we can pass it into a remote Environment's
 // git repository
-func (o *Options) ResolveChartMuseumURL() (string, error) {
+func (o *Options) ResolveChartRepositoryURL() (string, error) {
 	kubeClient := o.KubeClient
 	jxClient := o.JXClient
 	ns := o.Namespace
@@ -679,65 +619,6 @@ func (o *Options) ResolveChartMuseumURL() (string, error) {
 		}
 	}
 	return answer, err
-}
-
-// UpdateNamespaceInYamlFiles updates the namespace in yaml files
-func UpdateNamespaceInYamlFiles(dir string, ens string) error {
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if info == nil || info.IsDir() {
-			return nil
-		}
-		if !strings.HasSuffix(path, "yaml") {
-			return nil
-		}
-
-		// lets load the file
-		data, err := ioutil.ReadFile(path)
-
-		// lets add a namespace line into the yaml
-		lines := strings.Split(string(data), "\n")
-		inMetadata := false
-		for i, line := range lines {
-			if strings.HasSuffix(line, "metadata:") {
-				inMetadata = true
-				continue
-			}
-			if line == "" {
-				continue
-			}
-			if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t") {
-				if !inMetadata {
-					continue
-				}
-				t := strings.TrimSpace(line)
-				if strings.HasPrefix(t, "name:") {
-					// if the next line is namespace replace it otherwise insert it
-					nsLine := "  namespace: " + ens
-					j := i + 1
-					nextLine := lines[j]
-					if strings.HasPrefix(strings.TrimSpace(nextLine), "namespace:") {
-						lines[j] = nsLine
-					} else {
-						lines = append(lines[:j], append([]string{nsLine}, lines[j:]...)...)
-					}
-					break
-				}
-			} else {
-				inMetadata = false
-			}
-		}
-		data = []byte(strings.Join(lines, "\n"))
-		err = ioutil.WriteFile(path, data, util.DefaultFileWritePermissions)
-		if err != nil {
-			return errors.Wrapf(err, "failed to save %s", path)
-		}
-		return nil
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to set namespace to %s in dir %s", ens, dir)
-	}
-	return nil
-
 }
 
 func (o *Options) GetTargetNamespace(ns string, env string) (string, *v1.Environment, error) {
