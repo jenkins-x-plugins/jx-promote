@@ -23,8 +23,8 @@ import (
 	"github.com/jenkins-x/jx/v2/pkg/config"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/jenkins-x/jx-promote/pkg/kube/naming"
 	"github.com/jenkins-x/jx/v2/pkg/cmd/helper"
-	"github.com/jenkins-x/jx/v2/pkg/kube/naming"
 
 	"github.com/pkg/errors"
 	"gopkg.in/AlecAivazis/survey.v1"
@@ -33,12 +33,12 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/jenkins-x/jx-logging/pkg/log"
+	"github.com/jenkins-x/jx-promote/pkg/kube"
 	typev1 "github.com/jenkins-x/jx/v2/pkg/client/clientset/versioned/typed/jenkins.io/v1"
 	"github.com/jenkins-x/jx/v2/pkg/cmd/opts"
 	"github.com/jenkins-x/jx/v2/pkg/cmd/templates"
 	"github.com/jenkins-x/jx/v2/pkg/gits"
 	"github.com/jenkins-x/jx/v2/pkg/helm"
-	"github.com/jenkins-x/jx/v2/pkg/kube"
 	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/spf13/cobra"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"

@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/jx-promote/pkg/envctx"
+	"github.com/jenkins-x/jx-promote/pkg/kube"
 	v1 "github.com/jenkins-x/jx/v2/pkg/apis/jenkins.io/v1"
 	"github.com/jenkins-x/jx/v2/pkg/config"
-	"github.com/jenkins-x/jx/v2/pkg/kube"
 	"github.com/jenkins-x/jx/v2/pkg/versionstream"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"

@@ -5,9 +5,9 @@ import (
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/jx-promote/pkg/common"
 	"github.com/jenkins-x/jx-promote/pkg/gitconfig"
+	"github.com/jenkins-x/jx-promote/pkg/kube"
 	"github.com/jenkins-x/jx/v2/pkg/auth"
 	"github.com/jenkins-x/jx/v2/pkg/gits"
-	"github.com/jenkins-x/jx/v2/pkg/kube"
 	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/pkg/errors"
 )
