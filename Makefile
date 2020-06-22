@@ -164,3 +164,12 @@ lint: ## Lint the code
 
 .PHONY: all
 all: fmt build lint test
+
+install-refdocs:
+	$(GO) get github.com/jenkins-x/gen-crd-api-reference-docs
+
+generate-refdocs: install-refdocs
+	${GOPATH}/bin/gen-crd-api-reference-docs -config "hack/configdocs/config.json" \
+	-template-dir hack/configdocs/templates \
+    -api-dir "./pkg/apis/promote/v1alpha1" \
+    -out-file docs/config.md
