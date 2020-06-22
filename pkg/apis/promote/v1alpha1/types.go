@@ -30,15 +30,15 @@ type PromoteSpec struct {
 	// File specifies a promotion rule for a File such as for a Makefile or shell script
 	FileRule *FileRule `json:"fileRule,omitempty"`
 
-	// HelmfileRule specifies the location of the helmfile to promote into
-	HelmfileRule *HelmfileRule `json:"helmfileRule,omitempty"`
-
 	// HelmRule specifies a composite helm chart to promote to by adding the app to the charts
 	// 'requirements.yaml' file
 	HelmRule *HelmRule `json:"helmRule,omitempty"`
 
+	// HelmfileRule specifies the location of the helmfile to promote into
+	HelmfileRule *HelmfileRule `json:"helmfileRule,omitempty"`
+
 	// KptRule specifies to fetch the apps resource via kpt : https://googlecontainertools.github.io/kpt/
-	KptRule *KptRule `json:"helmfileRule,omitempty"`
+	KptRule *KptRule `json:"kptRule,omitempty"`
 }
 
 // AppsRule uses a 'jx-apps.yml` file to store apps to be deployed
