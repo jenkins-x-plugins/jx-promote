@@ -5,6 +5,7 @@ import (
 	"github.com/jenkins-x/jx-promote/pkg/rules/apps"
 	"github.com/jenkins-x/jx-promote/pkg/rules/file"
 	"github.com/jenkins-x/jx-promote/pkg/rules/helm"
+	"github.com/jenkins-x/jx-promote/pkg/rules/helmfile"
 	"github.com/jenkins-x/jx-promote/pkg/rules/kpt"
 )
 
@@ -14,11 +15,14 @@ func NewFunction(r *rules.PromoteRule) rules.RuleFunction {
 	if spec.AppsRule != nil {
 		return apps.AppsRule
 	}
+	if spec.FileRule != nil {
+		return file.FileRule
+	}
 	if spec.HelmRule != nil {
 		return helm.HelmRule
 	}
-	if spec.FileRule != nil {
-		return file.FileRule
+	if spec.HelmfileRule != nil {
+		return helmfile.HelmfileRule
 	}
 	if spec.KptRule != nil {
 		return kpt.KptRule

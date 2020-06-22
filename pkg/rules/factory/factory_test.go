@@ -91,7 +91,7 @@ func ruleFileName(cfg *v1alpha1.Promote) string {
 		return filepath.Join(path, "requirements.yaml")
 	}
 	if cfg.Spec.HelmfileRule != nil {
-		return cfg.Spec.AppsRule.Path
+		return cfg.Spec.HelmfileRule.Path
 	}
 	return cfg.Spec.FileRule.Path
 }
