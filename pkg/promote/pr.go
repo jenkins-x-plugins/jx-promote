@@ -43,12 +43,10 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 
 		r := &rules.PromoteRule{
 			TemplateContext: rules.TemplateContext{
-				GitURL:  "",
-				Version: o.Version,
-				AppName: o.Application,
-
-				// TODO
-				ChartAlias:        "",
+				GitURL:            "",
+				Version:           o.Version,
+				AppName:           o.Application,
+				ChartAlias:        o.Alias,
 				Namespace:         o.Namespace,
 				HelmRepositoryURL: o.HelmRepositoryURL,
 			},
