@@ -14,6 +14,25 @@ Download the [jx-alpha-promote binary](https://github.com/jenkins-x/jx-promote/r
 
 There will be an `app` you can install soon too...
 
-## Importing Repositories and Creating Quickstarts
+## Promoting via the command line
 
 Just run the `jx alpha promote` command line and follow the instructions as if it were `jx promote`.
+
+## Rules
+
+`jx promote` supports a number of different rules for promoting new versions of applications for various kinds of deployment tools.
+
+### Helm
+
+The helm rule uses a helm chart's `requirements.yaml` file to manage dependent applications. This is the traditional default source layout of a Jenkins X Staging or Production repository; there is usually a helm chart in the `env` folder and `jx-promote` will create a Pull Request adding or updating the applications version in `env/requirements.yaml`.
+
+You can [explicitly configure]() the helm rule by specifying the `helmRule` property on the [spec](https://github.com/jenkins-x/jx-promote/blob/master/docs/config.md#promote.jenkins-x.io/v1alpha1.PromoteSpec) of the [.jx/promote.yaml](https://github.com/jenkins-x/jx-promote/blob/master/docs/config.md#promote) configuration file. 
+
+
+## Rule Configuration
+
+You can configure which promotion rule is used declaratively in your environment git repository by creating a [.jx/promote.yaml](https://github.com/jenkins-x/jx-promote/blob/master/docs/config.md#promote) configuration file. 
+
+ 
+ 
+

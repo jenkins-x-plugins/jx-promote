@@ -1,7 +1,7 @@
 ---
 title: API Documentation
 linktitle: API Documentation
-description: Reference of the Jenkins X REST APIs and custom resources
+description: Reference of the jx-promote configuration
 weight: 10
 ---
 <p>Packages:</p>
@@ -490,5 +490,5 @@ KptRule
 <hr/>
 <p><em>
 Generated with <code>gen-crd-api-reference-docs</code>
-on git commit <code>11f31d0</code>.
+on git commit <code>a310d6d</code>.
 </em></p>
