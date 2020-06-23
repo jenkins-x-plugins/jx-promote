@@ -18,7 +18,7 @@ var (
 
 	promoteExample = templates.Examples(`
 		# promotes your current app to the staging environment
-		%s promote 
+		%s 
 	`)
 )
 
@@ -33,7 +33,7 @@ func Main() (*cobra.Command, *promote.Options) {
 	options := &promote.Options{}
 
 	cmd := &cobra.Command{
-		Use:     "promote",
+		Use:     common.BinaryName,
 		Short:   "Promotes a version of an application to an Environment",
 		Long:    promoteLong,
 		Example: fmt.Sprintf(promoteExample, common.BinaryName),

@@ -173,3 +173,13 @@ generate-refdocs: install-refdocs
 	-template-dir hack/configdocs/templates \
     -api-dir "./pkg/apis/promote/v1alpha1" \
     -out-file docs/config.md
+
+bin/docs:
+	go build $(LDFLAGS) -v -o bin/docs cmd/docs/*.go
+
+.PHONY: docs
+docs: bin/docs ## update docs
+	@echo "Generating docs"
+	@./bin/docs --target=./docs/cmd
+	@./bin/docs --target=./docs/man/man1 --kind=man
+	@rm -f ./bin/docs
