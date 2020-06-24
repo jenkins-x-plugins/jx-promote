@@ -57,8 +57,6 @@ replace github.com/banzaicloud/bank-vaults => github.com/banzaicloud/bank-vaults
 
 replace github.com/TV4/logrus-stackdriver-formatter => github.com/jenkins-x/logrus-stackdriver-formatter v0.1.1-0.20200408213659-1dcf20c371bb
 
-replace code.gitea.io/sdk/gitea => code.gitea.io/sdk/gitea v0.12.0
-
 // TODO until this PR is merged https://github.com/jenkins-x/go-scm/pull/150
 replace github.com/jenkins-x/go-scm => github.com/jstrachan/go-scm v1.5.1-0.20200624082102-98a34cc79bbc
 
