@@ -3,6 +3,7 @@ module github.com/jenkins-x/jx-promote
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cli/cli v0.6.2
+	github.com/cpuguy83/go-md2man v1.0.10
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/go-cmp v0.3.1
 	github.com/google/uuid v1.1.1
@@ -20,6 +21,7 @@ require (
 	github.com/satori/go.uuid v1.2.1-0.20180103174451-36e9d2ebbde5
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v0.0.6
+	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.3
 	gopkg.in/src-d/go-git.v4 v4.13.1
@@ -56,5 +58,8 @@ replace github.com/banzaicloud/bank-vaults => github.com/banzaicloud/bank-vaults
 replace github.com/TV4/logrus-stackdriver-formatter => github.com/jenkins-x/logrus-stackdriver-formatter v0.1.1-0.20200408213659-1dcf20c371bb
 
 replace code.gitea.io/sdk/gitea => code.gitea.io/sdk/gitea v0.12.0
+
+// TODO until this PR is merged https://github.com/jenkins-x/go-scm/pull/150
+replace github.com/jenkins-x/go-scm => github.com/jstrachan/go-scm v1.5.1-0.20200624082102-98a34cc79bbc
 
 go 1.13

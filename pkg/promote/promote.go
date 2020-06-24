@@ -174,8 +174,7 @@ func (o *Options) AddOptions(cmd *cobra.Command) {
 	cmd.Flags().BoolVarP(&o.NoHelmUpdate, "no-helm-update", "", false, "Allows the 'helm repo update' command if you are sure your local helm cache is up to date with the version you wish to promote")
 	cmd.Flags().BoolVarP(&o.NoMergePullRequest, "no-merge", "", false, "Disables automatic merge of promote Pull Requests")
 
-	// TODO bring back polling?
-	cmd.Flags().BoolVarP(&o.NoPoll, "no-poll", "", true, "Disables polling for Pull Request or Pipeline status")
+	cmd.Flags().BoolVarP(&o.NoPoll, "no-poll", "", false, "Disables polling for Pull Request or Pipeline status")
 	cmd.Flags().BoolVarP(&o.NoWaitAfterMerge, "no-wait", "", false, "Disables waiting for completing promotion after the Pull request is merged")
 	cmd.Flags().BoolVarP(&o.IgnoreLocalFiles, "ignore-local-file", "", false, "Ignores the local file system when deducing the Git repository")
 }
@@ -739,8 +738,6 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, relea
 							log.Logger().Infof("Pull Request %s is merged but waiting for Merge SHA", util.ColorInfo(pr.Link))
 						}
 					} else {
-						// TODO is this the same as MergeSha?
-						//mergeSha := pr.MergeCommitSHA
 						mergeSha := pr.MergeSha
 						if !logHasMergeSha {
 							logHasMergeSha = true
@@ -771,8 +768,6 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, relea
 						}
 
 						statuses, _, err := scmClient.Repositories.ListStatus(ctx, fullName, mergeSha, scm.ListOptions{})
-						// TODO
-						//statuses, err := gitProvider.ListCommitStatus(pr.Owner, pr.Repo, mergeSha)
 						if err != nil {
 							if !logMergeStatusError {
 								logMergeStatusError = true
@@ -792,9 +787,10 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, relea
 										return fmt.Errorf("Status: %s URL: %s description: %s\n",
 											status.State, status.Target, status.Desc)
 									}
-									// TODO is this equivalent to status.URL?
-									//url := status.URL
-									url := status.Label
+									url := status.Link
+									if url == "" {
+										url = status.Target
+									}
 									state := status.State
 									if urlStatusMap[url] == scm.StateUnknown || urlStatusMap[url] != scm.StateSuccess {
 										if urlStatusMap[url] != state {
@@ -959,10 +955,7 @@ func (o *Options) PullRequestLastCommitStatus(pr *scm.PullRequest) (*scm.Status,
 }
 
 func (o *Options) pullRequestLastCommitSha(pr *scm.PullRequest) string {
-	// TODO - add last commit sha....
-	//prLastCommitSha := prLastCommitSha
-	prLastCommitSha := pr.MergeSha
-	return prLastCommitSha
+	return pr.Head.Sha
 }
 
 func (o *Options) findLatestVersion(app string) (string, error) {
