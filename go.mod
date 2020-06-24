@@ -7,7 +7,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/go-cmp v0.3.1
 	github.com/google/uuid v1.1.1
-	github.com/jenkins-x/go-scm v1.5.141
+	github.com/jenkins-x/go-scm v1.5.143
 	github.com/jenkins-x/jx-kube-client v0.0.3
 	github.com/jenkins-x/jx-logging v0.0.8
 	github.com/jenkins-x/jx/v2 v2.1.78
@@ -56,8 +56,5 @@ replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v10.15.5+in
 replace github.com/banzaicloud/bank-vaults => github.com/banzaicloud/bank-vaults v0.0.0-20190508130850-5673d28c46bd
 
 replace github.com/TV4/logrus-stackdriver-formatter => github.com/jenkins-x/logrus-stackdriver-formatter v0.1.1-0.20200408213659-1dcf20c371bb
-
-// TODO until this PR is merged https://github.com/jenkins-x/go-scm/pull/150
-replace github.com/jenkins-x/go-scm => github.com/jstrachan/go-scm v1.5.1-0.20200624082102-98a34cc79bbc
 
 go 1.13
