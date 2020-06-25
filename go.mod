@@ -31,6 +31,7 @@ require (
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	k8s.io/helm v2.7.2+incompatible
 	k8s.io/kubernetes v1.14.0
+	knative.dev/pkg v0.0.0-20200207181514-32ea84581573
 	sigs.k8s.io/yaml v1.1.0
 
 )
