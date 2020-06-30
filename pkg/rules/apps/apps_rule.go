@@ -1,7 +1,7 @@
 package apps
 
 import (
-	"github.com/jenkins-x/jx-promote/pkg/jxapps"
+	"github.com/jenkins-x/jx-apps/pkg/jxapps"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/pkg/errors"
 )
