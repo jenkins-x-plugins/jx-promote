@@ -18,6 +18,8 @@ GO_VERSION := 1.13
 
 GO_DEPENDENCIES := $(call rwildcard,pkg/,*.go) $(call rwildcard,cmd/j,*.go)
 
+GOPRIVATE := github.com/jenkins-x/jx-apps,github.com/jenkins-x/jx-helpers
+
 BRANCH     := $(shell git rev-parse --abbrev-ref HEAD 2> /dev/null  || echo 'unknown')
 BUILD_DATE := $(shell date +%Y%m%d-%H:%M:%S)
 CGO_ENABLED = 0
@@ -83,6 +85,7 @@ print-version: ## Print version
 	@echo $(VERSION)
 
 build: $(GO_DEPENDENCIES) clean ## Build jx-labs binary for current OS
+	go env -w GOPRIVATE=github.com/jenkins-x/jx-apps,github.com/jenkins-x/jx-helpers
 	CGO_ENABLED=$(CGO_ENABLED) $(GO) $(BUILD_TARGET) $(BUILDFLAGS) -o build/$(BINARY_NAME) $(MAIN_SRC_FILE)
 
 build-all: $(GO_DEPENDENCIES) build make-reports-dir ## Build all files - runtime, all tests etc.

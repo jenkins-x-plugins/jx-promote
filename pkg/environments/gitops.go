@@ -12,7 +12,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x/jx-promote/pkg/githelpers"
-	"github.com/jenkins-x/jx-promote/pkg/jxapps"
+	"github.com/jenkins-x/jx-apps/pkg/jxapps"
 	jenkinsio "github.com/jenkins-x/jx/v2/pkg/apis/jenkins.io"
 
 	"github.com/pkg/errors"

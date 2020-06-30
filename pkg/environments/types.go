@@ -7,7 +7,7 @@ import (
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x/jx-promote/pkg/envctx"
 	"github.com/jenkins-x/jx-promote/pkg/helmer"
-	"github.com/jenkins-x/jx-promote/pkg/jxapps"
+	"github.com/jenkins-x/jx-apps/pkg/jxapps"
 	"github.com/jenkins-x/jx/v2/pkg/auth"
 	"github.com/jenkins-x/jx/v2/pkg/gits"
 	"github.com/jenkins-x/jx/v2/pkg/util"

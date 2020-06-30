@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/jenkins-x/jx-promote/pkg/helmfile"
-	"github.com/jenkins-x/jx-promote/pkg/jxapps"
+	"github.com/jenkins-x/jx-apps/pkg/helmfile"
+	"github.com/jenkins-x/jx-apps/pkg/jxapps"
 	"github.com/jenkins-x/jx-promote/pkg/kube"
 	"github.com/jenkins-x/jx-promote/pkg/versionstream"
 	v1 "github.com/jenkins-x/jx/v2/pkg/apis/jenkins.io/v1"
