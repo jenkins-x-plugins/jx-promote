@@ -10,13 +10,13 @@
 
 ## Getting Started
 
-Download the [jx-alpha-promote binary](https://github.com/jenkins-x/jx-promote/releases) for your operating system and add it to your `$PATH`.
+Download the [jx-promote binary](https://github.com/jenkins-x/jx-promote/releases) for your operating system and add it to your `$PATH`.
 
 There will be an `app` you can install soon too...
 
 ## Commands
 
-See the [jx-alpha-promote command reference](https://github.com/jenkins-x/jx-promote/blob/master/docs/cmd/jx-alpha-promote.md#jx-alpha-promote)
+See the [jx-promote command reference](https://github.com/jenkins-x/jx-promote/blob/master/docs/cmd/jx-promote.md#jx-promote)
 
 ## Promoting via the command line
 

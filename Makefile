@@ -3,7 +3,7 @@ rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 
 SHELL := /bin/bash
 NAME := jx-project
-BINARY_NAME := jx-alpha-promote
+BINARY_NAME := jx-promote
 BUILD_TARGET = build
 MAIN_SRC_FILE=cmd/main.go
 GO := GO111MODULE=on go

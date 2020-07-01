@@ -3,6 +3,9 @@ dockerRegistryOwner: jenkinsxio-labs-private
 pipelineConfig:
   pipelines:
     overrides:
+      - name: helm-template
+        step:
+          sh: echo disabled
       - name: make-linux
         step:
           sh: make linux
@@ -29,9 +32,9 @@ pipelineConfig:
               - name: upload-binaries
                 command: make goreleaser
                 image: gcr.io/jenkinsxio-labs-private/step-go-releaser:0.0.5
-#              - name: copy-to-bucket
-#                command: gsutil cp dist/*.gz dist/*.zip gs://cloudbees-jx-project-plugin/plugin/${VERSION}
-#                image: gcr.io/jenkinsxio-labs-private/jxl
+              - name: copy-to-bucket
+                command: gsutil cp dist/*.gz dist/*.zip gs://cloudbees-jx-plugins/plugin/promote/${VERSION}
+                image: gcr.io/jenkinsxio-labs-private/jxl
               - command: ./promote.sh
                 dir: /workspace/source
                 name: promote-release
