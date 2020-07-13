@@ -106,19 +106,6 @@ FileRule
 </tr>
 <tr>
 <td>
-<code>helmfileRule</code></br>
-<em>
-<a href="#promote.jenkins-x.io/v1alpha1.HelmfileRule">
-HelmfileRule
-</a>
-</em>
-</td>
-<td>
-<p>HelmfileRule specifies the location of the helmfile to promote into</p>
-</td>
-</tr>
-<tr>
-<td>
 <code>helmRule</code></br>
 <em>
 <a href="#promote.jenkins-x.io/v1alpha1.HelmRule">
@@ -134,6 +121,19 @@ HelmRule
 <tr>
 <td>
 <code>helmfileRule</code></br>
+<em>
+<a href="#promote.jenkins-x.io/v1alpha1.HelmfileRule">
+HelmfileRule
+</a>
+</em>
+</td>
+<td>
+<p>HelmfileRule specifies the location of the helmfile to promote into</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>kptRule</code></br>
 <em>
 <a href="#promote.jenkins-x.io/v1alpha1.KptRule">
 KptRule
@@ -175,6 +175,18 @@ string
 </td>
 <td>
 <p>Path to the apps file to modify. Defaults to <code>jx-apps.yml</code></p>
+</td>
+</tr>
+<tr>
+<td>
+<code>namespace</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>Namespace if specified the given namespace is used in the <code>jx-apps.yml</code> file when using Environments in the
+same cluster using the same git repository URL as the dev environment</p>
 </td>
 </tr>
 </tbody>
@@ -447,19 +459,6 @@ FileRule
 </tr>
 <tr>
 <td>
-<code>helmfileRule</code></br>
-<em>
-<a href="#promote.jenkins-x.io/v1alpha1.HelmfileRule">
-HelmfileRule
-</a>
-</em>
-</td>
-<td>
-<p>HelmfileRule specifies the location of the helmfile to promote into</p>
-</td>
-</tr>
-<tr>
-<td>
 <code>helmRule</code></br>
 <em>
 <a href="#promote.jenkins-x.io/v1alpha1.HelmRule">
@@ -476,6 +475,19 @@ HelmRule
 <td>
 <code>helmfileRule</code></br>
 <em>
+<a href="#promote.jenkins-x.io/v1alpha1.HelmfileRule">
+HelmfileRule
+</a>
+</em>
+</td>
+<td>
+<p>HelmfileRule specifies the location of the helmfile to promote into</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>kptRule</code></br>
+<em>
 <a href="#promote.jenkins-x.io/v1alpha1.KptRule">
 KptRule
 </a>
@@ -490,5 +502,5 @@ KptRule
 <hr/>
 <p><em>
 Generated with <code>gen-crd-api-reference-docs</code>
-on git commit <code>a310d6d</code>.
+on git commit <code>138b41c</code>.
 </em></p>
