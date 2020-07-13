@@ -34,9 +34,14 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 		envDir = o.CloneDir
 	}
 
+	promoteNS := ""
+	if o.DevEnvContext.DevEnv != nil && o.DevEnvContext.DevEnv.Spec.Source.URL == env.Spec.Source.URL {
+		promoteNS = env.Spec.Namespace
+	}
+
 	o.Function = func() error {
 		dir := o.OutDir
-		promoteConfig, _, err := promoteconfig.Discover(dir)
+		promoteConfig, _, err := promoteconfig.Discover(dir, promoteNS)
 		if err != nil {
 			return errors.Wrapf(err, "failed to discover the PromoteConfig in dir %s", dir)
 		}

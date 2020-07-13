@@ -25,6 +25,7 @@ func TestRuleFactory(t *testing.T) {
 	files, err := ioutil.ReadDir(sourceData)
 	assert.NoError(t, err)
 
+	testPromoteNS := ""
 	ns := "jx"
 	for _, f := range files {
 		if f.IsDir() {
@@ -39,7 +40,7 @@ func TestRuleFactory(t *testing.T) {
 			err = util.CopyDirOverwrite(src, dir)
 			require.NoError(t, err, "could not copy source data in %s to %s", src, dir)
 
-			cfg, _, err := promoteconfig.Discover(dir)
+			cfg, _, err := promoteconfig.Discover(dir, testPromoteNS)
 			require.NoError(t, err, "failed to load cfg dir %s", dir)
 			require.NotNil(t, cfg, "no project cfg found in dir %s", dir)
 

@@ -9,9 +9,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testPromoteNS = ""
+
 func TestDiscoverPromoteConfigKpt(t *testing.T) {
 	dir := filepath.Join("test_data", "custom", "cfg-root", "namespaces")
-	cfg, fileName, err := promoteconfig.Discover(dir)
+	cfg, fileName, err := promoteconfig.Discover(dir, testPromoteNS)
 	require.NoError(t, err)
 	require.NotEmpty(t, fileName, "no fileName returned")
 	require.NotNil(t, cfg, "cfg not returned")
@@ -27,7 +29,7 @@ func TestDiscoverPromoteConfigKpt(t *testing.T) {
 
 func TestDiscoverPromoteConfigHelm(t *testing.T) {
 	dir := filepath.Join("test_data", "helm")
-	cfg, fileName, err := promoteconfig.Discover(dir)
+	cfg, fileName, err := promoteconfig.Discover(dir, testPromoteNS)
 	require.NoError(t, err, "for dir %s", dir)
 	require.NotNil(t, cfg, "config not returned for %s", dir)
 	assert.Empty(t, fileName, "fileName for %s", dir)
@@ -40,7 +42,7 @@ func TestDiscoverPromoteConfigHelm(t *testing.T) {
 
 func TestDiscoverPromoteConfigHelmfile(t *testing.T) {
 	dir := filepath.Join("test_data", "helmfile")
-	cfg, fileName, err := promoteconfig.Discover(dir)
+	cfg, fileName, err := promoteconfig.Discover(dir, testPromoteNS)
 	require.NoError(t, err, "for dir %s", dir)
 	require.NotNil(t, cfg, "config not returned for %s", dir)
 	assert.Empty(t, fileName, "fileName for %s", dir)

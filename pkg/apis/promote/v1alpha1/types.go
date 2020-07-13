@@ -45,6 +45,9 @@ type PromoteSpec struct {
 type AppsRule struct {
 	// Path to the apps file to modify. Defaults to `jx-apps.yml`
 	Path string `json:"path"`
+	// Namespace if specified the given namespace is used in the `jx-apps.yml` file when using Environments in the
+	// same cluster using the same git repository URL as the dev environment
+	Namespace string `json:"namespace"`
 }
 
 // HelmRule specifies which chart to add the app to the Chart's 'requirements.yaml' file

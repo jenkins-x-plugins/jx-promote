@@ -16,7 +16,7 @@ import (
 //
 // if an explicit configuration is found (in a current or parent directory of '.jx/promote.yaml' then that is used.
 // otherwise the env/Chart.yaml or 'jx-apps.yaml' are detected
-func Discover(dir string) (*v1alpha1.Promote, string, error) {
+func Discover(dir string, promoteNamespace string) (*v1alpha1.Promote, string, error) {
 	config, fileName, err := LoadPromote(dir, false)
 	if err != nil {
 		return config, fileName, errors.Wrapf(err, "failed to load Promote configuration from %s", dir)
@@ -55,7 +55,8 @@ func Discover(dir string) (*v1alpha1.Promote, string, error) {
 			},
 			Spec: v1alpha1.PromoteSpec{
 				AppsRule: &v1alpha1.AppsRule{
-					Path: "jx-apps.yml",
+					Path:      "jx-apps.yml",
+					Namespace: promoteNamespace,
 				},
 			},
 		}

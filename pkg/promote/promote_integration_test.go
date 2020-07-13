@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jenkins-x/jx-apps/pkg/jxapps"
 	"github.com/jenkins-x/jx-promote/pkg/fakes/fakeauth"
 	"github.com/jenkins-x/jx-promote/pkg/fakes/fakegit"
 	"github.com/jenkins-x/jx-promote/pkg/promote"
@@ -130,4 +131,97 @@ func AssertPromoteIntegration(t *testing.T, testCases ...PromoteTestCase) {
 		t.Logf("PR body: %s", pr.Body)
 
 	}
+}
+
+func TestPromoteIntegrationLocalEnvironmentWithNoGitURL(t *testing.T) {
+	version := "1.2.3"
+	appName := "myapp"
+	envName := "staging"
+	ns := "jx"
+
+	_, po := promote.NewCmdPromote()
+	name := "staging-no-git-url"
+	po.Application = appName
+	po.Version = version
+	po.Environment = envName
+
+	po.NoPoll = true
+	po.BatchMode = true
+	po.AuthConfigService = fakeauth.NewFakeAuthConfigService(t, "jstrachan", "dummytoken", "https://github.com")
+	po.GitKind = "fake"
+	po.Gitter = fakegit.NewGitFakeClone()
+	po.AppGitURL = "https://github.com/myorg/myapp.git"
+
+	targetFullName := "jenkins-x/default-environment-helmfile"
+
+	devEnv, err := testhelpers.CreateTestDevEnvironment(ns)
+	require.NoError(t, err, "failed to create dev environment")
+	devEnv.Spec.Source.URL = "https://github.com/jstrachan/environment-fake-dev"
+
+	kubeObjects := []runtime.Object{
+		&corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: ns,
+				Labels: map[string]string{
+					"tag":  "",
+					"team": "jx",
+					"env":  "dev",
+				},
+			},
+		},
+	}
+	promoteNamespace := "jx-" + envName
+	jxObjects := []runtime.Object{
+		devEnv,
+		&v1.Environment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      envName,
+				Namespace: ns,
+			},
+			Spec: v1.EnvironmentSpec{
+				Label:             strings.Title(envName),
+				Namespace:         promoteNamespace,
+				PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
+				Order:             0,
+				Kind:              "",
+				PullRequestURL:    "",
+				TeamSettings:      v1.TeamSettings{},
+				RemoteCluster:     false,
+			},
+		},
+	}
+
+	po.KubeClient = fake.NewSimpleClientset(kubeObjects...)
+	po.JXClient = v1fake.NewSimpleClientset(jxObjects...)
+	po.Namespace = ns
+	po.DevEnvContext.VersionResolver = testhelpers.CreateTestVersionResolver(t)
+
+	err = po.Run()
+	require.NoError(t, err, "failed test %s s", name)
+
+	outDir := po.OutDir
+	require.DirExists(t, outDir, "failed to create OutDir")
+	appsConfig, _, err := jxapps.LoadAppConfig(outDir)
+	require.NoError(t, err, "failed to load jx-apps.yml from outDir %s", outDir)
+	foundApp := false
+	appChart := "jenkins-x/" + appName
+	for _, app := range appsConfig.Apps {
+		if app.Name == appChart {
+			foundApp = true
+			assert.Equal(t, promoteNamespace, app.Namespace, "generated jx-apps.yml name %s in dir %s", appChart, outDir)
+		}
+	}
+	assert.True(t, foundApp, "could not find app %s in the generated jx-apps.yml file in outDir %s", appChart, outDir)
+
+	scmClient := po.ScmClient
+	require.NotNil(t, scmClient, "no ScmClient created")
+	ctx := context.Background()
+	pr, _, err := scmClient.PullRequests.Find(ctx, targetFullName, 1)
+	require.NoError(t, err, "failed to find repository %s", targetFullName)
+	assert.NotNil(t, pr, "nil pr %s", targetFullName)
+
+	t.Logf("created PullRequest %s", pr.Link)
+	t.Logf("PR title: %s", pr.Title)
+	t.Logf("PR body: %s", pr.Body)
+
 }

@@ -13,7 +13,7 @@ func AppsRule(r *rules.PromoteRule) error {
 		return errors.Errorf("no appsRule configured")
 	}
 	rule := config.Spec.AppsRule
-	err := modifyAppsFile(r, r.Dir, rule.Path)
+	err := modifyAppsFile(r, r.Dir, rule.Namespace)
 	if err != nil {
 		return errors.Wrapf(err, "failed to modify chart files in dir %s", r.Dir)
 	}
@@ -21,7 +21,7 @@ func AppsRule(r *rules.PromoteRule) error {
 }
 
 // ModifyAppsFile modifies the 'jx-apps.yml' file to add/update/remove apps
-func modifyAppsFile(r *rules.PromoteRule, dir string, file string) error {
+func modifyAppsFile(r *rules.PromoteRule, dir string, promoteNS string) error {
 	appsConfig, fileName, err := jxapps.LoadAppConfig(dir)
 	if fileName == "" {
 		// if we don't have a `jx-apps.yml` then just return immediately
@@ -30,7 +30,7 @@ func modifyAppsFile(r *rules.PromoteRule, dir string, file string) error {
 	if err != nil {
 		return err
 	}
-	err = modifyApps(r, appsConfig)
+	err = modifyApps(r, appsConfig, promoteNS)
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func modifyAppsFile(r *rules.PromoteRule, dir string, file string) error {
 	return nil
 }
 
-func modifyApps(r *rules.PromoteRule, appsConfig *jxapps.AppConfig) error {
+func modifyApps(r *rules.PromoteRule, appsConfig *jxapps.AppConfig, promoteNS string) error {
 	if r.DevEnvContext == nil {
 		return errors.Errorf("no devEnvContext")
 	}
@@ -58,12 +58,16 @@ func modifyApps(r *rules.PromoteRule, appsConfig *jxapps.AppConfig) error {
 		appConfig := &appsConfig.Apps[i]
 		if appConfig.Name == app || appConfig.Name == details.Name {
 			appConfig.Version = version
+			if promoteNS != "" {
+				appConfig.Namespace = promoteNS
+			}
 			return nil
 		}
 	}
 	appsConfig.Apps = append(appsConfig.Apps, jxapps.App{
-		Name:    details.Name,
-		Version: version,
+		Name:      details.Name,
+		Version:   version,
+		Namespace: promoteNS,
 	})
 	return nil
 }

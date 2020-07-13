@@ -551,8 +551,16 @@ func (o *Options) Promote(targetNS string, env *v1.Environment, warnIfAuto bool)
 	kubeClient := o.KubeClient
 	promoteKey := o.CreatePromoteKey(env)
 	if env != nil {
+		if !env.Spec.Kind.IsPermanent() {
+			return nil, errors.Errorf("cannot promote to Environment which is not a permanent Environment")
+		}
 		source := &env.Spec.Source
-		if source.URL != "" && env.Spec.Kind.IsPermanent() {
+		if source.URL == "" && !env.Spec.RemoteCluster && o.DevEnvContext.DevEnv != nil {
+			// lets default to the git repository of the dev environment as we are sharing the git repository across multiple namespaces
+			source.URL = o.DevEnvContext.DevEnv.Spec.Source.URL
+		}
+
+		if source.URL != "" {
 			err := o.PromoteViaPullRequest(env, releaseInfo)
 			if err == nil {
 				startPromotePR := func(a *v1.PipelineActivity, s *v1.PipelineActivityStep, ps *v1.PromoteActivityStep, p *v1.PromotePullRequestStep) error {
