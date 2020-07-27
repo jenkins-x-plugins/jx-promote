@@ -13,7 +13,7 @@ require (
 	github.com/jenkins-x/jx-kube-client v0.0.3
 	github.com/jenkins-x/jx-logging v0.0.10
 	github.com/jenkins-x/jx/v2 v2.1.90
-	github.com/magiconair/properties v1.8.0
+	github.com/magiconair/properties v1.8.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.0
