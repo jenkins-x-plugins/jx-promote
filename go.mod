@@ -11,7 +11,7 @@ require (
 	github.com/jenkins-x/jx-apps v0.0.2
 	github.com/jenkins-x/jx-helpers v1.0.15 // indirect
 	github.com/jenkins-x/jx-kube-client v0.0.3
-	github.com/jenkins-x/jx-logging v0.0.10
+	github.com/jenkins-x/jx-logging v0.0.11
 	github.com/jenkins-x/jx/v2 v2.1.90
 	github.com/magiconair/properties v1.8.0
 	github.com/mitchellh/go-homedir v1.1.0
