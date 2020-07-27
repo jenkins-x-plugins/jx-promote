@@ -2,10 +2,10 @@ module github.com/jenkins-x/jx-promote
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/cli/cli v0.6.2
+	github.com/cli/cli v0.11.0
 	github.com/cpuguy83/go-md2man v1.0.10
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
-	github.com/google/go-cmp v0.4.0
+	github.com/google/go-cmp v0.4.1
 	github.com/google/uuid v1.1.1
 	github.com/jenkins-x/go-scm v1.5.143
 	github.com/jenkins-x/jx-apps v0.0.2
@@ -27,7 +27,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
 	gopkg.in/src-d/go-git.v4 v4.13.1
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+	gopkg.in/yaml.v3 v3.0.0-20200506231410-2ff61e1afc86
 	k8s.io/api v0.17.2
 	k8s.io/apimachinery v0.17.2
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
