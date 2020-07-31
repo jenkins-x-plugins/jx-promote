@@ -14,12 +14,12 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/jx-api/pkg/config"
 	"github.com/jenkins-x/jx-promote/pkg/common"
 	"github.com/jenkins-x/jx-promote/pkg/environments"
 	"github.com/jenkins-x/jx-promote/pkg/kube/services"
 	"github.com/jenkins-x/jx/v2/pkg/builds"
 	"github.com/jenkins-x/jx/v2/pkg/client/clientset/versioned"
-	"github.com/jenkins-x/jx/v2/pkg/config"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/jenkins-x/jx-promote/pkg/kube/naming"
@@ -28,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/AlecAivazis/survey.v1"
 
-	v1 "github.com/jenkins-x/jx/v2/pkg/apis/jenkins.io/v1"
+	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
 
 	"github.com/blang/semver"
 	"github.com/jenkins-x/jx-logging/pkg/log"

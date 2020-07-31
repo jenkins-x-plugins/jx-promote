@@ -10,18 +10,18 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/jenkins-x/go-scm/scm"
+	jenkinsio "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io"
+	"github.com/jenkins-x/jx-apps/pkg/jxapps"
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x/jx-promote/pkg/githelpers"
-	"github.com/jenkins-x/jx-apps/pkg/jxapps"
-	jenkinsio "github.com/jenkins-x/jx/v2/pkg/apis/jenkins.io"
 
 	"github.com/pkg/errors"
 
 	"k8s.io/helm/pkg/proto/hapi/chart"
 
+	jenkinsv1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
 	"github.com/jenkins-x/jx-logging/pkg/log"
 	helm "github.com/jenkins-x/jx-promote/pkg/helmer"
-	jenkinsv1 "github.com/jenkins-x/jx/v2/pkg/apis/jenkins.io/v1"
 	"github.com/jenkins-x/jx/v2/pkg/gits"
 	"github.com/jenkins-x/jx/v2/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
