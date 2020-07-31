@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jenkins-x/jx-api/pkg/config"
 	"github.com/jenkins-x/jx-promote/pkg/versionstream/versionstreamrepo"
-	"github.com/jenkins-x/jx/v2/pkg/config"
 	"github.com/jenkins-x/jx/v2/pkg/gits"
 	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/stretchr/testify/assert"

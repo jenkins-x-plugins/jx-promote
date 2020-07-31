@@ -14,12 +14,12 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx-api/pkg/config"
 	"github.com/jenkins-x/jx-promote/pkg/common"
 	"github.com/jenkins-x/jx-promote/pkg/environments"
 	"github.com/jenkins-x/jx-promote/pkg/kube/services"
 	"github.com/jenkins-x/jx/v2/pkg/builds"
-	"github.com/jenkins-x/jx/v2/pkg/client/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/jenkins-x/jx-promote/pkg/kube/naming"
@@ -31,10 +31,10 @@ import (
 	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
 
 	"github.com/blang/semver"
+	typev1 "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned/typed/jenkins.io/v1"
 	"github.com/jenkins-x/jx-logging/pkg/log"
 	helm "github.com/jenkins-x/jx-promote/pkg/helmer"
 	"github.com/jenkins-x/jx-promote/pkg/kube"
-	typev1 "github.com/jenkins-x/jx/v2/pkg/client/clientset/versioned/typed/jenkins.io/v1"
 	"github.com/jenkins-x/jx/v2/pkg/cmd/opts"
 	"github.com/jenkins-x/jx/v2/pkg/cmd/templates"
 	"github.com/jenkins-x/jx/v2/pkg/gits"
@@ -1370,7 +1370,11 @@ func (o *Options) GetEnvChartValues(targetNS string, env *v1.Environment) ([]str
 
 func (o *Options) lazyCreateKubeClients() error {
 	if o.Namespace == "" {
-		o.Namespace = kubeclient.CurrentNamespace()
+		var err error
+		o.Namespace, err = kubeclient.CurrentNamespace()
+		if err != nil {
+			return errors.Wrap(err, "failed to find current namespace")
+		}
 	}
 	if o.KubeClient != nil && o.JXClient != nil {
 		return nil

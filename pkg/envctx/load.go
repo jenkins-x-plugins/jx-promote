@@ -10,9 +10,9 @@ import (
 	"sigs.k8s.io/yaml"
 
 	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
+	"github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx-api/pkg/config"
 	"github.com/jenkins-x/jx-promote/pkg/kube"
-	"github.com/jenkins-x/jx/v2/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 )
 

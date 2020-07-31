@@ -8,12 +8,12 @@ import (
 	"testing"
 
 	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
+	v1fake "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned/fake"
 	"github.com/jenkins-x/jx-apps/pkg/jxapps"
 	"github.com/jenkins-x/jx-promote/pkg/fakes/fakeauth"
 	"github.com/jenkins-x/jx-promote/pkg/fakes/fakegit"
 	"github.com/jenkins-x/jx-promote/pkg/promote"
 	"github.com/jenkins-x/jx-promote/pkg/testhelpers"
-	v1fake "github.com/jenkins-x/jx/v2/pkg/client/clientset/versioned/fake"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
