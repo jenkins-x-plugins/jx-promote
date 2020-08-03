@@ -3,5 +3,5 @@ dependencies:
   owner: jenkins-x
   repo: jxl-base-image
   url: https://github.com/jenkins-x/jxl-base-image
-  version: 0.0.53
+  version: 0.0.60
   versionURL: ""
