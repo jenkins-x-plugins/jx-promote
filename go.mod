@@ -7,7 +7,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/google/go-cmp v0.4.1
 	github.com/google/uuid v1.1.1
-	github.com/jenkins-x/go-scm v1.5.153
+	github.com/jenkins-x/go-scm v1.5.154
 	github.com/jenkins-x/jx-api v0.0.17
 	github.com/jenkins-x/jx-apps v0.0.4
 	github.com/jenkins-x/jx-helpers v1.0.34 // indirect
