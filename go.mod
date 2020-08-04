@@ -13,7 +13,7 @@ require (
 	github.com/jenkins-x/jx-helpers v1.0.34 // indirect
 	github.com/jenkins-x/jx-kube-client v0.0.8
 	github.com/jenkins-x/jx-logging v0.0.11
-	github.com/jenkins-x/jx/v2 v2.1.121
+	github.com/jenkins-x/jx/v2 v2.1.125
 	github.com/jenkins-x/lighthouse-config v0.0.10 // indirect
 	github.com/magiconair/properties v1.8.1
 	github.com/mitchellh/go-homedir v1.1.0
