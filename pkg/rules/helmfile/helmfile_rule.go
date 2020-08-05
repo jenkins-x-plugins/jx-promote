@@ -67,6 +67,16 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 		return errors.Wrapf(err, "failed to get chart details for %s repo %s", app, r.HelmRepositoryURL)
 	}
 
+	if promoteNs == "" {
+		promoteNs = r.Namespace
+		if promoteNs == "" {
+			promoteNs = "jx"
+		}
+	}
+	if r.HelmRepositoryURL == "" {
+		r.HelmRepositoryURL = "http://jenkins-x-chartmuseum:8080"
+	}
+
 	for i := range helmfile.Releases {
 		appConfig := &helmfile.Releases[i]
 		if appConfig.Name == app || appConfig.Name == details.Name {
@@ -74,11 +84,30 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 			return nil
 		}
 	}
-	chartName := details.Name
-	if details.Prefix == "" {
-		// TODO figure out correct prefix!
-		details.Prefix = "dev"
+	found := false
+	if r.HelmRepositoryURL != "" {
+		for _, repo := range helmfile.Repositories {
+			if repo.URL == r.HelmRepositoryURL {
+				found = true
+				if details.Prefix == "" {
+					details.Prefix = repo.Name
+				}
+				break
+			}
+		}
+		if !found {
+			helmfile.Repositories = append(helmfile.Repositories, state.RepositorySpec{
+				Name: "dev",
+				URL:  r.HelmRepositoryURL,
+			})
+			if details.Prefix == "" {
+				// TODO figure out correct prefix!
+				details.Prefix = "dev"
+			}
+		}
 	}
+
+	chartName := details.Name
 	if details.Prefix != "" {
 		chartName = details.Prefix + "/" + details.LocalName
 	}
@@ -88,5 +117,7 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 		Version:   version,
 		Namespace: promoteNs,
 	})
+
+
 	return nil
 }

@@ -75,6 +75,7 @@ func Discover(dir string, promoteNamespace string) (*v1alpha1.Promote, string, e
 			Spec: v1alpha1.PromoteSpec{
 				HelmfileRule: &v1alpha1.HelmfileRule{
 					Path: "helmfile.yaml",
+					Namespace: promoteNamespace,
 				},
 			},
 		}
