@@ -1,14 +1,13 @@
 package helmfile
 
 import (
-	"io/ioutil"
 	"path/filepath"
 
-	"github.com/jenkins-x/jx-apps/pkg/helmfile"
+	"github.com/jenkins-x/jx-helpers/pkg/yaml2s"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/pkg/errors"
-	"sigs.k8s.io/yaml"
+	"github.com/roboll/helmfile/pkg/state"
 )
 
 // HelmfileRule uses a jx-apps.yml file
@@ -39,16 +38,11 @@ func modifyHelmfile(r *rules.PromoteRule, file string) error {
 		return errors.Errorf("file does not exist %s", file)
 	}
 
-	data, err := ioutil.ReadFile(file)
+
+	state := &state.HelmState{}
+	err = yaml2s.LoadFile(file, state)
 	if err != nil {
 		return errors.Wrapf(err, "failed to load file %s", file)
-	}
-
-	state := &helmfile.HelmState{}
-
-	err = yaml.Unmarshal(data, state)
-	if err != nil {
-		return errors.Wrapf(err, "failed parse YAML file %s", file)
 	}
 
 	err = modifyHelmfileApps(r, state)
@@ -56,18 +50,14 @@ func modifyHelmfile(r *rules.PromoteRule, file string) error {
 		return err
 	}
 
-	data, err = yaml.Marshal(state)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal helmfile state %#v", state)
-	}
-	err = ioutil.WriteFile(file, data, util.DefaultFileWritePermissions)
+	err = yaml2s.SaveFile(state, file)
 	if err != nil {
 		return errors.Wrapf(err, "failed to save file %s", file)
 	}
 	return nil
 }
 
-func modifyHelmfileApps(r *rules.PromoteRule, state *helmfile.HelmState) error {
+func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState) error {
 	if r.DevEnvContext == nil {
 		return errors.Errorf("no devEnvContext")
 	}
@@ -78,14 +68,14 @@ func modifyHelmfileApps(r *rules.PromoteRule, state *helmfile.HelmState) error {
 		return errors.Wrapf(err, "failed to get chart details for %s repo %s", app, r.HelmRepositoryURL)
 	}
 
-	for i := range state.Releases {
-		appConfig := &state.Releases[i]
+	for i := range helmfile.Releases {
+		appConfig := &helmfile.Releases[i]
 		if appConfig.Name == app || appConfig.Name == details.Name {
 			appConfig.Version = version
 			return nil
 		}
 	}
-	state.Releases = append(state.Releases, helmfile.ReleaseSpec{
+	helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
 		Name:    details.Name,
 		Version: version,
 	})

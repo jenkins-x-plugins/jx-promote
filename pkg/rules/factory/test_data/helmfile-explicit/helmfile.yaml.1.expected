@@ -1,20 +1,13 @@
-helmDefaults:
-  atomic: false
-  devel: false
-  force: false
-  recreatePods: false
-  tillerless: false
-  timeout: 0
-  tls: false
-  verify: false
-  wait: false
-releases:
-- chart: ./dbmigrator
-  labels:
-    job: dbmigrator
-  name: dbmigrator
-- name: myapp
-  version: 1.2.3
+filepath: ""
 repositories:
 - name: yourorg
   url: https://yourorg.example.com/charts
+releases:
+- chart: ./dbmigrator
+  name: dbmigrator
+  labels:
+    job: dbmigrator
+- version: 1.2.3
+  name: myapp
+templates: {}
+missingFileHandler: ""
