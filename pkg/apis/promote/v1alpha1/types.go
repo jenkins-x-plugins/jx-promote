@@ -60,6 +60,9 @@ type HelmRule struct {
 type HelmfileRule struct {
 	// Path to the helmfile to modify
 	Path string `json:"path"`
+	// Namespace if specified the given namespace is used in the `helmfile.yml` file when using Environments in the
+	// same cluster using the same git repository URL as the dev environment
+	Namespace string `json:"namespace"`
 }
 
 // KptRule specifies to fetch the apps resource via kpt : https://googlecontainertools.github.io/kpt/

@@ -2,12 +2,15 @@ filepath: ""
 repositories:
 - name: yourorg
   url: https://yourorg.example.com/charts
+- name: dev
+  url: http://jenkins-x-chartmuseum:8080
 releases:
 - chart: ./dbmigrator
   name: dbmigrator
   labels:
     job: dbmigrator
-- version: 1.2.4
+- chart: dev/myapp
+  version: 1.2.4
   name: myapp
 templates: {}
 missingFileHandler: ""
