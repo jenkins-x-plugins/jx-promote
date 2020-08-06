@@ -1,9 +1,11 @@
 package helmfile
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/jenkins-x/jx-helpers/pkg/yaml2s"
+	"github.com/jenkins-x/jx-promote/pkg/envctx"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/pkg/errors"
@@ -62,19 +64,20 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 	}
 	app := r.AppName
 	version := r.Version
+	if r.HelmRepositoryURL == "" {
+		r.HelmRepositoryURL = "http://jenkins-x-chartmuseum:8080"
+	}
 	details, err := r.DevEnvContext.ChartDetails(app, r.HelmRepositoryURL)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get chart details for %s repo %s", app, r.HelmRepositoryURL)
 	}
+	defaultPrefix(helmfile, details, "dev")
 
 	if promoteNs == "" {
 		promoteNs = r.Namespace
 		if promoteNs == "" {
 			promoteNs = "jx"
 		}
-	}
-	if r.HelmRepositoryURL == "" {
-		r.HelmRepositoryURL = "http://jenkins-x-chartmuseum:8080"
 	}
 
 	for i := range helmfile.Releases {
@@ -84,40 +87,58 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 			return nil
 		}
 	}
-	found := false
-	if r.HelmRepositoryURL != "" {
-		for _, repo := range helmfile.Repositories {
-			if repo.URL == r.HelmRepositoryURL {
-				found = true
-				if details.Prefix == "" {
-					details.Prefix = repo.Name
-				}
-				break
-			}
-		}
-		if !found {
-			helmfile.Repositories = append(helmfile.Repositories, state.RepositorySpec{
-				Name: "dev",
-				URL:  r.HelmRepositoryURL,
-			})
-			if details.Prefix == "" {
-				// TODO figure out correct prefix!
-				details.Prefix = "dev"
-			}
-		}
-	}
-
-	chartName := details.Name
-	if details.Prefix != "" {
-		chartName = details.Prefix + "/" + details.LocalName
-	}
 	helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
-		Name:      details.Name,
-		Chart:     chartName,
+		Name:      details.LocalName,
+		Chart:     details.Name,
 		Version:   version,
 		Namespace: promoteNs,
 	})
 
-
 	return nil
+}
+
+// defaultPrefix lets find a chart prefix / repository name for the URL that does not clash with
+// any other existing repositories in the helmfile
+func defaultPrefix(appsConfig *state.HelmState, d *envctx.ChartDetails, defaultPrefix string) {
+	if d.Prefix != "" {
+		return
+	}
+	found := false
+	prefixes := map[string]string{}
+	urls := map[string]string{}
+	for _, r := range appsConfig.Repositories {
+		if r.URL == d.Repository {
+			found = true
+		}
+		if r.Name != "" {
+			urls[r.URL] = r.Name
+			prefixes[r.Name] = r.URL
+		}
+	}
+
+	prefix := urls[d.Repository]
+	if prefix == "" {
+		if prefixes[defaultPrefix] == "" {
+			prefix = defaultPrefix
+		} else {
+			// the defaultPrefix exists and maps to another URL
+			// so lets create another similar prefix name as an alias for this repo URL
+			i := 2
+			for {
+				prefix = fmt.Sprintf("%s%d", defaultPrefix, i)
+				if prefixes[prefix] == "" {
+					break
+				}
+				i++
+			}
+		}
+	}
+	if !found {
+		appsConfig.Repositories = append(appsConfig.Repositories, state.RepositorySpec{
+			Name: prefix,
+			URL:  d.Repository,
+		})
+
+	}
+	d.SetPrefix(prefix)
 }
