@@ -2,17 +2,22 @@ package promote
 
 import (
 	"fmt"
+	"path/filepath"
 
 	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
 	"github.com/jenkins-x/jx-promote/pkg/promoteconfig"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/jenkins-x/jx-promote/pkg/rules/factory"
+	"github.com/jenkins-x/jx/v2/pkg/dependencymatrix"
 	"github.com/pkg/errors"
 
 	"github.com/jenkins-x/jx/v2/pkg/gits"
 )
 
 func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *ReleaseInfo) error {
+	// lets configure the dependency matrix path
+	dependencymatrix.DependencyMatrixDirName = filepath.Join(".jx", "dependencies")
+
 	version := o.Version
 	versionName := version
 	if versionName == "" {
