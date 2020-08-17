@@ -31,7 +31,15 @@ type PromoteTestCase struct {
 	remote bool
 }
 
+func TestPromoteIntegrationHelmfile(t *testing.T) {
+	AssertPromoteIntegration(t, PromoteTestCase{
+		gitURL: "https://github.com/jx3-gitops-repositories/jx3-gke-terraform-vault",
+	})
+}
+
 func TestPromoteIntegrationJXApps(t *testing.T) {
+	// lets deprecate the jx-apps.yml approach
+	t.SkipNow()
 	AssertPromoteIntegration(t, PromoteTestCase{
 		gitURL: "https://github.com/jstrachan/environment-fake-dev",
 	})
