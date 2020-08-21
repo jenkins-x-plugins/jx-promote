@@ -81,9 +81,9 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 	}
 
 	for i := range helmfile.Releases {
-		appConfig := &helmfile.Releases[i]
-		if appConfig.Name == app || appConfig.Name == details.Name {
-			appConfig.Version = version
+		release := &helmfile.Releases[i]
+		if (release.Name == app || release.Name == details.Name) && release.Namespace == promoteNs {
+			release.Version = version
 			return nil
 		}
 	}
