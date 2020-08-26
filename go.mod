@@ -5,7 +5,7 @@ require (
 	github.com/cli/cli v0.6.2
 	github.com/cpuguy83/go-md2man v1.0.10
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
-	github.com/google/go-cmp v0.4.1
+	github.com/google/go-cmp v0.5.2
 	github.com/google/uuid v1.1.1
 	github.com/jenkins-x/go-scm v1.5.157
 	github.com/jenkins-x/jx-api v0.0.17
