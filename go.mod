@@ -7,14 +7,14 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/google/go-cmp v0.4.1
 	github.com/google/uuid v1.1.1
-	github.com/jenkins-x/go-scm v1.5.157
+	github.com/jenkins-x/go-scm v1.5.160
 	github.com/jenkins-x/jx-api v0.0.17
 	github.com/jenkins-x/jx-apps v0.0.4
-	github.com/jenkins-x/jx-helpers v1.0.44
+	github.com/jenkins-x/jx-helpers v1.0.47
 	github.com/jenkins-x/jx-kube-client v0.0.8
 	github.com/jenkins-x/jx-logging v0.0.11
-	github.com/jenkins-x/jx/v2 v2.1.132
-	github.com/jenkins-x/lighthouse v0.0.748 // indirect
+	github.com/jenkins-x/jx/v2 v2.1.142
+	github.com/jenkins-x/lighthouse v0.0.785 // indirect
 	github.com/jenkins-x/lighthouse-config v0.0.10 // indirect
 	github.com/magiconair/properties v1.8.1
 	github.com/mitchellh/go-homedir v1.1.0
