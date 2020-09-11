@@ -62,6 +62,7 @@ type Options struct {
 	Args                    []string
 	Namespace               string
 	Environment             string
+	PromoteEnvironments     []string
 	Application             string
 	AppGitURL               string
 	Pipeline                string
@@ -151,6 +152,7 @@ func NewCmdPromote() (*cobra.Command, *Options) {
 
 	cmd.Flags().StringVarP(&options.Namespace, "namespace", "n", "", "The Namespace to promote to")
 	cmd.Flags().StringVarP(&options.Environment, opts.OptionEnvironment, "e", "", "The Environment to promote to")
+	cmd.Flags().StringArrayP("promotion-environments", "", options.PromoteEnvironments, "The environments considered for promotion")
 	cmd.Flags().BoolVarP(&options.AllAutomatic, "all-auto", "", false, "Promote to all automatic environments in order")
 
 	options.AddOptions(cmd)
@@ -365,8 +367,16 @@ func (o *Options) Run() error {
 		o.ReleaseName = releaseName
 	}
 
+	if len(o.PromoteEnvironments) > 0 {
+		return o.PromoteAll(func(env *v1.Environment) bool {
+			return Contains(o.PromoteEnvironments, env.Spec.Label)
+		})
+	}
+
 	if o.AllAutomatic {
-		return o.PromoteAllAutomatic()
+		return o.PromoteAll(func(env *v1.Environment) bool {
+			return env.Spec.PromotionStrategy == v1.PromotionStrategyTypeAutomatic && env.Spec.Kind.IsPermanent()
+		})
 	}
 	if env == nil {
 		if o.Environment == "" {
@@ -393,6 +403,15 @@ func (o *Options) Run() error {
 		}
 	}
 	return err
+}
+
+func Contains(a []string, x string) bool {
+	for _, n := range a {
+		if x == n {
+			return true
+		}
+	}
+	return false
 }
 
 // DiscoverAppNam discovers an app name from a helm chart installation
@@ -457,7 +476,7 @@ func IsInCluster() bool {
 	return err == nil
 }
 
-func (o *Options) PromoteAllAutomatic() error {
+func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 	kubeClient := o.KubeClient
 	currentNs := o.Namespace
 	team, _, err := kube.GetDevNamespace(kubeClient, currentNs)
@@ -478,8 +497,7 @@ func (o *Options) PromoteAllAutomatic() error {
 	kube.SortEnvironments(environments)
 
 	for _, env := range environments {
-		kind := env.Spec.Kind
-		if env.Spec.PromotionStrategy == v1.PromotionStrategyTypeAutomatic && kind.IsPermanent() {
+		if pred(&env) {
 			ns := env.Spec.Namespace
 			if ns == "" {
 				return fmt.Errorf("No namespace for environment %s", env.Name)
