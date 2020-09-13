@@ -982,11 +982,16 @@ github.com/jenkins-x/go-scm v1.5.157/go.mod h1:Gt1dJz1rH47GbMlL47mWkibKHAM5+htwz
 github.com/jenkins-x/go-scm v1.5.159/go.mod h1:Gt1dJz1rH47GbMlL47mWkibKHAM5+htwzOpsGmEbvfg=
 github.com/jenkins-x/go-scm v1.5.160 h1:1OixAnfXn+3Ymxq3suALpJq7PilmpxKl62S6mO/woXM=
 github.com/jenkins-x/go-scm v1.5.160/go.mod h1:wJgj7PfgsCs+YAXC0vEj43g48HKf94apSyza62ADxKY=
+github.com/jenkins-x/go-scm v1.5.162/go.mod h1:wJgj7PfgsCs+YAXC0vEj43g48HKf94apSyza62ADxKY=
+github.com/jenkins-x/go-scm v1.5.164 h1:p+N22JDRRuWLg/MTBD58eWoJhTdYYTx3FejaXG+pUwo=
+github.com/jenkins-x/go-scm v1.5.164/go.mod h1:wJgj7PfgsCs+YAXC0vEj43g48HKf94apSyza62ADxKY=
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314 h1:kyBMx/ucSV92S+umX/V6DDaPNynlFFOM9MGJWApltoU=
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314/go.mod h1:C6j5HgwlHGjRU27W4XCs6jXksqYFo8OdBu+p44jqQeM=
 github.com/jenkins-x/jx-api v0.0.13/go.mod h1:/TyG05VMeX2hydFPHh6nDfPPXTBCQaFCuet/pdPvjUA=
 github.com/jenkins-x/jx-api v0.0.17 h1:DXfR76lH3s7K2CaSJBzq/S7zRtKFfbKpnNyY4n8plUQ=
 github.com/jenkins-x/jx-api v0.0.17/go.mod h1:QKLHk4VzI+sDBPSzN4K+QdEjNIBnCHS3DKY5YbGeCdY=
+github.com/jenkins-x/jx-api v0.0.18 h1:ncOG3hsdimAJhdwyo+b8v+RHZPUWgDrWE7pMcCyrnvk=
+github.com/jenkins-x/jx-api v0.0.18/go.mod h1:QKLHk4VzI+sDBPSzN4K+QdEjNIBnCHS3DKY5YbGeCdY=
 github.com/jenkins-x/jx-apps v0.0.4 h1:pLQ9cY+nX8xMXiJxb09lOv6r21vvw9VLB+ixy1larJU=
 github.com/jenkins-x/jx-apps v0.0.4/go.mod h1:aazqQIaAsaJjsFL1NdilvQ9l41hjVT6L+dWe9ULravM=
 github.com/jenkins-x/jx-helpers v1.0.9/go.mod h1:JldgSKYWU4cwWGynlLHtR4BhhEjjppoKG8TKaaiiumY=
@@ -998,6 +1003,8 @@ github.com/jenkins-x/jx-helpers v1.0.44 h1:9D6t8sS6tg6I/Zub9LD95HCdnmz4Qkljns2C0
 github.com/jenkins-x/jx-helpers v1.0.44/go.mod h1:rJvVFOjVUx0urq93P8mVw/MMuBjd6qwbTYJw+rcU2jA=
 github.com/jenkins-x/jx-helpers v1.0.47 h1:O6jyXLsOhpGIxFG8MybugA4aJGEcpAZilTkYMa0AAOg=
 github.com/jenkins-x/jx-helpers v1.0.47/go.mod h1:rJvVFOjVUx0urq93P8mVw/MMuBjd6qwbTYJw+rcU2jA=
+github.com/jenkins-x/jx-helpers v1.0.58 h1:SRLCiV1VHm0KXZ3zjOtDj53Odl7/3hbJqfdBbg7WLR8=
+github.com/jenkins-x/jx-helpers v1.0.58/go.mod h1:GcR4f3e1183/StDPUbU9I3ie2ZtWkg+sq+oPb3RotRg=
 github.com/jenkins-x/jx-kube-client v0.0.8 h1:XK/TP2qnhHPb/vhaGHmvVilWGDtARIZ1DOEHp/6/h0Y=
 github.com/jenkins-x/jx-kube-client v0.0.8/go.mod h1:XvNZQAAF95wzQzSfCpehXwb5FI6WCg+5GiwVA2S4SPA=
 github.com/jenkins-x/jx-logging v0.0.8/go.mod h1:mjEejiArk2Mk+J+72/YcSKGo9bZlJ/LwKYjMgAiv+G4=
@@ -1011,6 +1018,8 @@ github.com/jenkins-x/jx/v2 v2.1.132 h1:ATQavX6FOzepZTkKPJ6U21om6YYC+lE9VbjXF7mNO
 github.com/jenkins-x/jx/v2 v2.1.132/go.mod h1:83rj/hp0cOzigTStedEvdUTdhZvr+wYIgYTBMMPU20w=
 github.com/jenkins-x/jx/v2 v2.1.142 h1:I0fmRrvhVWSFZ9sAZocmias0ZL3Ezbh/dZ443uxiLXk=
 github.com/jenkins-x/jx/v2 v2.1.142/go.mod h1:O8WXBjll+5UMxivEykrq6xlRmENDzY9QUD60bcnw6OI=
+github.com/jenkins-x/jx/v2 v2.1.143 h1:FIsKDMpmxBtk3P66CvFMo5cG1VW2ULn7UwTQeA97Hnw=
+github.com/jenkins-x/jx/v2 v2.1.143/go.mod h1:O8WXBjll+5UMxivEykrq6xlRmENDzY9QUD60bcnw6OI=
 github.com/jenkins-x/lighthouse v0.0.707/go.mod h1:tYg7UU3MAP0NWZVZN66gYLfGcZNItQt8G4ZZwPvmEsY=
 github.com/jenkins-x/lighthouse v0.0.708 h1:waC2m1t4ctTG+XXu//X9+U41AfIGvPKrDVCCXeD7cDM=
 github.com/jenkins-x/lighthouse v0.0.708/go.mod h1:tYg7UU3MAP0NWZVZN66gYLfGcZNItQt8G4ZZwPvmEsY=
@@ -1021,6 +1030,8 @@ github.com/jenkins-x/lighthouse v0.0.748/go.mod h1:pX/EwoeXo91Inr8NFIkdkGc37AjoW
 github.com/jenkins-x/lighthouse v0.0.783/go.mod h1:YQrNm8iYd2CbYKEw/uuN2O4xHp19xMSRnl4rRVOf4vc=
 github.com/jenkins-x/lighthouse v0.0.785 h1:RVH7cR+4JqHjUvvU5cnZG/l3u9YAnvUX1i6hn+EjYzg=
 github.com/jenkins-x/lighthouse v0.0.785/go.mod h1:CwKGIN9JFhZ8YcPjBeshYnoHs/Bg7XBA3KF9lHHjIDY=
+github.com/jenkins-x/lighthouse v0.0.812 h1:JCgNNzYHBjyjtlxSFkEDYZN5cOvrK8wzVfPLK65CgZ0=
+github.com/jenkins-x/lighthouse v0.0.812/go.mod h1:z5/JiPthNksT+7DPkcwXRK3mZaUnFb2yDXx+6sFriqc=
 github.com/jenkins-x/lighthouse-config v0.0.6/go.mod h1:5ax5UF79SGM+Xc3HrWR/9LsPQBWDxE+TEJMwPAikst8=
 github.com/jenkins-x/lighthouse-config v0.0.10 h1:wwbUeMYBAikpEtLTsSAB8/pHVIiiyieUnNmp0NbH+Q8=
 github.com/jenkins-x/lighthouse-config v0.0.10/go.mod h1:yG86b4t5H/Auif/mIiUf4C35wuI8LnjivjWTVUUbYIs=

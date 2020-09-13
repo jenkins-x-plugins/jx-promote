@@ -2,9 +2,13 @@ package envctx
 
 import (
 	"fmt"
+	"path/filepath"
 
+	"github.com/jenkins-x/jx-helpers/pkg/files"
 	"github.com/jenkins-x/jx-logging/pkg/log"
+	"github.com/jenkins-x/jx-promote/pkg/githelpers"
 	"github.com/jenkins-x/jx-promote/pkg/versions"
+	"github.com/jenkins-x/jx-promote/pkg/versionstream"
 	"github.com/jenkins-x/jx/v2/pkg/gits"
 	"github.com/jenkins-x/jx/v2/pkg/util"
 	"sigs.k8s.io/yaml"
@@ -39,8 +43,35 @@ func (e *EnvironmentContext) LazyLoad(jxClient versioned.Interface, ns string, g
 	}
 
 	if e.VersionResolver == nil {
-		url := e.Requirements.VersionStream.URL
-		ref := e.Requirements.VersionStream.Ref
+		// lets use the dev environment git repository
+		url := e.DevEnv.Spec.Source.URL
+		ref := "master"
+		if url != "" {
+
+			cloneDir, err := githelpers.GitCloneToDir(gitter, url, ref, "")
+			if err != nil {
+				return errors.Wrapf(err, "failed to clone URL %s", url)
+			}
+
+			versionsDir := filepath.Join(cloneDir, "versionStream")
+			exists, err := files.DirExists(versionsDir)
+			if err != nil {
+				return errors.Wrapf(err, "failed to check if version stream exists %s", versionsDir)
+			}
+			if !exists {
+				return errors.Errorf("dev environment git repository %s does not have a versionStream dir", url)
+			}
+
+			e.VersionResolver = &versionstream.VersionResolver{
+				VersionsDir: versionsDir,
+			}
+			log.Logger().Infof("using version stream from dev environment")
+			return nil
+		}
+
+		log.Logger().Warnf("dev environment has no source URL configured")
+		url = e.Requirements.VersionStream.URL
+		ref = e.Requirements.VersionStream.Ref
 		if ref == "" {
 			ref = "master"
 		}
