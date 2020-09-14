@@ -66,6 +66,7 @@ func AssertPromoteIntegration(t *testing.T, testCases ...PromoteTestCase) {
 		if name == "" {
 			name = tc.gitURL
 		}
+		po.DisableGitConfig = true
 		po.Application = appName
 		po.Version = version
 		po.Environment = envName

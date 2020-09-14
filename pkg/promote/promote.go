@@ -85,6 +85,7 @@ type Options struct {
 	NoWaitAfterMerge        bool
 	IgnoreLocalFiles        bool
 	NoWaitForUpdatePipeline bool
+	DisableGitConfig        bool //  to disable git init in unit tests
 	Timeout                 string
 	PullRequestPollTime     string
 	Filter                  string
@@ -322,7 +323,7 @@ func (o *Options) Run() error {
 		return errors.Wrap(err, "failed to lazy load the EnvironmentContext")
 	}
 
-	if kube.IsInCluster() {
+	if kube.IsInCluster() && !o.DisableGitConfig {
 		err = o.InitGitConfigAndUser()
 		if err != nil {
 			return errors.Wrapf(err, "failed to init git")
