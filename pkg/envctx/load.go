@@ -5,6 +5,9 @@ import (
 	"path/filepath"
 
 	"github.com/jenkins-x/jx-helpers/pkg/files"
+	"github.com/jenkins-x/jx-helpers/pkg/gitclient/giturl"
+	"github.com/jenkins-x/jx-helpers/pkg/gitclient/loadcreds"
+	"github.com/jenkins-x/jx-helpers/pkg/stringhelpers"
 	"github.com/jenkins-x/jx-logging/pkg/log"
 	"github.com/jenkins-x/jx-promote/pkg/githelpers"
 	"github.com/jenkins-x/jx-promote/pkg/versions"
@@ -47,10 +50,45 @@ func (e *EnvironmentContext) LazyLoad(jxClient versioned.Interface, ns string, g
 		url := e.DevEnv.Spec.Source.URL
 		ref := "master"
 		if url != "" {
+			if e.GitUsername == "" || e.GitToken == "" {
+				creds, err := loadcreds.LoadGitCredential()
+				if err != nil {
+					return errors.Wrapf(err, "failed to load git credentials")
+				}
 
-			cloneDir, err := githelpers.GitCloneToDir(gitter, url, ref, "")
+				gitInfo, err := giturl.ParseGitURL(url)
+				if err != nil {
+					return errors.Wrapf(err, "failed to parse git URL %s", url)
+				}
+				gitServerURL := gitInfo.HostURL()
+				serverCreds := loadcreds.GetServerCredentials(creds, gitServerURL)
+
+				if e.GitUsername == "" {
+					e.GitUsername = serverCreds.Username
+				}
+				if e.GitToken == "" {
+					e.GitToken = serverCreds.Password
+				}
+				if e.GitToken == "" {
+					e.GitToken = serverCreds.Token
+				}
+
+				if e.GitUsername == "" {
+					return errors.Errorf("could not find git user for git server %s", gitServerURL)
+				}
+				if e.GitToken == "" {
+					return errors.Errorf("could not find git token for git server %s", gitServerURL)
+				}
+			}
+
+			gitCloneURL, err := stringhelpers.URLSetUserPassword(url, e.GitUsername, e.GitToken)
 			if err != nil {
-				return errors.Wrapf(err, "failed to clone URL %s", url)
+				return errors.Wrapf(err, "failed to add user and token to git url %s", url)
+			}
+
+			cloneDir, err := githelpers.GitCloneToDir(gitter, gitCloneURL, ref, "")
+			if err != nil {
+				return errors.Wrapf(err, "failed to clone URL %s", gitCloneURL)
 			}
 
 			versionsDir := filepath.Join(cloneDir, "versionStream")

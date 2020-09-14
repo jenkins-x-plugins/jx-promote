@@ -35,6 +35,12 @@ type EnvironmentContext struct {
 
 	// VersionResolver the resolver of versions in the version stream
 	VersionResolver *versionstream.VersionResolver
+
+	// GitUsername the git token used to clone the development git repository to get the version stream
+	GitUsername string
+
+	// GitToken the git token used to clone the development git repository
+	GitToken string
 }
 
 // TeamSettings returns the team settings for the current environment
