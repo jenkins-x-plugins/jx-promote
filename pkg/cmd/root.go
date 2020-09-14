@@ -44,6 +44,7 @@ func Main() (*cobra.Command, *promote.Options) {
 
 	cmd.Flags().StringVarP(&options.Namespace, "namespace", "n", "", "The Namespace to promote to")
 	cmd.Flags().StringVarP(&options.Environment, "env", "e", "", "The Environment to promote to")
+	cmd.Flags().StringVarP(&options.DefaultAppNamespace, "default-app-namespace", "", "", "The default namespace for promoting to remote clusters for the first")
 	cmd.Flags().StringArrayP("promotion-environments", "", options.PromoteEnvironments, "The environments considered for promotion")
 	cmd.Flags().BoolVarP(&options.AllAutomatic, "all-auto", "", false, "Promote to all automatic environments in order")
 	cmd.Flags().BoolVarP(&options.BatchMode, "batch-mode", "b", false, "Enables batch mode which avoids prompting for user input")

@@ -68,6 +68,7 @@ type Options struct {
 	Dir                     string
 	Args                    []string
 	Namespace               string
+	DefaultAppNamespace     string
 	Environment             string
 	PromoteEnvironments     []string
 	Application             string
@@ -161,6 +162,7 @@ func NewCmdPromote() (*cobra.Command, *Options) {
 
 	cmd.Flags().StringVarP(&options.Namespace, "namespace", "n", "", "The Namespace to promote to")
 	cmd.Flags().StringVarP(&options.Environment, optionEnvironment, "e", "", "The Environment to promote to")
+	cmd.Flags().StringVarP(&options.DefaultAppNamespace, "default-app-namespace", "", "", "The default namespace for promoting to remote clusters for the first")
 	cmd.Flags().StringArrayP("promotion-environments", "", options.PromoteEnvironments, "The environments considered for promotion")
 	cmd.Flags().BoolVarP(&options.AllAutomatic, "all-auto", "", false, "Promote to all automatic environments in order")
 
