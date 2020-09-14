@@ -153,6 +153,7 @@ func TestPromoteIntegrationLocalEnvironmentWithNoGitURL(t *testing.T) {
 
 	_, po := promote.NewCmdPromote()
 	name := "staging-no-git-url"
+	po.DisableGitConfig = true
 	po.Application = appName
 	po.Version = version
 	po.Environment = envName
