@@ -6,18 +6,18 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/jx-helpers/pkg/gitclient"
+	"github.com/jenkins-x/jx-helpers/pkg/gitclient/cli"
+	"github.com/jenkins-x/jx-helpers/pkg/gitclient/giturl"
+	"github.com/jenkins-x/jx-helpers/pkg/termcolor"
 	"github.com/jenkins-x/jx-logging/pkg/log"
-	"github.com/jenkins-x/jx-promote/pkg/authhelpers"
-	"github.com/jenkins-x/jx-promote/pkg/githelpers"
-	"github.com/jenkins-x/jx/v2/pkg/gits"
-	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/pkg/errors"
 )
 
 // Git lazily create a gitter if its not specified
-func (o *EnvironmentPullRequestOptions) Git() gits.Gitter {
+func (o *EnvironmentPullRequestOptions) Git() gitclient.Interface {
 	if o.Gitter == nil {
-		o.Gitter = gits.NewGitCLI()
+		o.Gitter = cli.NewCLIClient("", o.CommandRunner)
 	}
 	return o.Gitter
 }
@@ -30,17 +30,17 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(dir string, gitURL str
 	}
 
 	gitter := o.Git()
-	changes, err := gitter.HasChanges(dir)
+	changes, err := gitclient.HasChanges(gitter, dir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to detect if there were git changes in dir %s", dir)
 	}
 	if !changes && !doneCommit {
-		log.Logger().Infof("no changes detected so not creating a Pull Request on %s", util.ColorInfo(gitURL))
+		log.Logger().Infof("no changes detected so not creating a Pull Request on %s", termcolor.ColorInfo(gitURL))
 		return nil, nil
 	}
 
 	if o.BranchName == "" {
-		o.BranchName, err = githelpers.CreateBranch(gitter, dir)
+		o.BranchName, err = gitclient.CreateBranch(gitter, dir)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create git branch in %s", dir)
 		}
@@ -54,17 +54,17 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(dir string, gitURL str
 		commitMessageStart = commitTitle
 	}
 	commitMessage := fmt.Sprintf("%s\n\n%s", commitMessageStart, commitBody)
-	err = gitter.AddCommit(dir, commitMessage)
+	_, err = gitclient.AddAndCommitFiles(gitter, dir, commitMessage)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to commit changes in dir %s", dir)
 	}
 
-	err = gitter.ForcePushBranch(dir, o.BranchName, o.BranchName)
+	err = gitclient.ForcePushBranch(gitter, dir, o.BranchName, o.BranchName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to push to branch %s from dir %s", o.BranchName, dir)
 	}
 
-	gitInfo, err := gits.ParseGitURL(gitURL)
+	gitInfo, err := giturl.ParseGitURL(gitURL)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse git URL")
 	}
@@ -107,19 +107,18 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(dir string, gitURL str
 	// the URL should not really end in .diff - fix in go-scm
 	link := strings.TrimSuffix(pr.Link, ".diff")
 	pr.Link = link
-	log.Logger().Infof("created Pull Request %s from dir %s", util.ColorInfo(link), util.ColorInfo(dir))
+	log.Logger().Infof("created Pull Request %s from dir %s", termcolor.ColorInfo(link), termcolor.ColorInfo(dir))
 	return pr, nil
 }
 
 // CreateScmClient creates a new scm client
 func (o *EnvironmentPullRequestOptions) CreateScmClient(gitServer, owner, gitKind string) (*scm.Client, string, error) {
-	af, err := authhelpers.NewAuthFacadeWithArgs(o.AuthConfigService, o.Git(), o.IOFileHandles, o.BatchMode, o.UseGitHubOAuth)
+	o.ScmClientFactory.GitServerURL = gitServer
+	o.ScmClientFactory.Owner = owner
+	o.ScmClientFactory.GitKind = gitKind
+	scmClient, err := o.ScmClientFactory.Create()
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to create git auth facade")
+		return scmClient, "", errors.Wrapf(err, "failed to create SCM client for server %s", gitServer)
 	}
-	scmClient, token, _, err := af.ScmClient(gitServer, owner, gitKind)
-	if err != nil {
-		return scmClient, token, errors.Wrapf(err, "failed to create SCM client for server %s", gitServer)
-	}
-	return scmClient, token, nil
+	return scmClient, o.ScmClientFactory.GitToken, nil
 }

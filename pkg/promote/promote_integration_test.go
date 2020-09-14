@@ -10,10 +10,10 @@ import (
 	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
 	v1fake "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned/fake"
 	"github.com/jenkins-x/jx-apps/pkg/jxapps"
-	"github.com/jenkins-x/jx-promote/pkg/fakes/fakeauth"
-	"github.com/jenkins-x/jx-promote/pkg/fakes/fakegit"
+	"github.com/jenkins-x/jx-helpers/pkg/cmdrunner"
+	"github.com/jenkins-x/jx-helpers/pkg/cmdrunner/fakerunner"
+	"github.com/jenkins-x/jx-promote/pkg/jxtesthelpers"
 	"github.com/jenkins-x/jx-promote/pkg/promote"
-	"github.com/jenkins-x/jx-promote/pkg/testhelpers"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,26 +58,28 @@ func AssertPromoteIntegration(t *testing.T, testCases ...PromoteTestCase) {
 	envName := "staging"
 	ns := "jx"
 
+	runner := NewFakeRunnerWithGitClone()
+
 	for _, tc := range testCases {
 		_, po := promote.NewCmdPromote()
 		name := tc.name
 		if name == "" {
 			name = tc.gitURL
 		}
+		po.DisableGitConfig = true
 		po.Application = appName
 		po.Version = version
 		po.Environment = envName
 
 		po.NoPoll = true
 		po.BatchMode = true
-		po.AuthConfigService = fakeauth.NewFakeAuthConfigService(t, "jstrachan", "dummytoken", "https://github.com")
 		po.GitKind = "fake"
-		po.Gitter = fakegit.NewGitFakeClone()
+		po.CommandRunner = runner.Run
 		po.AppGitURL = "https://github.com/myorg/myapp.git"
 
 		targetFullName := "jenkins-x/default-environment-helmfile"
 
-		devEnv, err := testhelpers.CreateTestDevEnvironment(ns)
+		devEnv, err := jxtesthelpers.CreateTestDevEnvironment(ns)
 		require.NoError(t, err, "failed to create dev environment")
 
 		kubeObjects := []runtime.Object{
@@ -120,7 +122,7 @@ func AssertPromoteIntegration(t *testing.T, testCases ...PromoteTestCase) {
 		po.KubeClient = fake.NewSimpleClientset(kubeObjects...)
 		po.JXClient = v1fake.NewSimpleClientset(jxObjects...)
 		po.Namespace = ns
-		po.DevEnvContext.VersionResolver = testhelpers.CreateTestVersionResolver(t)
+		po.DevEnvContext.VersionResolver = jxtesthelpers.CreateTestVersionResolver(t)
 
 		err = po.Run()
 		require.NoError(t, err, "failed test %s s", name)
@@ -147,22 +149,24 @@ func TestPromoteIntegrationLocalEnvironmentWithNoGitURL(t *testing.T) {
 	envName := "staging"
 	ns := "jx"
 
+	runner := NewFakeRunnerWithGitClone()
+
 	_, po := promote.NewCmdPromote()
 	name := "staging-no-git-url"
+	po.DisableGitConfig = true
 	po.Application = appName
 	po.Version = version
 	po.Environment = envName
 
 	po.NoPoll = true
 	po.BatchMode = true
-	po.AuthConfigService = fakeauth.NewFakeAuthConfigService(t, "jstrachan", "dummytoken", "https://github.com")
 	po.GitKind = "fake"
-	po.Gitter = fakegit.NewGitFakeClone()
+	po.CommandRunner = runner.Run
 	po.AppGitURL = "https://github.com/myorg/myapp.git"
 
 	targetFullName := "jenkins-x/default-environment-helmfile"
 
-	devEnv, err := testhelpers.CreateTestDevEnvironment(ns)
+	devEnv, err := jxtesthelpers.CreateTestDevEnvironment(ns)
 	require.NoError(t, err, "failed to create dev environment")
 	devEnv.Spec.Source.URL = "https://github.com/jstrachan/environment-fake-dev"
 
@@ -202,7 +206,7 @@ func TestPromoteIntegrationLocalEnvironmentWithNoGitURL(t *testing.T) {
 	po.KubeClient = fake.NewSimpleClientset(kubeObjects...)
 	po.JXClient = v1fake.NewSimpleClientset(jxObjects...)
 	po.Namespace = ns
-	po.DevEnvContext.VersionResolver = testhelpers.CreateTestVersionResolver(t)
+	po.DevEnvContext.VersionResolver = jxtesthelpers.CreateTestVersionResolver(t)
 
 	err = po.Run()
 	require.NoError(t, err, "failed test %s s", name)
@@ -231,5 +235,16 @@ func TestPromoteIntegrationLocalEnvironmentWithNoGitURL(t *testing.T) {
 	t.Logf("created PullRequest %s", pr.Link)
 	t.Logf("PR title: %s", pr.Title)
 	t.Logf("PR body: %s", pr.Body)
+}
 
+func NewFakeRunnerWithGitClone() *fakerunner.FakeRunner {
+	runner := &fakerunner.FakeRunner{}
+	runner.CommandRunner = func(c *cmdrunner.Command) (string, error) {
+		if c.Name == "git" && len(c.Args) > 0 && c.Args[0] == "clone" {
+			// lets really git clone but then fake out all other commands
+			return cmdrunner.DefaultCommandRunner(c)
+		}
+		return "", nil
+	}
+	return runner
 }

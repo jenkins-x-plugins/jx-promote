@@ -5,12 +5,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/jenkins-x/jx-helpers/pkg/files"
+	"github.com/jenkins-x/jx-helpers/pkg/testhelpers"
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
+	"github.com/jenkins-x/jx-promote/pkg/jxtesthelpers"
 	"github.com/jenkins-x/jx-promote/pkg/promoteconfig"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/jenkins-x/jx-promote/pkg/rules/factory"
-	"github.com/jenkins-x/jx-promote/pkg/testhelpers"
-	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,12 +23,12 @@ func TestRuleFactory(t *testing.T) {
 	t.Logf("creating tests at %s", tmpDir)
 
 	sourceData := filepath.Join("test_data")
-	files, err := ioutil.ReadDir(sourceData)
+	fileSlice, err := ioutil.ReadDir(sourceData)
 	assert.NoError(t, err)
 
 	testPromoteNS := ""
 	ns := "jx"
-	for _, f := range files {
+	for _, f := range fileSlice {
 		if f.IsDir() {
 			name := f.Name()
 			if name == "jenkins-x-versions" {
@@ -37,7 +38,7 @@ func TestRuleFactory(t *testing.T) {
 			dir := filepath.Join(tmpDir, name)
 
 			src := filepath.Join("test_data", name)
-			err = util.CopyDirOverwrite(src, dir)
+			err = files.CopyDirOverwrite(src, dir)
 			require.NoError(t, err, "could not copy source data in %s to %s", src, dir)
 
 			cfg, _, err := promoteconfig.Discover(dir, testPromoteNS)
@@ -54,7 +55,7 @@ func TestRuleFactory(t *testing.T) {
 				},
 				Dir:           dir,
 				Config:        *cfg,
-				DevEnvContext: testhelpers.CreateTestDevEnvironmentContext(t, ns),
+				DevEnvContext: jxtesthelpers.CreateTestDevEnvironmentContext(t, ns),
 			}
 
 			fn := factory.NewFunction(r)

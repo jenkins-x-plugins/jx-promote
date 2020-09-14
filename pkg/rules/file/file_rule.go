@@ -7,10 +7,11 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/jenkins-x/jx-helpers/pkg/files"
+	"github.com/jenkins-x/jx-helpers/pkg/termcolor"
 	"github.com/jenkins-x/jx-logging/pkg/log"
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
-	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/pkg/errors"
 )
 
@@ -26,7 +27,7 @@ func FileRule(r *rules.PromoteRule) error {
 		return errors.Errorf("no path property in FileRule %#v", rule)
 	}
 	path = filepath.Join(r.Dir, path)
-	exists, err := util.FileExists(path)
+	exists, err := files.FileExists(path)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if file exists %s", path)
 	}
@@ -98,11 +99,11 @@ func FileRule(r *rules.PromoteRule) error {
 	}
 
 	data = []byte(strings.Join(lines, "\n"))
-	err = ioutil.WriteFile(path, data, util.DefaultFileWritePermissions)
+	err = ioutil.WriteFile(path, data, files.DefaultFileWritePermissions)
 	if err != nil {
 		return errors.Wrapf(err, "failed to write file %s", path)
 	}
-	log.Logger().Infof("modified file %s", util.ColorInfo(path))
+	log.Logger().Infof("modified file %s", termcolor.ColorInfo(path))
 	return nil
 }
 

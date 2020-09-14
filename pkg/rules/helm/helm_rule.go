@@ -3,9 +3,9 @@ package helm
 import (
 	"path/filepath"
 
-	"github.com/jenkins-x/jx-promote/pkg/helmer"
+	"github.com/jenkins-x/jx-helpers/pkg/files"
+	"github.com/jenkins-x/jx-helpers/pkg/helmer"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
-	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/pkg/errors"
 )
 
@@ -36,7 +36,7 @@ func modifyChartFiles(r *rules.PromoteRule, dir string) error {
 		return err
 	}
 
-	exists, err := util.FileExists(requirementsFile)
+	exists, err := files.FileExists(requirementsFile)
 	if err != nil {
 		return errors.Wrapf(err, "failed to detect file %s", requirementsFile)
 	}

@@ -9,42 +9,48 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jenkins-x/jx-kube-client/pkg/kubeclient"
-	"github.com/jenkins-x/jx-promote/pkg/githelpers"
-	"k8s.io/client-go/rest"
-
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx-api/pkg/config"
-	"github.com/jenkins-x/jx-promote/pkg/common"
+	"github.com/jenkins-x/jx-gitops/pkg/cmd/git/setup"
+	"github.com/jenkins-x/jx-helpers/pkg/builds"
+	"github.com/jenkins-x/jx-helpers/pkg/gitclient"
+	"github.com/jenkins-x/jx-helpers/pkg/gitclient/gitdiscovery"
+	"github.com/jenkins-x/jx-helpers/pkg/gitclient/giturl"
+	"github.com/jenkins-x/jx-helpers/pkg/input"
+	"github.com/jenkins-x/jx-helpers/pkg/input/survey"
+	"github.com/jenkins-x/jx-helpers/pkg/kube/activities"
+	"github.com/jenkins-x/jx-helpers/pkg/kube/jxclient"
+	"github.com/jenkins-x/jx-helpers/pkg/kube/jxenv"
+	"github.com/jenkins-x/jx-helpers/pkg/kube/services"
+	"github.com/jenkins-x/jx-helpers/pkg/options"
+	"github.com/jenkins-x/jx-helpers/pkg/stringhelpers"
+	"github.com/jenkins-x/jx-helpers/pkg/termcolor"
 	"github.com/jenkins-x/jx-promote/pkg/environments"
-	"github.com/jenkins-x/jx-promote/pkg/kube/services"
-	"github.com/jenkins-x/jx/v2/pkg/builds"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/jenkins-x/jx-promote/pkg/kube/naming"
-	"github.com/jenkins-x/jx/v2/pkg/cmd/helper"
+	"github.com/jenkins-x/jx-helpers/pkg/cobras/helper"
+	"github.com/jenkins-x/jx-helpers/pkg/kube/naming"
 
 	"github.com/pkg/errors"
-	"gopkg.in/AlecAivazis/survey.v1"
 
 	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
 
 	"github.com/blang/semver"
 	typev1 "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned/typed/jenkins.io/v1"
+	"github.com/jenkins-x/jx-helpers/pkg/cobras/templates"
+	helm "github.com/jenkins-x/jx-helpers/pkg/helmer"
+	"github.com/jenkins-x/jx-helpers/pkg/kube"
 	"github.com/jenkins-x/jx-logging/pkg/log"
-	helm "github.com/jenkins-x/jx-promote/pkg/helmer"
-	"github.com/jenkins-x/jx-promote/pkg/kube"
-	"github.com/jenkins-x/jx/v2/pkg/cmd/opts"
-	"github.com/jenkins-x/jx/v2/pkg/cmd/templates"
-	"github.com/jenkins-x/jx/v2/pkg/gits"
-	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/spf13/cobra"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
+	optionEnvironment         = "env"
+	optionApplication         = "app"
+	optionTimeout             = "timeout"
 	optionPullRequestPollTime = "pull-request-poll-time"
 
 	// DefaultChartRepo default URL for charts repository
@@ -59,6 +65,7 @@ var (
 type Options struct {
 	environments.EnvironmentPullRequestOptions
 
+	Dir                     string
 	Args                    []string
 	Namespace               string
 	Environment             string
@@ -78,6 +85,7 @@ type Options struct {
 	NoWaitAfterMerge        bool
 	IgnoreLocalFiles        bool
 	NoWaitForUpdatePipeline bool
+	DisableGitConfig        bool //  to disable git init in unit tests
 	Timeout                 string
 	PullRequestPollTime     string
 	Filter                  string
@@ -86,12 +94,13 @@ type Options struct {
 	KubeClient kubernetes.Interface
 	JXClient   versioned.Interface
 	Helmer     helm.Helmer
+	Input      input.Interface
 
 	// calculated fields
 	TimeoutDuration         *time.Duration
 	PullRequestPollDuration *time.Duration
 	Activities              typev1.PipelineActivityInterface
-	GitInfo                 *gits.GitRepository
+	GitInfo                 *giturl.GitRepository
 	releaseResource         *v1.Release
 	ReleaseInfo             *ReleaseInfo
 	prow                    bool
@@ -151,7 +160,7 @@ func NewCmdPromote() (*cobra.Command, *Options) {
 	}
 
 	cmd.Flags().StringVarP(&options.Namespace, "namespace", "n", "", "The Namespace to promote to")
-	cmd.Flags().StringVarP(&options.Environment, opts.OptionEnvironment, "e", "", "The Environment to promote to")
+	cmd.Flags().StringVarP(&options.Environment, optionEnvironment, "e", "", "The Environment to promote to")
 	cmd.Flags().StringArrayP("promotion-environments", "", options.PromoteEnvironments, "The environments considered for promotion")
 	cmd.Flags().BoolVarP(&options.AllAutomatic, "all-auto", "", false, "Promote to all automatic environments in order")
 
@@ -161,7 +170,7 @@ func NewCmdPromote() (*cobra.Command, *Options) {
 
 // AddOptions adds command level options to `promote`
 func (o *Options) AddOptions(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&o.Application, opts.OptionApplication, "a", "", "The Application to promote")
+	cmd.Flags().StringVarP(&o.Application, optionApplication, "a", "", "The Application to promote")
 	cmd.Flags().StringVarP(&o.AppGitURL, "app-git-url", "", "", "The Git URL of the application being promoted. Only required if using file or kpt rules")
 	cmd.Flags().StringVarP(&o.Filter, "filter", "f", "", "The search filter to find charts to promote")
 	cmd.Flags().StringVarP(&o.Alias, "alias", "", "", "The optional alias used in the 'requirements.yaml' file")
@@ -171,8 +180,12 @@ func (o *Options) AddOptions(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.LocalHelmRepoName, "helm-repo-name", "r", kube.LocalHelmRepoName, "The name of the helm repository that contains the app")
 	cmd.Flags().StringVarP(&o.HelmRepositoryURL, "helm-repo-url", "u", "", "The Helm Repository URL to use for the App")
 	cmd.Flags().StringVarP(&o.ReleaseName, "release", "", "", "The name of the helm release")
-	cmd.Flags().StringVarP(&o.Timeout, opts.OptionTimeout, "t", "1h", "The timeout to wait for the promotion to succeed in the underlying Environment. The command fails if the timeout is exceeded or the promotion does not complete")
+	cmd.Flags().StringVarP(&o.Timeout, optionTimeout, "t", "1h", "The timeout to wait for the promotion to succeed in the underlying Environment. The command fails if the timeout is exceeded or the promotion does not complete")
 	cmd.Flags().StringVarP(&o.PullRequestPollTime, optionPullRequestPollTime, "", "20s", "Poll time when waiting for a Pull Request to merge")
+
+	cmd.Flags().StringVarP(&o.DevEnvContext.GitUsername, "git-user", "", "", "Git username used to clone the development environment. If not specified its loaded from the git credentials file")
+	cmd.Flags().StringVarP(&o.DevEnvContext.GitToken, "git-token", "", "", "Git token used to clone the development environment. If not specified its loaded from the git credentials file")
+
 	cmd.Flags().BoolVarP(&o.NoHelmUpdate, "no-helm-update", "", false, "Allows the 'helm repo update' command if you are sure your local helm cache is up to date with the version you wish to promote")
 	cmd.Flags().BoolVarP(&o.NoMergePullRequest, "no-merge", "", false, "Disables automatic merge of promote Pull Requests")
 
@@ -223,15 +236,9 @@ func (o *Options) setApplicationNameFromDiscoveredAppName(discoverAppName discov
 
 		question := fmt.Sprintf("Are you sure you want to promote the application named: %s?", app)
 
-		prompt := &survey.Confirm{
-			Message: question,
-			Default: true,
-		}
-		h := common.GetIOFileHandles(o.IOFileHandles)
-		surveyOpts := survey.WithStdio(h.In, h.Out, h.Err)
-		err = survey.AskOne(prompt, &continueWithAppName, nil, surveyOpts)
+		continueWithAppName, err := o.Input.Confirm(question, true, "please confirm you wish to promote this app")
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "failed to confirm promotion")
 		}
 
 		if !continueWithAppName {
@@ -263,9 +270,31 @@ func (o *Options) EnsureApplicationNameIsDefined(sf searchForChartFn, df discove
 	return nil
 }
 
+// Validate validates settings
+func (o *Options) Validate() error {
+	if o.Input == nil {
+		o.Input = survey.NewInput()
+	}
+	var err error
+	o.KubeClient, o.Namespace, err = kube.LazyCreateKubeClientAndNamespace(o.KubeClient, o.Namespace)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create the kube client")
+	}
+	o.JXClient, err = jxclient.LazyCreateJXClient(o.JXClient)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create the jx client")
+	}
+	return nil
+}
+
 // Run implements this command
 func (o *Options) Run() error {
-	var err error
+	err := o.Validate()
+	if err != nil {
+		return errors.Wrapf(err, "failed to validate options")
+	}
+
+	// TODO move to validate
 	err = o.EnsureApplicationNameIsDefined(o.SearchForChart, o.DiscoverAppName)
 	if err != nil {
 		return err
@@ -274,7 +303,7 @@ func (o *Options) Run() error {
 	if o.Version == "" {
 		o.Version = os.Getenv("VERSION")
 		if o.Version != "" {
-			log.Logger().Infof("defaulting to the version %s from $VERSION", util.ColorInfo(o.Version))
+			log.Logger().Infof("defaulting to the version %s from $VERSION", termcolor.ColorInfo(o.Version))
 		}
 		if o.Version == "" && o.Application != "" {
 			o.Version, err = o.findLatestVersion(o.Application)
@@ -284,23 +313,17 @@ func (o *Options) Run() error {
 		}
 	}
 
-	err = o.lazyCreateKubeClients()
-	if err != nil {
-		return errors.Wrapf(err, "failed to lazy create kube clients")
-	}
 	ns := o.Namespace
 	if ns == "" {
 		return errors.Errorf("no namespace defined")
 	}
 	jxClient := o.JXClient
-	handles := common.GetIOFileHandles(o.IOFileHandles)
-
-	err = o.DevEnvContext.LazyLoad(o.JXClient, o.Namespace, o.Git(), handles)
+	err = o.DevEnvContext.LazyLoad(o.JXClient, o.Namespace, o.Git())
 	if err != nil {
 		return errors.Wrap(err, "failed to lazy load the EnvironmentContext")
 	}
 
-	if IsInCluster() {
+	if kube.IsInCluster() && !o.DisableGitConfig {
 		err = o.InitGitConfigAndUser()
 		if err != nil {
 			return errors.Wrapf(err, "failed to init git")
@@ -323,7 +346,7 @@ func (o *Options) Run() error {
 	}
 	if o.Environment == "" && !o.BatchMode {
 		names := []string{}
-		m, allEnvNames, err := kube.GetOrderedEnvironments(jxClient, ns)
+		m, allEnvNames, err := jxenv.GetOrderedEnvironments(jxClient, ns)
 		if err != nil {
 			return err
 		}
@@ -333,9 +356,9 @@ func (o *Options) Run() error {
 				names = append(names, n)
 			}
 		}
-		o.Environment, err = kube.PickEnvironment(names, "", handles)
+		o.Environment, err = o.Input.PickNameWithDefault(names, "Pick environment:", "", "please select an Environment name")
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "failed to pick an Environment name")
 		}
 	}
 
@@ -349,7 +372,7 @@ func (o *Options) Run() error {
 	if o.Timeout != "" {
 		duration, err := time.ParseDuration(o.Timeout)
 		if err != nil {
-			return fmt.Errorf("Invalid duration format %s for option --%s: %s", o.Timeout, opts.OptionTimeout, err)
+			return fmt.Errorf("Invalid duration format %s for option --%s: %s", o.Timeout, optionTimeout, err)
 		}
 		o.TimeoutDuration = &duration
 	}
@@ -380,7 +403,7 @@ func (o *Options) Run() error {
 	}
 	if env == nil {
 		if o.Environment == "" {
-			return util.MissingOption(opts.OptionEnvironment)
+			return options.MissingOption(optionEnvironment)
 		}
 		env, err := jxClient.JenkinsV1().Environments(ns).Get(o.Environment, metav1.GetOptions{})
 		if err != nil {
@@ -425,16 +448,14 @@ func (o *Options) DiscoverAppName() (string, error) {
 		return helm.LoadChartName(chartFile)
 	}
 
-	gitInfo, err := o.Git().Info("")
+	gitInfo, err := gitdiscovery.FindGitInfoFromDir(o.Dir)
 	if err != nil {
 		return answer, err
 	}
-
 	if gitInfo == nil {
 		return answer, fmt.Errorf("no git info found to discover app name from")
 	}
 	answer = gitInfo.Name
-
 	return answer, nil
 }
 
@@ -462,7 +483,7 @@ func (o *Options) DefaultChartRepositoryURL() string {
 		}
 	}
 	if chartRepo == "" {
-		if IsInCluster() {
+		if kube.IsInCluster() {
 			log.Logger().Warnf("No $CHART_REPOSITORY defined so using the default value of: %s", DefaultChartRepo)
 		}
 		chartRepo = DefaultChartRepo
@@ -470,16 +491,10 @@ func (o *Options) DefaultChartRepositoryURL() string {
 	return chartRepo
 }
 
-// IsInCluster tells if we are running incluster
-func IsInCluster() bool {
-	_, err := rest.InClusterConfig()
-	return err == nil
-}
-
 func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 	kubeClient := o.KubeClient
 	currentNs := o.Namespace
-	team, _, err := kube.GetDevNamespace(kubeClient, currentNs)
+	team, _, err := jxenv.GetDevNamespace(kubeClient, currentNs)
 	if err != nil {
 		return err
 	}
@@ -494,7 +509,7 @@ func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 		log.Logger().Warnf("No Environments have been created yet in team %s. Please create some via 'jx create env'", team)
 		return nil
 	}
-	kube.SortEnvironments(environments)
+	jxenv.SortEnvironments(environments)
 
 	for _, env := range environments {
 		if pred(&env) {
@@ -519,15 +534,13 @@ func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 }
 
 func (o *Options) Promote(targetNS string, env *v1.Environment, warnIfAuto bool) (*ReleaseInfo, error) {
-	h := common.GetIOFileHandles(o.IOFileHandles)
-	surveyOpts := survey.WithStdio(h.In, h.Out, h.Err)
 	app := o.Application
 	if app == "" {
-		log.Logger().Warnf("No application name could be detected so cannot promote via Helm. If the detection of the helm chart name is not working consider adding it with the --%s argument on the 'jx alpha promote' command", opts.OptionApplication)
+		log.Logger().Warnf("No application name could be detected so cannot promote via Helm. If the detection of the helm chart name is not working consider adding it with the --%s argument on the 'jx alpha promote' command", optionApplication)
 		return nil, nil
 	}
 	version := o.Version
-	info := util.ColorInfo
+	info := termcolor.ColorInfo
 	if version == "" {
 		log.Logger().Infof("Promoting latest version of app %s to namespace %s", info(app), info(targetNS))
 	} else {
@@ -549,16 +562,10 @@ func (o *Options) Promote(targetNS string, env *v1.Environment, warnIfAuto bool)
 	}
 
 	if warnIfAuto && env != nil && env.Spec.PromotionStrategy == v1.PromotionStrategyTypeAutomatic && !o.BatchMode {
-		log.Logger().Infof("%s", util.ColorWarning(fmt.Sprintf("WARNING: The Environment %s is setup to promote automatically as part of the CI/CD Pipelines.\n", env.Name)))
-
-		confirm := &survey.Confirm{
-			Message: "Do you wish to promote anyway? :",
-			Default: false,
-		}
-		flag := false
-		err := survey.AskOne(confirm, &flag, nil, surveyOpts)
+		log.Logger().Infof("%s", termcolor.ColorWarning(fmt.Sprintf("WARNING: The Environment %s is setup to promote automatically as part of the CI/CD Pipelines.\n", env.Name)))
+		flag, err := o.Input.Confirm("Do you wish to promote anyway? :", false, "usually we do not manually promote to Auto promotion environments")
 		if err != nil {
-			return releaseInfo, err
+			return nil, errors.Wrapf(err, "failed to confirm promotion")
 		}
 		if !flag {
 			return releaseInfo, nil
@@ -582,7 +589,7 @@ func (o *Options) Promote(targetNS string, env *v1.Environment, warnIfAuto bool)
 			err := o.PromoteViaPullRequest(env, releaseInfo)
 			if err == nil {
 				startPromotePR := func(a *v1.PipelineActivity, s *v1.PipelineActivityStep, ps *v1.PromoteActivityStep, p *v1.PromotePullRequestStep) error {
-					kube.StartPromotionPullRequest(a, s, ps, p)
+					activities.StartPromotionPullRequest(a, s, ps, p)
 					pr := releaseInfo.PullRequestInfo
 					if pr != nil && pr.Link != "" {
 						p.PullRequestURL = pr.Link
@@ -627,7 +634,7 @@ func (o *Options) ResolveChartRepositoryURL() (string, error) {
 		}
 	}
 	if answer == "" {
-		env, err := kube.GetDevEnvironment(jxClient, ns)
+		env, err := jxenv.GetDevEnvironment(jxClient, ns)
 		if err != nil && apierrors.IsNotFound(err) {
 			err = nil
 		}
@@ -649,7 +656,7 @@ func (o *Options) ResolveChartRepositoryURL() (string, error) {
 func (o *Options) GetTargetNamespace(ns string, env string) (string, *v1.Environment, error) {
 	kubeClient := o.KubeClient
 	currentNs := o.Namespace
-	team, _, err := kube.GetDevNamespace(kubeClient, currentNs)
+	team, _, err := jxenv.GetDevNamespace(kubeClient, currentNs)
 	if err != nil {
 		return "", nil, err
 	}
@@ -659,7 +666,7 @@ func (o *Options) GetTargetNamespace(ns string, env string) (string, *v1.Environ
 		return "", nil, err
 	}
 
-	m, envNames, err := kube.GetEnvironments(jxClient, team)
+	m, envNames, err := jxenv.GetEnvironments(jxClient, team)
 	if err != nil {
 		return "", nil, err
 	}
@@ -672,7 +679,7 @@ func (o *Options) GetTargetNamespace(ns string, env string) (string, *v1.Environ
 	if env != "" {
 		envResource = m[env]
 		if envResource == nil {
-			return "", nil, util.InvalidOption(opts.OptionEnvironment, env, envNames)
+			return "", nil, options.InvalidOption(optionEnvironment, env, envNames)
 		}
 		targetNS = envResource.Spec.Namespace
 		if targetNS == "" {
@@ -684,7 +691,7 @@ func (o *Options) GetTargetNamespace(ns string, env string) (string, *v1.Environ
 
 	labels := map[string]string{}
 	annotations := map[string]string{}
-	err = kube.EnsureNamespaceCreated(kubeClient, targetNS, labels, annotations)
+	err = jxenv.EnsureNamespaceCreated(kubeClient, targetNS, labels, annotations)
 	if err != nil {
 		return "", nil, err
 	}
@@ -693,7 +700,7 @@ func (o *Options) GetTargetNamespace(ns string, env string) (string, *v1.Environ
 
 func (o *Options) WaitForPromotion(ns string, env *v1.Environment, releaseInfo *ReleaseInfo) error {
 	if o.TimeoutDuration == nil {
-		log.Logger().Infof("No --%s option specified on the 'jx alpha promote' command so not waiting for the promotion to succeed", opts.OptionTimeout)
+		log.Logger().Infof("No --%s option specified on the 'jx alpha promote' command so not waiting for the promotion to succeed", optionTimeout)
 		return nil
 	}
 	if o.PullRequestPollDuration == nil {
@@ -712,7 +719,7 @@ func (o *Options) WaitForPromotion(ns string, env *v1.Environment, releaseInfo *
 		err := o.waitForGitOpsPullRequest(ns, env, releaseInfo, end, duration, promoteKey)
 		if err != nil {
 			// TODO based on if the PR completed or not fail the PR or the Promote?
-			promoteKey.OnPromotePullRequest(kubeClient, jxClient, o.Namespace, kube.FailedPromotionPullRequest)
+			promoteKey.OnPromotePullRequest(kubeClient, jxClient, o.Namespace, activities.FailedPromotionPullRequest)
 			return err
 		}
 	}
@@ -720,7 +727,7 @@ func (o *Options) WaitForPromotion(ns string, env *v1.Environment, releaseInfo *
 }
 
 // TODO This could do with a refactor and some tests...
-func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, releaseInfo *ReleaseInfo, end time.Time, duration time.Duration, promoteKey *kube.PromoteStepActivityKey) error {
+func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, releaseInfo *ReleaseInfo, end time.Time, duration time.Duration, promoteKey *activities.PromoteStepActivityKey) error {
 	pullRequestInfo := releaseInfo.PullRequestInfo
 	logMergeFailure := false
 	logNoMergeCommitSha := false
@@ -761,16 +768,16 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, relea
 					if pr.MergeSha == "" {
 						if !logNoMergeCommitSha {
 							logNoMergeCommitSha = true
-							log.Logger().Infof("Pull Request %s is merged but waiting for Merge SHA", util.ColorInfo(pr.Link))
+							log.Logger().Infof("Pull Request %s is merged but waiting for Merge SHA", termcolor.ColorInfo(pr.Link))
 						}
 					} else {
 						mergeSha := pr.MergeSha
 						if !logHasMergeSha {
 							logHasMergeSha = true
-							log.Logger().Infof("Pull Request %s is merged at sha %s", util.ColorInfo(pr.Link), util.ColorInfo(mergeSha))
+							log.Logger().Infof("Pull Request %s is merged at sha %s", termcolor.ColorInfo(pr.Link), termcolor.ColorInfo(mergeSha))
 
 							mergedPR := func(a *v1.PipelineActivity, s *v1.PipelineActivityStep, ps *v1.PromoteActivityStep, p *v1.PromotePullRequestStep) error {
-								kube.CompletePromotionPullRequest(a, s, ps, p)
+								activities.CompletePromotionPullRequest(a, s, ps, p)
 								p.MergeCommitSHA = mergeSha
 								return nil
 							}
@@ -782,13 +789,13 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, relea
 							}
 						}
 
-						promoteKey.OnPromoteUpdate(kubeClient, jxClient, o.Namespace, kube.StartPromotionUpdate)
+						promoteKey.OnPromoteUpdate(kubeClient, jxClient, o.Namespace, activities.StartPromotionUpdate)
 
 						if o.NoWaitForUpdatePipeline {
 							log.Logger().Info("Pull Request merged but we are not waiting for the update pipeline to complete!")
 							err = o.CommentOnIssues(ns, env, promoteKey)
 							if err == nil {
-								err = promoteKey.OnPromoteUpdate(kubeClient, jxClient, o.Namespace, kube.CompletePromotionUpdate)
+								err = promoteKey.OnPromoteUpdate(kubeClient, jxClient, o.Namespace, activities.CompletePromotionUpdate)
 							}
 							return err
 						}
@@ -823,7 +830,7 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, relea
 											urlStatusMap[url] = state
 											urlStatusTargetURLMap[url] = status.Target
 											log.Logger().Infof("merge status: %s for URL %s with target: %s description: %s",
-												util.ColorInfo(state), util.ColorInfo(url), util.ColorInfo(status.Target), util.ColorInfo(status.Desc))
+												termcolor.ColorInfo(state), termcolor.ColorInfo(url), termcolor.ColorInfo(status.Target), termcolor.ColorInfo(status.Desc))
 										}
 									}
 								}
@@ -860,7 +867,7 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, relea
 									log.Logger().Info("Merge status checks all passed so the promotion worked!")
 									err = o.CommentOnIssues(ns, env, promoteKey)
 									if err == nil {
-										err = promoteKey.OnPromoteUpdate(kubeClient, jxClient, o.Namespace, kube.CompletePromotionUpdate)
+										err = promoteKey.OnPromoteUpdate(kubeClient, jxClient, o.Namespace, activities.CompletePromotionUpdate)
 									}
 									return err
 								}
@@ -869,7 +876,7 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, relea
 					}
 				} else {
 					if pr.Closed {
-						log.Logger().Warnf("Pull Request %s is closed", util.ColorInfo(pr.Link))
+						log.Logger().Warnf("Pull Request %s is closed", termcolor.ColorInfo(pr.Link))
 						return fmt.Errorf("Promotion failed as Pull Request %s is closed without merging", pr.Link)
 					}
 
@@ -1023,7 +1030,7 @@ func (o *Options) Helm() helm.Helmer {
 	return o.Helmer
 }
 
-func (o *Options) CreatePromoteKey(env *v1.Environment) *kube.PromoteStepActivityKey {
+func (o *Options) CreatePromoteKey(env *v1.Environment) *activities.PromoteStepActivityKey {
 	pipeline := o.Pipeline
 	if o.Build == "" {
 		o.Build = builds.GetBuildNumber()
@@ -1035,7 +1042,13 @@ func (o *Options) CreatePromoteKey(env *v1.Environment) *kube.PromoteStepActivit
 	gitInfo := o.GitInfo
 	if !o.IgnoreLocalFiles {
 		var err error
-		gitInfo, err = o.Git().Info("")
+		if gitInfo == nil {
+			o.GitInfo, err = gitdiscovery.FindGitInfoFromDir(o.Dir)
+			if err != nil {
+				log.Logger().Warnf("Could not discover the Git repository info %s", err)
+			}
+		}
+
 		releaseName := o.ReleaseName
 		if o.releaseResource == nil && releaseName != "" {
 			jxClient := o.JXClient
@@ -1048,11 +1061,6 @@ func (o *Options) CreatePromoteKey(env *v1.Environment) *kube.PromoteStepActivit
 		}
 		if o.releaseResource != nil {
 			releaseNotesURL = o.releaseResource.Spec.ReleaseNotesURL
-		}
-		if err != nil {
-			log.Logger().Warnf("Could not discover the Git repository info %s", err)
-		} else {
-			o.GitInfo = gitInfo
 		}
 	}
 	if pipeline == "" {
@@ -1071,9 +1079,9 @@ func (o *Options) CreatePromoteKey(env *v1.Environment) *kube.PromoteStepActivit
 		name += "-" + build
 	}
 	name = naming.ToValidName(name)
-	log.Logger().Debugf("Using pipeline: %s build: %s", util.ColorInfo(pipeline), util.ColorInfo("#"+build))
-	return &kube.PromoteStepActivityKey{
-		PipelineActivityKey: kube.PipelineActivityKey{
+	log.Logger().Debugf("Using pipeline: %s build: %s", termcolor.ColorInfo(pipeline), termcolor.ColorInfo("#"+build))
+	return &activities.PromoteStepActivityKey{
+		PipelineActivityKey: activities.PipelineActivityKey{
 			Name:            name,
 			Pipeline:        pipeline,
 			Build:           build,
@@ -1117,20 +1125,20 @@ func (o *Options) GetLatestPipelineBuildByCRD(pipeline string) (string, error) {
 }
 
 // GetPipelineName return the pipeline name
-func (o *Options) GetPipelineName(gitInfo *gits.GitRepository, pipeline string, build string, appName string) (string, string) {
+func (o *Options) GetPipelineName(gitInfo *giturl.GitRepository, pipeline string, build string, appName string) (string, string) {
 	if build == "" {
 		build = builds.GetBuildNumber()
 	}
 	if gitInfo != nil && pipeline == "" {
 		// lets default the pipeline name from the Git repo
-		branch, err := o.Git().Branch(".")
+		branch, err := gitclient.Branch(o.Git(), ".")
 		if err != nil {
 			log.Logger().Warnf("Could not find the branch name: %s", err)
 		}
 		if branch == "" {
 			branch = "master"
 		}
-		pipeline = util.UrlJoin(gitInfo.Organisation, gitInfo.Name, branch)
+		pipeline = stringhelpers.UrlJoin(gitInfo.Organisation, gitInfo.Name, branch)
 	}
 	if pipeline == "" && appName != "" {
 		suffix := appName + "/master"
@@ -1173,7 +1181,7 @@ func (o *Options) GetLatestPipelineBuild(pipeline string) (string, string, error
 	jxClient := o.JXClient
 	ns := o.Namespace
 	kubeClient := o.KubeClient
-	devEnv, err := kube.GetEnrichedDevEnvironment(kubeClient, jxClient, ns)
+	devEnv, err := jxenv.GetEnrichedDevEnvironment(kubeClient, jxClient, ns)
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to find dev env")
 	}
@@ -1185,7 +1193,7 @@ func (o *Options) GetLatestPipelineBuild(pipeline string) (string, string, error
 }
 
 // CommentOnIssues comments on any issues for a release that the fix is available in the given environment
-func (o *Options) CommentOnIssues(targetNS string, environment *v1.Environment, promoteKey *kube.PromoteStepActivityKey) error {
+func (o *Options) CommentOnIssues(targetNS string, environment *v1.Environment, promoteKey *activities.PromoteStepActivityKey) error {
 	ens := environment.Spec.Namespace
 	envName := environment.Spec.Label
 	app := o.Application
@@ -1248,7 +1256,7 @@ func (o *Options) CommentOnIssues(targetNS string, environment *v1.Environment, 
 	// lets try update the PipelineActivity
 	if url != "" && promoteKey.ApplicationURL == "" {
 		promoteKey.ApplicationURL = url
-		log.Logger().Debugf("Application is available at: %s", util.ColorInfo(url))
+		log.Logger().Debugf("Application is available at: %s", termcolor.ColorInfo(url))
 	}
 
 	release, err := jxClient.JenkinsV1().Releases(ens).Get(releaseName, metav1.GetOptions{})
@@ -1262,7 +1270,7 @@ func (o *Options) CommentOnIssues(targetNS string, environment *v1.Environment, 
 		}
 		for _, issue := range issues {
 			if issue.IsClosed() {
-				log.Logger().Infof("Commenting that issue %s is now in %s", util.ColorInfo(issue.URL), util.ColorInfo(envName))
+				log.Logger().Infof("Commenting that issue %s is now in %s", termcolor.ColorInfo(issue.URL), termcolor.ColorInfo(envName))
 
 				comment := fmt.Sprintf(":white_check_mark: the fix for this issue is now deployed to **%s** in version %s %s", envName, versionMessage, available)
 				id := issue.ID
@@ -1309,7 +1317,7 @@ func (o *Options) SearchForChart(filter string) (string, error) {
 		names = append(names, text)
 		m[text] = &charts[i]
 	}
-	name, err := util.PickName(names, "Pick chart to promote: ", "", common.GetIOFileHandles(o.IOFileHandles))
+	name, err := o.Input.PickNameWithDefault(names, "Pick chart to promote: ", "", "which chart name do you wish to promote")
 	if err != nil {
 		return answer, err
 	}
@@ -1330,7 +1338,7 @@ func (o *Options) SearchForChart(filter string) (string, error) {
 
 	repoUrl := repos[repoName]
 	if repoUrl == "" {
-		return answer, fmt.Errorf("Failed to find helm chart repo URL for '%s' when possible values are %s", repoName, util.SortedMapKeys(repos))
+		return answer, fmt.Errorf("Failed to find helm chart repo URL for '%s' when possible values are %s", repoName, stringhelpers.SortedMapKeys(repos))
 
 	}
 	o.Version = chart.ChartVersion
@@ -1339,9 +1347,23 @@ func (o *Options) SearchForChart(filter string) (string, error) {
 }
 
 func (o *Options) InitGitConfigAndUser() error {
+	_, so := setup.NewCmdGitSetup()
+
+	so.KubeClient = o.KubeClient
+	so.Namespace = o.Namespace
+	so.CommandRunner = o.CommandRunner
+	// TODO configure more values?
+	err := so.Run()
+	if err != nil {
+		return errors.Wrapf(err, "failed to setup git config")
+	}
+	return nil
+
+	/* TODO
+
 	// lets make sure the home dir exists
 	dir := util.HomeDir()
-	err := os.MkdirAll(dir, util.DefaultWritePermissions)
+	err := os.MkdirAll(dir, files.DefaultFileWritePermissions)
 	if err != nil {
 		return errors.Wrapf(err, "failed to make sure the home directory %s was created", dir)
 	}
@@ -1360,17 +1382,19 @@ func (o *Options) InitGitConfigAndUser() error {
 		log.Logger().Warnf("Note that the environment variable $XDG_CONFIG_HOME is not defined so we may not be able to push to git!")
 	}
 	return nil
+
+	*/
 }
 
 func (o *Options) GetEnvChartValues(targetNS string, env *v1.Environment) ([]string, []string) {
 	kind := string(env.Spec.Kind)
 	values := []string{
 		fmt.Sprintf("tags.jx-ns-%s=true", targetNS),
-		fmt.Sprintf("global.jxNs%s=true", util.ToCamelCase(targetNS)),
+		fmt.Sprintf("global.jxNs%s=true", stringhelpers.ToCamelCase(targetNS)),
 		fmt.Sprintf("tags.jx-%s=true", strings.ToLower(kind)),
 		fmt.Sprintf("tags.jx-env-%s=true", env.ObjectMeta.Name),
 		fmt.Sprintf("global.jx%s=true", kind),
-		fmt.Sprintf("global.jxEnv%s=true", util.ToCamelCase(env.ObjectMeta.Name)),
+		fmt.Sprintf("global.jxEnv%s=true", stringhelpers.ToCamelCase(env.ObjectMeta.Name)),
 	}
 	valueString := []string{
 		fmt.Sprintf("global.jxNs=%s", targetNS),
@@ -1384,37 +1408,4 @@ func (o *Options) GetEnvChartValues(targetNS string, env *v1.Environment) ([]str
 		)
 	}
 	return values, valueString
-}
-
-func (o *Options) lazyCreateKubeClients() error {
-	if o.Namespace == "" {
-		var err error
-		o.Namespace, err = kubeclient.CurrentNamespace()
-		if err != nil {
-			return errors.Wrap(err, "failed to find current namespace")
-		}
-	}
-	if o.KubeClient != nil && o.JXClient != nil {
-		return nil
-	}
-
-	f := kubeclient.NewFactory()
-	cfg, err := f.CreateKubeConfig()
-	if err != nil {
-		return errors.Wrap(err, "failed to get kubernetes config")
-	}
-
-	if o.KubeClient == nil {
-		o.KubeClient, err = kubernetes.NewForConfig(cfg)
-		if err != nil {
-			return errors.Wrap(err, "error building kubernetes clientset")
-		}
-	}
-	if o.JXClient == nil {
-		o.JXClient, err = versioned.NewForConfig(cfg)
-		if err != nil {
-			return errors.Wrap(err, "error building jx clientset")
-		}
-	}
-	return nil
 }

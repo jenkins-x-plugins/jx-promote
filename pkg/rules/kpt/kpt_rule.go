@@ -5,9 +5,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/jenkins-x/jx-helpers/pkg/cmdrunner"
+	"github.com/jenkins-x/jx-helpers/pkg/files"
 	"github.com/jenkins-x/jx-logging/pkg/log"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
-	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/pkg/errors"
 )
 
@@ -38,7 +39,7 @@ func KptRule(r *rules.PromoteRule) error {
 
 	appDir := filepath.Join(namespaceDir, app)
 	// if the dir exists lets upgrade otherwise lets add it
-	exists, err := util.DirExists(appDir)
+	exists, err := files.DirExists(appDir)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if the app dir exists %s", appDir)
 	}
@@ -49,16 +50,19 @@ func KptRule(r *rules.PromoteRule) error {
 	if version == "" {
 		version = "master"
 	}
+	if r.CommandRunner == nil {
+		r.CommandRunner = cmdrunner.DefaultCommandRunner
+	}
 	if exists {
 		// lets upgrade the version via kpt
 		args := []string{"pkg", "update", fmt.Sprintf("%s@%s", app, version), "--strategy=alpha-git-patch"}
-		c := util.Command{
+		c := &cmdrunner.Command{
 			Name: "kpt",
 			Args: args,
 			Dir:  namespaceDir,
 		}
 		log.Logger().Infof("running command: %s", c.String())
-		_, err = c.RunWithoutRetry()
+		_, err = r.CommandRunner(c)
 		if err != nil {
 			return errors.Wrapf(err, "failed to update kpt app %s", app)
 		}
@@ -73,13 +77,13 @@ func KptRule(r *rules.PromoteRule) error {
 		// lets add the path to the released kubernetes resources
 		gitURL += fmt.Sprintf("/charts/%s/resources", app)
 		args := []string{"pkg", "get", fmt.Sprintf("%s@%s", gitURL, version), app}
-		c := util.Command{
+		c := &cmdrunner.Command{
 			Name: "kpt",
 			Args: args,
 			Dir:  namespaceDir,
 		}
 		log.Logger().Infof("running command: %s", c.String())
-		_, err = c.RunWithoutRetry()
+		_, err = r.CommandRunner(c)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get the app %s via kpt", app)
 		}

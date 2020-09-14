@@ -2,41 +2,23 @@ module github.com/jenkins-x/jx-promote
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/cli/cli v0.6.2
 	github.com/cpuguy83/go-md2man v1.0.10
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
-	github.com/google/go-cmp v0.4.1
-	github.com/google/uuid v1.1.1
 	github.com/jenkins-x/go-scm v1.5.164
 	github.com/jenkins-x/jx-api v0.0.18
 	github.com/jenkins-x/jx-apps v0.0.4
-	github.com/jenkins-x/jx-helpers v1.0.58
-	github.com/jenkins-x/jx-kube-client v0.0.8
+	github.com/jenkins-x/jx-gitops v0.0.290
+	github.com/jenkins-x/jx-helpers v1.0.60
 	github.com/jenkins-x/jx-logging v0.0.11
-	github.com/jenkins-x/jx/v2 v2.1.143
-	github.com/jenkins-x/lighthouse v0.0.812 // indirect
-	github.com/jenkins-x/lighthouse-config v0.0.10 // indirect
-	github.com/magiconair/properties v1.8.1
-	github.com/mitchellh/go-homedir v1.1.0
-	github.com/onsi/ginkgo v1.11.0
-	github.com/onsi/gomega v1.8.1
-	github.com/pborman/uuid v1.2.0
-	github.com/petergtz/pegomock v2.7.0+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/roboll/helmfile v0.125.2
-	github.com/satori/go.uuid v1.2.1-0.20180103174451-36e9d2ebbde5
-	github.com/sirupsen/logrus v1.6.0
+	github.com/roboll/helmfile v0.125.7
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
-	gopkg.in/AlecAivazis/survey.v1 v1.8.8
-	gopkg.in/src-d/go-git.v4 v4.13.1
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 	k8s.io/api v0.18.1
 	k8s.io/apimachinery v0.18.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	k8s.io/helm v2.7.2+incompatible
-	k8s.io/kubernetes v1.14.0
+	k8s.io/helm v2.16.10+incompatible
 	sigs.k8s.io/yaml v1.2.0
 
 )

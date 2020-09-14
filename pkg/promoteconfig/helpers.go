@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/jenkins-x/jx-helpers/pkg/files"
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
-	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
@@ -26,7 +26,7 @@ func Discover(dir string, promoteNamespace string) (*v1alpha1.Promote, string, e
 	}
 
 	envChart := filepath.Join(dir, "env", "Chart.yaml")
-	exists, err := util.FileExists(envChart)
+	exists, err := files.FileExists(envChart)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to check if file exists %s", envChart)
 	}
@@ -44,7 +44,7 @@ func Discover(dir string, promoteNamespace string) (*v1alpha1.Promote, string, e
 		return &config, "", nil
 	}
 	ja := filepath.Join(dir, "jx-apps.yml")
-	exists, err = util.FileExists(ja)
+	exists, err = files.FileExists(ja)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to check if file exists %s", ja)
 	}
@@ -63,7 +63,7 @@ func Discover(dir string, promoteNamespace string) (*v1alpha1.Promote, string, e
 		return &config, "", nil
 	}
 	hf := filepath.Join(dir, "helmfile.yaml")
-	exists, err = util.FileExists(hf)
+	exists, err = files.FileExists(hf)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to check if file exists %s", hf)
 	}
@@ -74,7 +74,7 @@ func Discover(dir string, promoteNamespace string) (*v1alpha1.Promote, string, e
 			},
 			Spec: v1alpha1.PromoteSpec{
 				HelmfileRule: &v1alpha1.HelmfileRule{
-					Path: "helmfile.yaml",
+					Path:      "helmfile.yaml",
 					Namespace: promoteNamespace,
 				},
 			},
@@ -96,7 +96,7 @@ func LoadPromote(dir string, failIfMissing bool) (*v1alpha1.Promote, string, err
 		fileName := filepath.Join(absolute, relPath)
 		absolute = filepath.Dir(absolute)
 
-		exists, err := util.FileExists(fileName)
+		exists, err := files.FileExists(fileName)
 		if err != nil {
 			return nil, "", err
 		}

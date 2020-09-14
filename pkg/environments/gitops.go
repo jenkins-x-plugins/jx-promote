@@ -12,20 +12,26 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	jenkinsio "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io"
 	"github.com/jenkins-x/jx-apps/pkg/jxapps"
+	"github.com/jenkins-x/jx-helpers/pkg/files"
+	"github.com/jenkins-x/jx-helpers/pkg/gitclient"
+	"github.com/jenkins-x/jx-helpers/pkg/stringhelpers"
+	"github.com/jenkins-x/jx-helpers/pkg/termcolor"
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
-	"github.com/jenkins-x/jx-promote/pkg/githelpers"
 
 	"github.com/pkg/errors"
 
 	"k8s.io/helm/pkg/proto/hapi/chart"
 
 	jenkinsv1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
+	helm "github.com/jenkins-x/jx-helpers/pkg/helmer"
 	"github.com/jenkins-x/jx-logging/pkg/log"
-	helm "github.com/jenkins-x/jx-promote/pkg/helmer"
-	"github.com/jenkins-x/jx/v2/pkg/gits"
-	"github.com/jenkins-x/jx/v2/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	helmchart "k8s.io/helm/pkg/proto/hapi/chart"
+)
+
+const (
+	// LabelUpdatebot is the label applied to PRs created by updatebot
+	LabelUpdatebot = "updatebot"
 )
 
 // Create a pull request against the environment repository for env.
@@ -36,8 +42,7 @@ import (
 // the message as the body for both the commit and the pull request,
 // and the pullRequestInfo for any existing PR that exists to modify the environment that we want to merge these
 // changes into.
-func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir string,
-	pullRequestDetails *gits.PullRequestDetails, filter *gits.PullRequestFilter, chartName string, autoMerge bool) (*scm.PullRequest, error) {
+func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir string, pullRequestDetails *scm.PullRequest, chartName string, autoMerge bool) (*scm.PullRequest, error) {
 	if prDir == "" {
 		tempDir, err := ioutil.TempDir("", "create-pr")
 		if err != nil {
@@ -48,16 +53,16 @@ func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir
 	}
 
 	gitURL := env.Spec.Source.URL
-	dir, err := githelpers.GitCloneToTempDir(gitURL, "")
+	dir, err := gitclient.CloneToDir(o.Gitter, gitURL, "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to clone environment %s URL %s", env.Spec.Label, gitURL)
 	}
 
 	o.OutDir = dir
-	log.Logger().Infof("cloned %s to %s", util.ColorInfo(gitURL), util.ColorInfo(dir))
+	log.Logger().Infof("cloned %s to %s", termcolor.ColorInfo(gitURL), termcolor.ColorInfo(dir))
 
 	// TODO fork if needed?
-	currentSha, err := o.Gitter.GetLatestCommitSha(dir)
+	currentSha, err := gitclient.GetLatestCommitSha(o.Gitter, dir)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get current commit sha")
 	}
@@ -71,21 +76,33 @@ func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir
 	}
 
 	labels := make([]string, 0)
-	labels = append(labels, pullRequestDetails.Labels...)
 	labels = append(labels, o.Labels...)
 	if autoMerge {
-		labels = append(labels, gits.LabelUpdatebot)
+		value := LabelUpdatebot
+		contains := false
+		for _, l := range pullRequestDetails.Labels {
+			if l != nil {
+				if l.Name == value {
+					contains = true
+					break
+				}
+			}
+		}
+		if !contains {
+			pullRequestDetails.Labels = append(pullRequestDetails.Labels, &scm.Label{
+				Name: value,
+			})
+		}
 	}
-	pullRequestDetails.Labels = labels
 
-	latestSha, err := o.Gitter.GetLatestCommitSha(dir)
+	latestSha, err := gitclient.GetLatestCommitSha(o.Gitter, dir)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get current latest commit sha")
 	}
 
 	doneCommit := true
 	if latestSha != currentSha {
-		changed, err := o.Gitter.HasChanges(dir)
+		changed, err := gitclient.HasChanges(o.Gitter, dir)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to detect changes in dir %s", dir)
 		}
@@ -103,7 +120,8 @@ func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir
 }
 
 // ModifyChartFiles modifies the chart files in the given directory using the given modify function
-func ModifyChartFiles(dir string, details *gits.PullRequestDetails, modifyFn ModifyChartFn, chartName string) error {
+/* TODO
+func ModifyChartFiles(dir string, details *scm.PullRequest, modifyFn ModifyChartFn, chartName string) error {
 	requirementsFile, err := helm.FindRequirementsFileName(dir)
 	if err != nil {
 		return err
@@ -161,9 +179,10 @@ func ModifyChartFiles(dir string, details *gits.PullRequestDetails, modifyFn Mod
 	}
 	return nil
 }
+*/
 
 // ModifyKptFiles modifies the kpt files in the given directory using the given modify function
-func ModifyKptFiles(dir string, promoteConfig *v1alpha1.Promote, details *gits.PullRequestDetails, modifyFn ModifyKptFn) error {
+func ModifyKptFiles(dir string, promoteConfig *v1alpha1.Promote, details *scm.PullRequest, modifyFn ModifyKptFn) error {
 	err := modifyFn(dir, promoteConfig, details)
 	if err != nil {
 		return err
@@ -172,7 +191,7 @@ func ModifyKptFiles(dir string, promoteConfig *v1alpha1.Promote, details *gits.P
 }
 
 // ModifyAppsFile modifies the 'jx-apps.yml' file to add/update/remove apps
-func ModifyAppsFile(dir string, details *gits.PullRequestDetails, modifyFn ModifyAppsFn) (bool, error) {
+func ModifyAppsFile(dir string, details *scm.PullRequest, modifyFn ModifyAppsFn) (bool, error) {
 	appsConfig, fileName, err := jxapps.LoadAppConfig(dir)
 	if fileName == "" {
 		// if we don't have a `jx-apps.yml` then just return immediately
@@ -204,7 +223,7 @@ func CreateUpgradeRequirementsFn(all bool, chartName string, alias string, versi
 		existingValues map[string]interface{}) error, verbose bool, valuesFiles *ValuesFiles) ModifyChartFn {
 	upgraded := false
 	return func(requirements *helm.Requirements, metadata *chart.Metadata, values map[string]interface{},
-		templates map[string]string, envDir string, details *gits.PullRequestDetails) error {
+		templates map[string]string, envDir string, details *scm.PullRequest) error {
 
 		// Work through the upgrades
 		for _, d := range requirements.Dependencies {
@@ -233,7 +252,7 @@ func CreateUpgradeRequirementsFn(all bool, chartName string, alias string, versi
 							}
 							version = chartVersion
 							if verbose {
-								log.Logger().Infof("No version specified so using latest version which is %s", util.ColorInfo(version))
+								log.Logger().Infof("No version specified so using latest version which is %s", termcolor.ColorInfo(version))
 							}
 						}
 
@@ -256,9 +275,9 @@ func CreateUpgradeRequirementsFn(all bool, chartName string, alias string, versi
 				d.Version = version
 				if !all {
 					details.Title = fmt.Sprintf("Upgrade %s to %s", chartName, version)
-					details.Message = fmt.Sprintf("Upgrade %s from %s to %s", chartName, oldVersion, version)
+					details.Body = fmt.Sprintf("Upgrade %s from %s to %s", chartName, oldVersion, version)
 				} else {
-					details.Message = fmt.Sprintf("%s\n* %s from %s to %s", details.Message, d.Name, oldVersion, version)
+					details.Body = fmt.Sprintf("%s\n* %s from %s to %s", details.Body, d.Name, oldVersion, version)
 				}
 			}
 		}
@@ -274,7 +293,7 @@ func CreateUpgradeRequirementsFn(all bool, chartName string, alias string, versi
 // alias and version can be specified.
 func CreateUpgradeAppConfigFn(all bool, chartName string, version string) ModifyAppsFn {
 	upgraded := false
-	return func(appsConfig *jxapps.AppConfig, dir string, details *gits.PullRequestDetails) error {
+	return func(appsConfig *jxapps.AppConfig, dir string, details *scm.PullRequest) error {
 
 		// Work through the upgrades
 		for _, d := range appsConfig.Apps {
@@ -295,9 +314,9 @@ func CreateUpgradeAppConfigFn(all bool, chartName string, version string) Modify
 					d.Version = version
 					if !all {
 						details.Title = fmt.Sprintf("Upgrade %s to %s", chartName, version)
-						details.Message = fmt.Sprintf("Upgrade %s from %s to %s", chartName, oldVersion, version)
+						details.Body = fmt.Sprintf("Upgrade %s from %s to %s", chartName, oldVersion, version)
 					} else {
-						details.Message = fmt.Sprintf("%s\n* %s from %s to %s", details.Message, d.Name, oldVersion, version)
+						details.Body = fmt.Sprintf("%s\n* %s from %s to %s", details.Body, d.Name, oldVersion, version)
 					}
 				} else {
 					upgraded = false
@@ -319,17 +338,17 @@ func CreateUpgradeAppConfigFn(all bool, chartName string, version string) Modify
 func CreateAddRequirementFn(chartName string, alias string, version string, repo string,
 	valuesFiles *ValuesFiles, chartDir string, verbose bool, helmer helm.Helmer) ModifyChartFn {
 	return func(requirements *helm.Requirements, chart *helmchart.Metadata, values map[string]interface{},
-		templates map[string]string, envDir string, details *gits.PullRequestDetails) error {
+		templates map[string]string, envDir string, details *scm.PullRequest) error {
 		// See if the chart already exists in requirements
 		found := false
 		for _, d := range requirements.Dependencies {
 			if d.Name == chartName && d.Alias == alias {
 				// App found
-				log.Logger().Infof("App %s already installed.", util.ColorWarning(chartName))
+				log.Logger().Infof("App %s already installed.", termcolor.ColorWarning(chartName))
 				if version != d.Version {
 					log.Logger().Infof("To upgrade the chartName use %s or %s",
-						util.ColorInfo("jx upgrade chartName <chartName>"),
-						util.ColorInfo("jx upgrade apps --all"))
+						termcolor.ColorInfo("jx upgrade chartName <chartName>"),
+						termcolor.ColorInfo("jx upgrade apps --all"))
 				}
 				found = true
 				break
@@ -355,17 +374,17 @@ func CreateAddRequirementFn(chartName string, alias string, version string, repo
 
 // CreateAddAppConfigFn create the ModifyAppsFn that adds an app to the AppConfig
 func CreateAddAppConfigFn(chartName string, version string, repo string) ModifyAppsFn {
-	return func(appsConfig *jxapps.AppConfig, dir string, pullRequestDetails *gits.PullRequestDetails) error {
+	return func(appsConfig *jxapps.AppConfig, dir string, pullRequestDetails *scm.PullRequest) error {
 		// See if the chart already exists in config
 		found := false
 		for _, d := range appsConfig.Apps {
 			if d.Name == chartName {
 				// App found
-				log.Logger().Infof("App %s already installed.", util.ColorWarning(chartName))
+				log.Logger().Infof("App %s already installed.", termcolor.ColorWarning(chartName))
 				if version != d.Version {
 					log.Logger().Infof("To upgrade the chartName use %s or %s",
-						util.ColorInfo("jx upgrade chartName <chartName>"),
-						util.ColorInfo("jx upgrade apps --all"))
+						termcolor.ColorInfo("jx upgrade chartName <chartName>"),
+						termcolor.ColorInfo("jx upgrade apps --all"))
 				}
 				found = true
 				break
@@ -402,7 +421,7 @@ func CreateNestedRequirementDir(dir string, requirementName string, requirementD
 	if requirementValuesFiles != nil && len(requirementValuesFiles.Items) > 0 {
 		if len(requirementValuesFiles.Items) == 1 {
 			// We need to write the values file into the right spot for the requirementName
-			err = util.CopyFile(requirementValuesFiles.Items[0], rootValuesFileName)
+			err = files.CopyFile(requirementValuesFiles.Items[0], rootValuesFileName)
 			if err != nil {
 				return errors.Wrapf(err, "cannot copy values."+
 					"yaml to %s directory %s", requirementName, appDir)
@@ -422,7 +441,7 @@ func CreateNestedRequirementDir(dir string, requirementName string, requirementD
 					sb.WriteString("\n")
 				}
 			}
-			err = ioutil.WriteFile(rootValuesFileName, []byte(sb.String()), util.DefaultWritePermissions)
+			err = ioutil.WriteFile(rootValuesFileName, []byte(sb.String()), files.DefaultFileWritePermissions)
 			if err != nil {
 				return errors.Wrapf(err, "failed to write values.yaml file %s", rootValuesFileName)
 			}
@@ -436,7 +455,7 @@ func CreateNestedRequirementDir(dir string, requirementName string, requirementD
 	templatesDir := filepath.Join(requirementDir, "templates")
 	if _, err := os.Stat(templatesDir); os.IsNotExist(err) {
 		if verbose {
-			log.Logger().Infof("No templates directory exists in %s", util.ColorInfo(dir))
+			log.Logger().Infof("No templates directory exists in %s", termcolor.ColorInfo(dir))
 		}
 	} else if err != nil {
 		return errors.Wrapf(err, "stat directory %s", appDir)
@@ -468,7 +487,7 @@ func CreateNestedRequirementDir(dir string, requirementName string, requirementD
 
 				log.Logger().Infof("Not adding release.yaml as not present in chart. Only files in %s are:",
 					templatesDir)
-				err := util.ListDirectory(templatesDir, true)
+				err := files.ListDirectory(templatesDir, true)
 				if err != nil {
 					return err
 				}
@@ -493,7 +512,7 @@ func CreateNestedRequirementDir(dir string, requirementName string, requirementD
 		if verbose {
 			log.Logger().Infof("Not adding %s as not present in chart. Only files in %s are:", helm.ChartFileName,
 				requirementDir)
-			err := util.ListDirectory(requirementDir, true)
+			err := files.ListDirectory(requirementDir, true)
 			if err != nil {
 				return err
 			}
@@ -509,12 +528,12 @@ func CreateNestedRequirementDir(dir string, requirementName string, requirementD
 	schemas := make(map[string][]string)
 	possibles := make(map[string]string)
 	if _, err := os.Stat(requirementDir); err == nil {
-		files, err := ioutil.ReadDir(requirementDir)
+		fileSlice, err := ioutil.ReadDir(requirementDir)
 		if err != nil {
 			return errors.Wrapf(err, "unable to list files in %s", requirementDir)
 		}
 		possibleReadmes := make([]string, 0)
-		for _, file := range files {
+		for _, file := range fileSlice {
 			fileName := strings.ToUpper(file.Name())
 			if fileName == "README.MD" || fileName == "README" {
 				possibleReadmes = append(possibleReadmes, filepath.Join(requirementDir, file.Name()))
@@ -533,8 +552,8 @@ func CreateNestedRequirementDir(dir string, requirementName string, requirementD
 			appReadme = string(bytes)
 		}
 
-		for _, f := range files {
-			ignore, err := util.IgnoreFile(f.Name(), helm.DefaultValuesTreeIgnores)
+		for _, f := range fileSlice {
+			ignore, err := files.IgnoreFile(f.Name(), helm.DefaultValuesTreeIgnores)
 			if err != nil {
 				return err
 			}
@@ -577,7 +596,7 @@ func CreateNestedRequirementDir(dir string, requirementName string, requirementD
 		}
 		externalFileHandler := func(path string, element map[string]interface{}, key string) error {
 			fileName, _ := filepath.Split(path)
-			err := util.CopyFile(path, filepath.Join(appDir, fileName))
+			err := files.CopyFile(path, filepath.Join(appDir, fileName))
 			if err != nil {
 				return errors.Wrapf(err, "copy %s to %s", path, appDir)
 			}
@@ -587,7 +606,7 @@ func CreateNestedRequirementDir(dir string, requirementName string, requirementD
 				for _, schemaPath := range schemaPaths {
 					fileName, _ := filepath.Split(schemaPath)
 					schemaOutPath := filepath.Join(appDir, fileName)
-					err := util.CopyFile(schemaPath, schemaOutPath)
+					err := files.CopyFile(schemaPath, schemaOutPath)
 					if err != nil {
 						return errors.Wrapf(err, "copy %s to %s", schemaPath, appDir)
 					}
@@ -611,7 +630,7 @@ func CreateNestedRequirementDir(dir string, requirementName string, requirementD
 func EnhanceChartWithAppMetadata(chartDir string, app *jenkinsv1.App, repository string, outputDir string,
 	filename string) error {
 	outputTemplateDir := filepath.Join(outputDir, "templates")
-	templatesDirExists, err := util.DirExists(outputTemplateDir)
+	templatesDirExists, err := files.DirExists(outputTemplateDir)
 	if err != nil {
 		return err
 	}
@@ -643,7 +662,7 @@ func AddAppMetaData(chartDir string, app *jenkinsv1.App, repository string) erro
 	if _, err = url.Parse(repository); err != nil {
 		return errors.Wrap(err, "Invalid repository url")
 	}
-	app.Annotations[helm.AnnotationAppRepository] = util.SanitizeURL(repository)
+	app.Annotations[helm.AnnotationAppRepository] = stringhelpers.SanitizeURL(repository)
 	if app.Labels == nil {
 		app.Labels = make(map[string]string)
 	}
@@ -658,7 +677,7 @@ func LocateAppResource(helmer helm.Helmer, chartDir string, appName string) (*je
 	string, error) {
 
 	templateWorkDir := filepath.Join(chartDir, "output")
-	templateWorkDirExists, err := util.DirExists(templateWorkDir)
+	templateWorkDirExists, err := files.DirExists(templateWorkDir)
 	if err != nil {
 		return nil, "", err
 	}
