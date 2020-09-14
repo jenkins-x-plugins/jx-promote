@@ -1,4 +1,4 @@
-package testhelpers
+package jxtesthelpers
 
 import (
 	"path"
@@ -6,9 +6,9 @@ import (
 
 	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
 	"github.com/jenkins-x/jx-api/pkg/config"
+	"github.com/jenkins-x/jx-helpers/pkg/kube/jxenv"
+	"github.com/jenkins-x/jx-helpers/pkg/versionstream"
 	"github.com/jenkins-x/jx-promote/pkg/envctx"
-	"github.com/jenkins-x/jx-promote/pkg/kube"
-	"github.com/jenkins-x/jx-promote/pkg/versionstream"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/yaml"
@@ -17,7 +17,7 @@ import (
 )
 
 func CreateTestDevEnvironment(ns string) (*v1.Environment, error) {
-	devEnv := kube.CreateDefaultDevEnvironment(ns)
+	devEnv := jxenv.CreateDefaultDevEnvironment(ns)
 	devEnv.Namespace = ns
 
 	// lets add a requirements object

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/jenkins-x/jx-helpers/pkg/files"
 	"github.com/jenkins-x/jx-helpers/pkg/yaml2s"
 	"github.com/jenkins-x/jx-promote/pkg/envctx"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
-	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/roboll/helmfile/pkg/state"
 )
@@ -32,7 +32,7 @@ func HelmfileRule(r *rules.PromoteRule) error {
 
 // ModifyAppsFile modifies the 'jx-apps.yml' file to add/update/remove apps
 func modifyHelmfile(r *rules.PromoteRule, file string, promoteNs string) error {
-	exists, err := util.FileExists(file)
+	exists, err := files.FileExists(file)
 	if err != nil {
 		return errors.Wrapf(err, "failed to detect if file exists %s", file)
 	}

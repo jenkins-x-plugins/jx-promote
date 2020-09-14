@@ -5,29 +5,26 @@ import (
 	"path/filepath"
 
 	"github.com/jenkins-x/jx-helpers/pkg/files"
+	"github.com/jenkins-x/jx-helpers/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/pkg/gitclient/giturl"
 	"github.com/jenkins-x/jx-helpers/pkg/gitclient/loadcreds"
+	"github.com/jenkins-x/jx-helpers/pkg/kube/jxenv"
 	"github.com/jenkins-x/jx-helpers/pkg/stringhelpers"
+	"github.com/jenkins-x/jx-helpers/pkg/versionstream"
 	"github.com/jenkins-x/jx-logging/pkg/log"
-	"github.com/jenkins-x/jx-promote/pkg/githelpers"
-	"github.com/jenkins-x/jx-promote/pkg/versions"
-	"github.com/jenkins-x/jx-promote/pkg/versionstream"
-	"github.com/jenkins-x/jx/v2/pkg/gits"
-	"github.com/jenkins-x/jx/v2/pkg/util"
 	"sigs.k8s.io/yaml"
 
 	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
 	"github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx-api/pkg/config"
-	"github.com/jenkins-x/jx-promote/pkg/kube"
 	"github.com/pkg/errors"
 )
 
 // LazyLoad lazy loads any missing values
-func (e *EnvironmentContext) LazyLoad(jxClient versioned.Interface, ns string, gitter gits.Gitter, handles util.IOFileHandles) error {
+func (e *EnvironmentContext) LazyLoad(jxClient versioned.Interface, ns string, gitter gitclient.Interface) error {
 	var err error
 	if e.DevEnv == nil {
-		e.DevEnv, err = kube.GetDevEnvironment(jxClient, ns)
+		e.DevEnv, err = jxenv.GetDevEnvironment(jxClient, ns)
 		if err != nil {
 			return errors.Wrapf(err, "failed to find dev environemnt in namespace %s", ns)
 		}
@@ -48,77 +45,64 @@ func (e *EnvironmentContext) LazyLoad(jxClient versioned.Interface, ns string, g
 	if e.VersionResolver == nil {
 		// lets use the dev environment git repository
 		url := e.DevEnv.Spec.Source.URL
-		ref := "master"
-		if url != "" {
-			if e.GitUsername == "" || e.GitToken == "" {
-				creds, err := loadcreds.LoadGitCredential()
-				if err != nil {
-					return errors.Wrapf(err, "failed to load git credentials")
-				}
-
-				gitInfo, err := giturl.ParseGitURL(url)
-				if err != nil {
-					return errors.Wrapf(err, "failed to parse git URL %s", url)
-				}
-				gitServerURL := gitInfo.HostURL()
-				serverCreds := loadcreds.GetServerCredentials(creds, gitServerURL)
-
-				if e.GitUsername == "" {
-					e.GitUsername = serverCreds.Username
-				}
-				if e.GitToken == "" {
-					e.GitToken = serverCreds.Password
-				}
-				if e.GitToken == "" {
-					e.GitToken = serverCreds.Token
-				}
-
-				if e.GitUsername == "" {
-					return errors.Errorf("could not find git user for git server %s", gitServerURL)
-				}
-				if e.GitToken == "" {
-					return errors.Errorf("could not find git token for git server %s", gitServerURL)
-				}
-			}
-
-			gitCloneURL, err := stringhelpers.URLSetUserPassword(url, e.GitUsername, e.GitToken)
+		if url == "" {
+			return errors.Errorf("environment %s does not have a source URL", e.DevEnv.Name)
+		}
+		if e.GitUsername == "" || e.GitToken == "" {
+			creds, err := loadcreds.LoadGitCredential()
 			if err != nil {
-				return errors.Wrapf(err, "failed to add user and token to git url %s", url)
+				return errors.Wrapf(err, "failed to load git credentials")
 			}
 
-			cloneDir, err := githelpers.GitCloneToDir(gitter, gitCloneURL, ref, "")
+			gitInfo, err := giturl.ParseGitURL(url)
 			if err != nil {
-				return errors.Wrapf(err, "failed to clone URL %s", gitCloneURL)
+				return errors.Wrapf(err, "failed to parse git URL %s", url)
+			}
+			gitServerURL := gitInfo.HostURL()
+			serverCreds := loadcreds.GetServerCredentials(creds, gitServerURL)
+
+			if e.GitUsername == "" {
+				e.GitUsername = serverCreds.Username
+			}
+			if e.GitToken == "" {
+				e.GitToken = serverCreds.Password
+			}
+			if e.GitToken == "" {
+				e.GitToken = serverCreds.Token
 			}
 
-			versionsDir := filepath.Join(cloneDir, "versionStream")
-			exists, err := files.DirExists(versionsDir)
-			if err != nil {
-				return errors.Wrapf(err, "failed to check if version stream exists %s", versionsDir)
+			if e.GitUsername == "" {
+				return errors.Errorf("could not find git user for git server %s", gitServerURL)
 			}
-			if !exists {
-				return errors.Errorf("dev environment git repository %s does not have a versionStream dir", url)
+			if e.GitToken == "" {
+				return errors.Errorf("could not find git token for git server %s", gitServerURL)
 			}
-
-			e.VersionResolver = &versionstream.VersionResolver{
-				VersionsDir: versionsDir,
-			}
-			log.Logger().Infof("using version stream from dev environment")
-			return nil
 		}
 
-		log.Logger().Warnf("dev environment has no source URL configured")
-		url = e.Requirements.VersionStream.URL
-		ref = e.Requirements.VersionStream.Ref
-		if ref == "" {
-			ref = "master"
-		}
-		log.Logger().Infof("loading version stream URL %s ref %s", util.ColorInfo(url), util.ColorInfo(ref))
-
-		e.VersionResolver, err = versions.CreateVersionResolver(url, ref, gitter)
+		gitCloneURL, err := stringhelpers.URLSetUserPassword(url, e.GitUsername, e.GitToken)
 		if err != nil {
-			return errors.Wrapf(err, "failed to create VersionResolver")
+			return errors.Wrapf(err, "failed to add user and token to git url %s", url)
 		}
+
+		cloneDir, err := gitclient.CloneToDir(gitter, gitCloneURL, "")
+		if err != nil {
+			return errors.Wrapf(err, "failed to clone URL %s", gitCloneURL)
+		}
+
+		versionsDir := filepath.Join(cloneDir, "versionStream")
+		exists, err := files.DirExists(versionsDir)
+		if err != nil {
+			return errors.Wrapf(err, "failed to check if version stream exists %s", versionsDir)
+		}
+		if !exists {
+			return errors.Errorf("dev environment git repository %s does not have a versionStream dir", url)
+		}
+
+		e.VersionResolver = &versionstream.VersionResolver{
+			VersionsDir: versionsDir,
+		}
+		log.Logger().Infof("using version stream from dev environment")
+		return nil
 	}
 	return nil
 }

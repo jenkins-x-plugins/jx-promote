@@ -6,9 +6,9 @@ import (
 	"path"
 	"testing"
 
-	"github.com/jenkins-x/jx-promote/pkg/envctx"
 	"github.com/jenkins-x/jx-apps/pkg/jxapps"
-	"github.com/jenkins-x/jx-promote/pkg/versionstream"
+	"github.com/jenkins-x/jx-helpers/pkg/versionstream"
+	"github.com/jenkins-x/jx-promote/pkg/envctx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -2,13 +2,13 @@ package promote
 
 import (
 	"fmt"
-	"path/filepath"
 
 	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
+	"github.com/jenkins-x/jx-helpers/pkg/gitclient"
+	"github.com/jenkins-x/jx-helpers/pkg/gitclient/gitconfig"
 	"github.com/jenkins-x/jx-promote/pkg/promoteconfig"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/jenkins-x/jx-promote/pkg/rules/factory"
-	"github.com/jenkins-x/jx/v2/pkg/dependencymatrix"
 	"github.com/pkg/errors"
 
 	"github.com/jenkins-x/jx/v2/pkg/gits"
@@ -69,11 +69,11 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 		// lets check if we need the apps git URL
 		if promoteConfig.Spec.FileRule != nil || promoteConfig.Spec.KptRule != nil {
 			if o.AppGitURL == "" {
-				_, gitConf, err := o.Git().FindGitConfigDir("")
+				_, gitConf, err := gitclient.FindGitConfigDir("")
 				if err != nil {
 					return errors.Wrapf(err, "failed to find git config dir")
 				}
-				o.AppGitURL, err = o.Git().DiscoverUpstreamGitURL(gitConf)
+				o.AppGitURL, err = gitconfig.DiscoverUpstreamGitURL(gitConf)
 				if err != nil {
 					return errors.Wrapf(err, "failed to discover application git URL")
 				}
@@ -102,5 +102,6 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 
 func configureDependencyMatrix() {
 	// lets configure the dependency matrix path
-	dependencymatrix.DependencyMatrixDirName = filepath.Join(".jx", "dependencies")
+	// TODO
+	//dependencymatrix.DependencyMatrixDirName = filepath.Join(".jx", "dependencies")
 }

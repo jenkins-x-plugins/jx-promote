@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
+	"github.com/jenkins-x/jx-helpers/pkg/testhelpers"
 	"github.com/jenkins-x/jx/v2/pkg/cmd/opts"
 	"github.com/jenkins-x/jx/v2/pkg/cmd/promote"
 	"github.com/jenkins-x/jx/v2/pkg/tests"
@@ -69,7 +70,7 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithBatchFlag(t *te
 }
 
 func TestEnsureApplicationNameIsDefinedWithoutApplicationFlag(t *testing.T) {
-	tests.SkipForWindows(t, "go-expect does not work on windows")
+	testhelpers.SkipForWindows(t, "go-expect does not work on windows")
 
 	console := tests.NewTerminal(t, nil)
 	defer console.Cleanup()
@@ -102,7 +103,7 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlag(t *testing.T) {
 }
 
 func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagUserSaysNo(t *testing.T) {
-	tests.SkipForWindows(t, "go-expect does not work on windows")
+	testhelpers.SkipForWindows(t, "go-expect does not work on windows")
 
 	console := tests.NewTerminal(t, nil)
 	defer console.Cleanup()

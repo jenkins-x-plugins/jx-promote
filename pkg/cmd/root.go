@@ -3,11 +3,10 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/jenkins-x/jx-helpers/pkg/cobras/helper"
+	"github.com/jenkins-x/jx-helpers/pkg/cobras/templates"
 	"github.com/jenkins-x/jx-promote/pkg/common"
 	"github.com/jenkins-x/jx-promote/pkg/promote"
-	"github.com/jenkins-x/jx/v2/pkg/cmd/helper"
-	"github.com/jenkins-x/jx/v2/pkg/cmd/opts"
-	"github.com/jenkins-x/jx/v2/pkg/cmd/templates"
 	"github.com/spf13/cobra"
 )
 
@@ -44,7 +43,7 @@ func Main() (*cobra.Command, *promote.Options) {
 	}
 
 	cmd.Flags().StringVarP(&options.Namespace, "namespace", "n", "", "The Namespace to promote to")
-	cmd.Flags().StringVarP(&options.Environment, opts.OptionEnvironment, "e", "", "The Environment to promote to")
+	cmd.Flags().StringVarP(&options.Environment, "env", "e", "", "The Environment to promote to")
 	cmd.Flags().StringArrayP("promotion-environments", "", options.PromoteEnvironments, "The environments considered for promotion")
 	cmd.Flags().BoolVarP(&options.AllAutomatic, "all-auto", "", false, "Promote to all automatic environments in order")
 	cmd.Flags().BoolVarP(&options.BatchMode, "batch-mode", "b", false, "Enables batch mode which avoids prompting for user input")

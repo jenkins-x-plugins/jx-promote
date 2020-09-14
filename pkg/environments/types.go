@@ -4,13 +4,14 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/jx-apps/pkg/jxapps"
+	"github.com/jenkins-x/jx-helpers/pkg/cmdrunner"
+	"github.com/jenkins-x/jx-helpers/pkg/gitclient"
+	"github.com/jenkins-x/jx-helpers/pkg/helmer"
+	"github.com/jenkins-x/jx-helpers/pkg/scmhelpers"
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x/jx-promote/pkg/envctx"
-	"github.com/jenkins-x/jx-promote/pkg/helmer"
-	"github.com/jenkins-x/jx-apps/pkg/jxapps"
-	"github.com/jenkins-x/jx/v2/pkg/auth"
 	"github.com/jenkins-x/jx/v2/pkg/gits"
-	"github.com/jenkins-x/jx/v2/pkg/util"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 )
 
@@ -34,23 +35,23 @@ type ModifyKptFn func(dir string, promoteConfig *v1alpha1.Promote, pullRequestDe
 // The provide a Gitter client for performing git operations, a GitProvider client for talking to the git provider,
 // a callback ModifyChartFn which is where the changes you want to make are defined,
 type EnvironmentPullRequestOptions struct {
-	DevEnvContext     envctx.EnvironmentContext
-	Gitter            gits.Gitter
-	GitKind           string
-	OutDir            string
-	Function          func() error
-	ModifyChartFn     ModifyChartFn
-	ModifyAppsFn      ModifyAppsFn
-	ModifyKptFn       ModifyKptFn
-	Labels            []string
-	BranchName        string
-	CommitTitle       string
-	CommitMessage     string
-	IOFileHandles     *util.IOFileHandles
-	ScmClient         *scm.Client
-	AuthConfigService auth.ConfigService
-	BatchMode         bool
-	UseGitHubOAuth    bool
-	Fork              bool
-	commitBody        strings.Builder
+	DevEnvContext    envctx.EnvironmentContext
+	ScmClientFactory scmhelpers.Factory
+	Gitter           gitclient.Interface
+	CommandRunner    cmdrunner.CommandRunner
+	GitKind          string
+	OutDir           string
+	Function         func() error
+	ModifyChartFn    ModifyChartFn
+	ModifyAppsFn     ModifyAppsFn
+	ModifyKptFn      ModifyKptFn
+	Labels           []string
+	BranchName       string
+	CommitTitle      string
+	CommitMessage    string
+	ScmClient        *scm.Client
+	BatchMode        bool
+	UseGitHubOAuth   bool
+	Fork             bool
+	commitBody       strings.Builder
 }

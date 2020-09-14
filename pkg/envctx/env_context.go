@@ -9,9 +9,9 @@ import (
 	"github.com/jenkins-x/jx-api/pkg/config"
 	"github.com/jenkins-x/jx-apps/pkg/helmfile"
 	"github.com/jenkins-x/jx-apps/pkg/jxapps"
-	"github.com/jenkins-x/jx-promote/pkg/kube"
-	"github.com/jenkins-x/jx-promote/pkg/versionstream"
-	"github.com/jenkins-x/jx/v2/pkg/util"
+	"github.com/jenkins-x/jx-helpers/pkg/files"
+	"github.com/jenkins-x/jx-helpers/pkg/kube"
+	"github.com/jenkins-x/jx-helpers/pkg/versionstream"
 )
 
 const (
@@ -177,7 +177,7 @@ func (c *EnvironmentContext) ResolveApplicationDefaults(chartName string) (*jxap
 	// list the values files
 	for _, f := range valuesFileNames {
 		fileName := filepath.Join(dir, f)
-		exists, _ := util.FileExists(fileName)
+		exists, _ := files.FileExists(fileName)
 		if exists {
 			valueFiles = append(valueFiles, fileName)
 		}

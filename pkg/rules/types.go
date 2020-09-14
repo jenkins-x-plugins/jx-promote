@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"github.com/jenkins-x/jx-helpers/pkg/cmdrunner"
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x/jx-promote/pkg/envctx"
 )
@@ -11,6 +12,7 @@ type PromoteRule struct {
 	Dir           string
 	Config        v1alpha1.Promote
 	DevEnvContext *envctx.EnvironmentContext
+	CommandRunner cmdrunner.CommandRunner
 }
 
 // TemplateContext expressions used in templates
