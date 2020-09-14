@@ -25,7 +25,6 @@ import (
 	jenkinsv1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
 	helm "github.com/jenkins-x/jx-helpers/pkg/helmer"
 	"github.com/jenkins-x/jx-logging/pkg/log"
-	"github.com/jenkins-x/jx/v2/pkg/gits"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	helmchart "k8s.io/helm/pkg/proto/hapi/chart"
 )
@@ -43,8 +42,7 @@ const (
 // the message as the body for both the commit and the pull request,
 // and the pullRequestInfo for any existing PR that exists to modify the environment that we want to merge these
 // changes into.
-func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir string,
-	pullRequestDetails *gits.PullRequestDetails, filter *gits.PullRequestFilter, chartName string, autoMerge bool) (*scm.PullRequest, error) {
+func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir string, pullRequestDetails *scm.PullRequest, chartName string, autoMerge bool) (*scm.PullRequest, error) {
 	if prDir == "" {
 		tempDir, err := ioutil.TempDir("", "create-pr")
 		if err != nil {
@@ -78,12 +76,24 @@ func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir
 	}
 
 	labels := make([]string, 0)
-	labels = append(labels, pullRequestDetails.Labels...)
 	labels = append(labels, o.Labels...)
 	if autoMerge {
-		labels = append(labels, LabelUpdatebot)
+		value := LabelUpdatebot
+		contains := false
+		for _, l := range pullRequestDetails.Labels {
+			if l != nil {
+				if l.Name == value {
+					contains = true
+					break
+				}
+			}
+		}
+		if !contains {
+			pullRequestDetails.Labels = append(pullRequestDetails.Labels, &scm.Label{
+				Name: value,
+			})
+		}
 	}
-	pullRequestDetails.Labels = labels
 
 	latestSha, err := gitclient.GetLatestCommitSha(o.Gitter, dir)
 	if err != nil {
@@ -111,7 +121,7 @@ func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir
 
 // ModifyChartFiles modifies the chart files in the given directory using the given modify function
 /* TODO
-func ModifyChartFiles(dir string, details *gits.PullRequestDetails, modifyFn ModifyChartFn, chartName string) error {
+func ModifyChartFiles(dir string, details *scm.PullRequest, modifyFn ModifyChartFn, chartName string) error {
 	requirementsFile, err := helm.FindRequirementsFileName(dir)
 	if err != nil {
 		return err
@@ -172,7 +182,7 @@ func ModifyChartFiles(dir string, details *gits.PullRequestDetails, modifyFn Mod
 */
 
 // ModifyKptFiles modifies the kpt files in the given directory using the given modify function
-func ModifyKptFiles(dir string, promoteConfig *v1alpha1.Promote, details *gits.PullRequestDetails, modifyFn ModifyKptFn) error {
+func ModifyKptFiles(dir string, promoteConfig *v1alpha1.Promote, details *scm.PullRequest, modifyFn ModifyKptFn) error {
 	err := modifyFn(dir, promoteConfig, details)
 	if err != nil {
 		return err
@@ -181,7 +191,7 @@ func ModifyKptFiles(dir string, promoteConfig *v1alpha1.Promote, details *gits.P
 }
 
 // ModifyAppsFile modifies the 'jx-apps.yml' file to add/update/remove apps
-func ModifyAppsFile(dir string, details *gits.PullRequestDetails, modifyFn ModifyAppsFn) (bool, error) {
+func ModifyAppsFile(dir string, details *scm.PullRequest, modifyFn ModifyAppsFn) (bool, error) {
 	appsConfig, fileName, err := jxapps.LoadAppConfig(dir)
 	if fileName == "" {
 		// if we don't have a `jx-apps.yml` then just return immediately
@@ -213,7 +223,7 @@ func CreateUpgradeRequirementsFn(all bool, chartName string, alias string, versi
 		existingValues map[string]interface{}) error, verbose bool, valuesFiles *ValuesFiles) ModifyChartFn {
 	upgraded := false
 	return func(requirements *helm.Requirements, metadata *chart.Metadata, values map[string]interface{},
-		templates map[string]string, envDir string, details *gits.PullRequestDetails) error {
+		templates map[string]string, envDir string, details *scm.PullRequest) error {
 
 		// Work through the upgrades
 		for _, d := range requirements.Dependencies {
@@ -265,9 +275,9 @@ func CreateUpgradeRequirementsFn(all bool, chartName string, alias string, versi
 				d.Version = version
 				if !all {
 					details.Title = fmt.Sprintf("Upgrade %s to %s", chartName, version)
-					details.Message = fmt.Sprintf("Upgrade %s from %s to %s", chartName, oldVersion, version)
+					details.Body = fmt.Sprintf("Upgrade %s from %s to %s", chartName, oldVersion, version)
 				} else {
-					details.Message = fmt.Sprintf("%s\n* %s from %s to %s", details.Message, d.Name, oldVersion, version)
+					details.Body = fmt.Sprintf("%s\n* %s from %s to %s", details.Body, d.Name, oldVersion, version)
 				}
 			}
 		}
@@ -283,7 +293,7 @@ func CreateUpgradeRequirementsFn(all bool, chartName string, alias string, versi
 // alias and version can be specified.
 func CreateUpgradeAppConfigFn(all bool, chartName string, version string) ModifyAppsFn {
 	upgraded := false
-	return func(appsConfig *jxapps.AppConfig, dir string, details *gits.PullRequestDetails) error {
+	return func(appsConfig *jxapps.AppConfig, dir string, details *scm.PullRequest) error {
 
 		// Work through the upgrades
 		for _, d := range appsConfig.Apps {
@@ -304,9 +314,9 @@ func CreateUpgradeAppConfigFn(all bool, chartName string, version string) Modify
 					d.Version = version
 					if !all {
 						details.Title = fmt.Sprintf("Upgrade %s to %s", chartName, version)
-						details.Message = fmt.Sprintf("Upgrade %s from %s to %s", chartName, oldVersion, version)
+						details.Body = fmt.Sprintf("Upgrade %s from %s to %s", chartName, oldVersion, version)
 					} else {
-						details.Message = fmt.Sprintf("%s\n* %s from %s to %s", details.Message, d.Name, oldVersion, version)
+						details.Body = fmt.Sprintf("%s\n* %s from %s to %s", details.Body, d.Name, oldVersion, version)
 					}
 				} else {
 					upgraded = false
@@ -328,7 +338,7 @@ func CreateUpgradeAppConfigFn(all bool, chartName string, version string) Modify
 func CreateAddRequirementFn(chartName string, alias string, version string, repo string,
 	valuesFiles *ValuesFiles, chartDir string, verbose bool, helmer helm.Helmer) ModifyChartFn {
 	return func(requirements *helm.Requirements, chart *helmchart.Metadata, values map[string]interface{},
-		templates map[string]string, envDir string, details *gits.PullRequestDetails) error {
+		templates map[string]string, envDir string, details *scm.PullRequest) error {
 		// See if the chart already exists in requirements
 		found := false
 		for _, d := range requirements.Dependencies {
@@ -364,7 +374,7 @@ func CreateAddRequirementFn(chartName string, alias string, version string, repo
 
 // CreateAddAppConfigFn create the ModifyAppsFn that adds an app to the AppConfig
 func CreateAddAppConfigFn(chartName string, version string, repo string) ModifyAppsFn {
-	return func(appsConfig *jxapps.AppConfig, dir string, pullRequestDetails *gits.PullRequestDetails) error {
+	return func(appsConfig *jxapps.AppConfig, dir string, pullRequestDetails *scm.PullRequest) error {
 		// See if the chart already exists in config
 		found := false
 		for _, d := range appsConfig.Apps {

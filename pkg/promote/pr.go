@@ -3,6 +3,7 @@ package promote
 import (
 	"fmt"
 
+	"github.com/jenkins-x/go-scm/scm"
 	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
 	"github.com/jenkins-x/jx-helpers/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/pkg/gitclient/gitconfig"
@@ -10,8 +11,6 @@ import (
 	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/jenkins-x/jx-promote/pkg/rules/factory"
 	"github.com/pkg/errors"
-
-	"github.com/jenkins-x/jx/v2/pkg/gits"
 )
 
 func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *ReleaseInfo) error {
@@ -24,14 +23,14 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 	}
 	app := o.Application
 
-	details := gits.PullRequestDetails{
-		BranchName: "promote-" + app + "-" + versionName,
-		Title:      "chore: " + app + " to " + versionName,
-		Message:    fmt.Sprintf("chore: Promote %s to version %s", app, versionName),
+	details := scm.PullRequest{
+		Source: "promote-" + app + "-" + versionName,
+		Title:  "chore: " + app + " to " + versionName,
+		Body:   fmt.Sprintf("chore: Promote %s to version %s", app, versionName),
 	}
 
 	o.EnvironmentPullRequestOptions.CommitTitle = details.Title
-	o.EnvironmentPullRequestOptions.CommitMessage = details.Message
+	o.EnvironmentPullRequestOptions.CommitMessage = details.Body
 
 	envDir := ""
 	if o.CloneDir != "" {
@@ -91,11 +90,10 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 		return fn(r)
 	}
 
-	filter := &gits.PullRequestFilter{}
 	if releaseInfo.PullRequestInfo != nil {
-		filter.Number = &releaseInfo.PullRequestInfo.Number
+		o.PullRequestNumber = releaseInfo.PullRequestInfo.Number
 	}
-	info, err := o.Create(env, envDir, &details, filter, "", true)
+	info, err := o.Create(env, envDir, &details, "", true)
 	releaseInfo.PullRequestInfo = info
 	return err
 }

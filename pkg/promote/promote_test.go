@@ -7,10 +7,9 @@ import (
 	"testing"
 
 	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
+	"github.com/jenkins-x/jx-helpers/pkg/input/fake"
 	"github.com/jenkins-x/jx-helpers/pkg/testhelpers"
-	"github.com/jenkins-x/jx/v2/pkg/cmd/opts"
-	"github.com/jenkins-x/jx/v2/pkg/cmd/promote"
-	"github.com/jenkins-x/jx/v2/pkg/tests"
+	"github.com/jenkins-x/jx-promote/pkg/promote"
 	"github.com/stretchr/testify/assert"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,13 +24,11 @@ func fakeDiscoverAppName() (string, error) {
 }
 
 func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithArgs(t *testing.T) {
-	promoteOptions := &promote.PromoteOptions{
+	promoteOptions := &promote.Options{
 		Environment: "production", // --env production
 	}
 
-	commonOpts := &opts.CommonOptions{}
-	promoteOptions.CommonOptions = commonOpts // Factory and other mocks initialized by cmd.ConfigureTestOptionsWithResources
-	commonOpts.Args = []string{"myArgumentApp"}
+	promoteOptions.Args = []string{"myArgumentApp"}
 
 	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName)
 	assert.NoError(t, err)
@@ -40,13 +37,10 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithArgs(t *testing
 }
 
 func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithFilterFlag(t *testing.T) {
-	promoteOptions := &promote.PromoteOptions{
+	promoteOptions := &promote.Options{
 		Environment: "production", // --env production
 		Filter:      "something",
 	}
-
-	commonOpts := &opts.CommonOptions{}
-	promoteOptions.CommonOptions = commonOpts // Factory and other mocks initialized by cmd.ConfigureTestOptionsWithResources
 
 	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName)
 	assert.NoError(t, err)
@@ -55,13 +49,11 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithFilterFlag(t *t
 }
 
 func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithBatchFlag(t *testing.T) {
-	promoteOptions := &promote.PromoteOptions{
+	promoteOptions := &promote.Options{
 		Environment: "production", // --env production
 	}
 
-	commonOpts := &opts.CommonOptions{}
-	promoteOptions.CommonOptions = commonOpts // Factory and other mocks initialized by cmd.ConfigureTestOptionsWithResources
-	promoteOptions.BatchMode = true           // --batch-mode
+	promoteOptions.BatchMode = true // --batch-mode
 
 	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName)
 	assert.NoError(t, err)
@@ -72,31 +64,15 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithBatchFlag(t *te
 func TestEnsureApplicationNameIsDefinedWithoutApplicationFlag(t *testing.T) {
 	testhelpers.SkipForWindows(t, "go-expect does not work on windows")
 
-	console := tests.NewTerminal(t, nil)
-	defer console.Cleanup()
-
-	promoteOptions := &promote.PromoteOptions{
+	promoteOptions := &promote.Options{
 		Environment: "production", // --env production
 	}
 
-	commonOpts := &opts.CommonOptions{}
-	promoteOptions.CommonOptions = commonOpts // Factory and other mocks initialized by cmd.ConfigureTestOptionsWithResources
-	promoteOptions.Out = console.Out
-	promoteOptions.In = console.In
-
-	donec := make(chan struct{})
-	go func() {
-		defer close(donec)
-		// Test boolean type
-		console.ExpectString("Are you sure you want to promote the application named: myDiscoveredApp?")
-		console.SendLine("Y")
-		console.ExpectEOF()
-	}()
+	promoteOptions.Input = &fake.FakeInput{
+		Values: map[string]string{"Are you sure you want to promote the application named: myDiscoveredApp?": "Y"},
+	}
 
 	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName)
-
-	console.Close()
-	<-donec
 
 	assert.NoError(t, err)
 	assert.Equal(t, "myDiscoveredApp", promoteOptions.Application)
@@ -105,32 +81,14 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlag(t *testing.T) {
 func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagUserSaysNo(t *testing.T) {
 	testhelpers.SkipForWindows(t, "go-expect does not work on windows")
 
-	console := tests.NewTerminal(t, nil)
-	defer console.Cleanup()
-
-	promoteOptions := &promote.PromoteOptions{
+	promoteOptions := &promote.Options{
 		Environment: "production", // --env production
+		Input: &fake.FakeInput{
+			Values: map[string]string{"Are you sure you want to promote the application named: myDiscoveredApp?": "N"},
+		},
 	}
 
-	commonOpts := &opts.CommonOptions{}
-	promoteOptions.CommonOptions = commonOpts // Factory and other mocks initialized by cmd.ConfigureTestOptionsWithResources
-	promoteOptions.Out = console.Out
-	promoteOptions.In = console.In
-
-	donec := make(chan struct{})
-	go func() {
-		defer close(donec)
-		// Test boolean type
-		console.ExpectString("Are you sure you want to promote the application named: myDiscoveredApp?")
-		console.SendLine("N")
-		console.ExpectEOF()
-	}()
-
 	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName)
-
-	console.Close()
-	<-donec
-
 	assert.Error(t, err)
 	assert.Equal(t, "", promoteOptions.Application)
 }
@@ -253,7 +211,7 @@ func TestGetEnvChartValues(t *testing.T) {
 	}}
 
 	for _, test := range tests {
-		promoteOptions := &promote.PromoteOptions{}
+		promoteOptions := &promote.Options{}
 		values, valueStrings := promoteOptions.GetEnvChartValues(test.ns, &test.env)
 		sort.Strings(values)
 		sort.Strings(test.values)
