@@ -93,7 +93,8 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 	if releaseInfo.PullRequestInfo != nil {
 		o.PullRequestNumber = releaseInfo.PullRequestInfo.Number
 	}
-	info, err := o.Create(env, envDir, &details, "", true)
+	gitURL := env.Spec.Source.URL
+	info, err := o.Create(gitURL, envDir, &details, true)
 	releaseInfo.PullRequestInfo = info
 	return err
 }

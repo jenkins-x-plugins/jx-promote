@@ -1,9 +1,0 @@
-apps:
-- name: jx-labs/jenkins-x-crds
-- name: stable/nginx-ingress
-- name: jenkins-x/jxboot-helmfile-resources
-- name: jenkins-x/lighthouse
-- name: jenkins-x/tekton
-repositories:
-- name: dev
-  url: http://chartmuseum-jx.34.78.195.22.nip.io

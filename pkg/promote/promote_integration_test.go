@@ -9,9 +9,9 @@ import (
 
 	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
 	v1fake "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned/fake"
-	"github.com/jenkins-x/jx-apps/pkg/jxapps"
 	"github.com/jenkins-x/jx-helpers/pkg/cmdrunner"
 	"github.com/jenkins-x/jx-helpers/pkg/cmdrunner/fakerunner"
+	"github.com/jenkins-x/jx-helpers/pkg/stringhelpers"
 	"github.com/jenkins-x/jx-promote/pkg/jxtesthelpers"
 	"github.com/jenkins-x/jx-promote/pkg/promote"
 	"github.com/stretchr/testify/require"
@@ -143,107 +143,18 @@ func AssertPromoteIntegration(t *testing.T, testCases ...PromoteTestCase) {
 	}
 }
 
-func TestPromoteIntegrationLocalEnvironmentWithNoGitURL(t *testing.T) {
-	version := "1.2.3"
-	appName := "myapp"
-	envName := "staging"
-	ns := "jx"
-
-	runner := NewFakeRunnerWithGitClone()
-
-	_, po := promote.NewCmdPromote()
-	name := "staging-no-git-url"
-	po.DisableGitConfig = true
-	po.Application = appName
-	po.Version = version
-	po.Environment = envName
-
-	po.NoPoll = true
-	po.BatchMode = true
-	po.GitKind = "fake"
-	po.CommandRunner = runner.Run
-	po.AppGitURL = "https://github.com/myorg/myapp.git"
-
-	targetFullName := "jenkins-x/default-environment-helmfile"
-
-	devEnv, err := jxtesthelpers.CreateTestDevEnvironment(ns)
-	require.NoError(t, err, "failed to create dev environment")
-	devEnv.Spec.Source.URL = "https://github.com/jstrachan/environment-fake-dev"
-
-	kubeObjects := []runtime.Object{
-		&corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: ns,
-				Labels: map[string]string{
-					"tag":  "",
-					"team": "jx",
-					"env":  "dev",
-				},
-			},
-		},
-	}
-	promoteNamespace := "jx-" + envName
-	jxObjects := []runtime.Object{
-		devEnv,
-		&v1.Environment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      envName,
-				Namespace: ns,
-			},
-			Spec: v1.EnvironmentSpec{
-				Label:             strings.Title(envName),
-				Namespace:         promoteNamespace,
-				PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
-				Order:             0,
-				Kind:              "",
-				PullRequestURL:    "",
-				TeamSettings:      v1.TeamSettings{},
-				RemoteCluster:     false,
-			},
-		},
-	}
-
-	po.KubeClient = fake.NewSimpleClientset(kubeObjects...)
-	po.JXClient = v1fake.NewSimpleClientset(jxObjects...)
-	po.Namespace = ns
-	po.DevEnvContext.VersionResolver = jxtesthelpers.CreateTestVersionResolver(t)
-
-	err = po.Run()
-	require.NoError(t, err, "failed test %s s", name)
-
-	outDir := po.OutDir
-	require.DirExists(t, outDir, "failed to create OutDir")
-	appsConfig, _, err := jxapps.LoadAppConfig(outDir)
-	require.NoError(t, err, "failed to load jx-apps.yml from outDir %s", outDir)
-	foundApp := false
-	appChart := "jenkins-x/" + appName
-	for _, app := range appsConfig.Apps {
-		if app.Name == appChart {
-			foundApp = true
-			assert.Equal(t, promoteNamespace, app.Namespace, "generated jx-apps.yml name %s in dir %s", appChart, outDir)
-		}
-	}
-	assert.True(t, foundApp, "could not find app %s in the generated jx-apps.yml file in outDir %s", appChart, outDir)
-
-	scmClient := po.ScmClient
-	require.NotNil(t, scmClient, "no ScmClient created")
-	ctx := context.Background()
-	pr, _, err := scmClient.PullRequests.Find(ctx, targetFullName, 1)
-	require.NoError(t, err, "failed to find repository %s", targetFullName)
-	assert.NotNil(t, pr, "nil pr %s", targetFullName)
-
-	t.Logf("created PullRequest %s", pr.Link)
-	t.Logf("PR title: %s", pr.Title)
-	t.Logf("PR body: %s", pr.Body)
-}
-
 func NewFakeRunnerWithGitClone() *fakerunner.FakeRunner {
 	runner := &fakerunner.FakeRunner{}
+
+	validGitCommands := []string{"clone", "rev-parse", "status"}
+
 	runner.CommandRunner = func(c *cmdrunner.Command) (string, error) {
-		if c.Name == "git" && len(c.Args) > 0 && c.Args[0] == "clone" {
-			// lets really git clone but then fake out all other commands
+		if c.Name == "git" && len(c.Args) > 0 && stringhelpers.StringArrayIndex(validGitCommands, c.Args[0]) >= 0 {
+			// lets really perform the git command
 			return cmdrunner.DefaultCommandRunner(c)
 		}
+
+		// lets fake out other commands
 		return "", nil
 	}
 	return runner

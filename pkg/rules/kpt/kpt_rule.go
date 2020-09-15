@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// KptRule uses a jx-apps.yml file
+// KptRule performs kpt upgrades
 func KptRule(r *rules.PromoteRule) error {
 	config := r.Config
 	if config.Spec.KptRule == nil {

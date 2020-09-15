@@ -43,25 +43,6 @@ func Discover(dir string, promoteNamespace string) (*v1alpha1.Promote, string, e
 		}
 		return &config, "", nil
 	}
-	ja := filepath.Join(dir, "jx-apps.yml")
-	exists, err = files.FileExists(ja)
-	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to check if file exists %s", ja)
-	}
-	if exists {
-		config := v1alpha1.Promote{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "generated",
-			},
-			Spec: v1alpha1.PromoteSpec{
-				AppsRule: &v1alpha1.AppsRule{
-					Path:      "jx-apps.yml",
-					Namespace: promoteNamespace,
-				},
-			},
-		}
-		return &config, "", nil
-	}
 	hf := filepath.Join(dir, "helmfile.yaml")
 	exists, err = files.FileExists(hf)
 	if err != nil {
