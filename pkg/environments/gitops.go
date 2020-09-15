@@ -42,7 +42,7 @@ const (
 // the message as the body for both the commit and the pull request,
 // and the pullRequestInfo for any existing PR that exists to modify the environment that we want to merge these
 // changes into.
-func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir string, pullRequestDetails *scm.PullRequest, chartName string, autoMerge bool) (*scm.PullRequest, error) {
+func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequestDetails *scm.PullRequest, autoMerge bool) (*scm.PullRequest, error) {
 	if prDir == "" {
 		tempDir, err := ioutil.TempDir("", "create-pr")
 		if err != nil {
@@ -52,10 +52,9 @@ func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir
 		defer os.RemoveAll(tempDir)
 	}
 
-	gitURL := env.Spec.Source.URL
 	dir, err := gitclient.CloneToDir(o.Gitter, gitURL, "")
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to clone environment %s URL %s", env.Spec.Label, gitURL)
+		return nil, errors.Wrapf(err, "failed to clone git URL %s", gitURL)
 	}
 
 	o.OutDir = dir
@@ -101,7 +100,7 @@ func (o *EnvironmentPullRequestOptions) Create(env *jenkinsv1.Environment, prDir
 	}
 
 	doneCommit := true
-	if latestSha != currentSha {
+	if latestSha == currentSha {
 		changed, err := gitclient.HasChanges(o.Gitter, dir)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to detect changes in dir %s", dir)
