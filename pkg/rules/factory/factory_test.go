@@ -82,9 +82,6 @@ func TestRuleFactory(t *testing.T) {
 }
 
 func ruleFileName(cfg *v1alpha1.Promote) string {
-	if cfg.Spec.AppsRule != nil {
-		return cfg.Spec.AppsRule.Path
-	}
 	if cfg.Spec.HelmRule != nil {
 		path := cfg.Spec.HelmRule.Path
 		if path == "" {

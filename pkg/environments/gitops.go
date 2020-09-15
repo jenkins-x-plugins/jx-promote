@@ -11,7 +11,6 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/jenkins-x/go-scm/scm"
 	jenkinsio "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io"
-	"github.com/jenkins-x/jx-apps/pkg/jxapps"
 	"github.com/jenkins-x/jx-helpers/pkg/files"
 	"github.com/jenkins-x/jx-helpers/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/pkg/stringhelpers"
@@ -189,28 +188,6 @@ func ModifyKptFiles(dir string, promoteConfig *v1alpha1.Promote, details *scm.Pu
 	return nil
 }
 
-// ModifyAppsFile modifies the 'jx-apps.yml' file to add/update/remove apps
-func ModifyAppsFile(dir string, details *scm.PullRequest, modifyFn ModifyAppsFn) (bool, error) {
-	appsConfig, fileName, err := jxapps.LoadAppConfig(dir)
-	if fileName == "" {
-		// if we don't have a `jx-apps.yml` then just return immediately
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	err = modifyFn(appsConfig, dir, details)
-	if err != nil {
-		return false, err
-	}
-
-	err = appsConfig.SaveConfig(fileName)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
 // CreateUpgradeRequirementsFn creates the ModifyChartFn that upgrades the requirements of a chart.
 // Either all requirements may be upgraded, or the chartName,
 // alias and version can be specified. A username and password can be passed for a protected repository.
@@ -287,48 +264,6 @@ func CreateUpgradeRequirementsFn(all bool, chartName string, alias string, versi
 	}
 }
 
-// CreateUpgradeAppConfigFn creates the ModifyAppsFn that upgrades the requirements of a chart.
-// Either all requirements may be upgraded, or the chartName,
-// alias and version can be specified.
-func CreateUpgradeAppConfigFn(all bool, chartName string, version string) ModifyAppsFn {
-	upgraded := false
-	return func(appsConfig *jxapps.AppConfig, dir string, details *scm.PullRequest) error {
-
-		// Work through the upgrades
-		for _, d := range appsConfig.Apps {
-			// We need to ignore the platform unless the chart name is the platform
-			upgrade := false
-			if all {
-				upgrade = true
-			} else {
-				if d.Name == chartName {
-					upgrade = true
-				}
-			}
-			if upgrade {
-				upgraded = true
-				if d.Version != version {
-					oldVersion := d.Version
-					// Do the upgrade
-					d.Version = version
-					if !all {
-						details.Title = fmt.Sprintf("Upgrade %s to %s", chartName, version)
-						details.Body = fmt.Sprintf("Upgrade %s from %s to %s", chartName, oldVersion, version)
-					} else {
-						details.Body = fmt.Sprintf("%s\n* %s from %s to %s", details.Body, d.Name, oldVersion, version)
-					}
-				} else {
-					upgraded = false
-				}
-			}
-		}
-		if !upgraded {
-			log.Logger().Infof("No upgrades available")
-		}
-		return nil
-	}
-}
-
 // CreateAddRequirementFn create the ModifyChartFn that adds a dependency to a chart. It takes the chart name,
 // an alias for the chart, the version of the chart, the repo to load the chart from,
 // valuesFiles (an array of paths to values.yaml files to add). The chartDir is the unpacked chart being added,
@@ -366,36 +301,6 @@ func CreateAddRequirementFn(chartName string, alias string, version string, repo
 				return errors.Wrapf(err, "creating nested app dir in chart dir %s", chartDir)
 			}
 
-		}
-		return nil
-	}
-}
-
-// CreateAddAppConfigFn create the ModifyAppsFn that adds an app to the AppConfig
-func CreateAddAppConfigFn(chartName string, version string, repo string) ModifyAppsFn {
-	return func(appsConfig *jxapps.AppConfig, dir string, pullRequestDetails *scm.PullRequest) error {
-		// See if the chart already exists in config
-		found := false
-		for _, d := range appsConfig.Apps {
-			if d.Name == chartName {
-				// App found
-				log.Logger().Infof("App %s already installed.", termcolor.ColorWarning(chartName))
-				if version != d.Version {
-					log.Logger().Infof("To upgrade the chartName use %s or %s",
-						termcolor.ColorInfo("jx upgrade chartName <chartName>"),
-						termcolor.ColorInfo("jx upgrade apps --all"))
-				}
-				found = true
-				break
-			}
-		}
-
-		// If app not found, add it
-		if !found {
-			appsConfig.Apps = append(appsConfig.Apps, jxapps.App{
-				Name: chartName,
-			})
-			// TODO lets default the namespace by looking up the configuration in the version stream
 		}
 		return nil
 	}

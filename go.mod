@@ -4,11 +4,10 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cpuguy83/go-md2man v1.0.10
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
-	github.com/jenkins-x/go-scm v1.5.164
-	github.com/jenkins-x/jx-api v0.0.18
-	github.com/jenkins-x/jx-apps v0.0.4
-	github.com/jenkins-x/jx-gitops v0.0.290
-	github.com/jenkins-x/jx-helpers v1.0.60
+	github.com/jenkins-x/go-scm v1.5.165
+	github.com/jenkins-x/jx-api v0.0.20
+	github.com/jenkins-x/jx-gitops v0.0.294
+	github.com/jenkins-x/jx-helpers v1.0.62
 	github.com/jenkins-x/jx-logging v0.0.11
 	github.com/pkg/errors v0.9.1
 	github.com/roboll/helmfile v0.125.7
@@ -44,8 +43,6 @@ replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.1+inc
 replace github.com/banzaicloud/bank-vaults => github.com/banzaicloud/bank-vaults v0.0.0-20191212164220-b327d7f2b681
 
 replace github.com/banzaicloud/bank-vaults/pkg/sdk => github.com/banzaicloud/bank-vaults/pkg/sdk v0.0.0-20191212164220-b327d7f2b681
-
-replace github.com/TV4/logrus-stackdriver-formatter => github.com/jenkins-x/logrus-stackdriver-formatter v0.1.1-0.20200408213659-1dcf20c371bb
 
 replace k8s.io/test-infra => github.com/jenkins-x/test-infra v0.0.0-20200611142252-211a92405c22
 

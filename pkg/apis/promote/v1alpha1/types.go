@@ -24,9 +24,6 @@ type Promote struct {
 // PromoteSpec defines the desired state of Promote.
 type PromoteSpec struct {
 
-	// AppsRule uses a 'jx-apps.yml` file to store apps to be deployed
-	AppsRule *AppsRule `json:"appsRule,omitempty"`
-
 	// File specifies a promotion rule for a File such as for a Makefile or shell script
 	FileRule *FileRule `json:"fileRule,omitempty"`
 
@@ -39,15 +36,6 @@ type PromoteSpec struct {
 
 	// KptRule specifies to fetch the apps resource via kpt : https://googlecontainertools.github.io/kpt/
 	KptRule *KptRule `json:"kptRule,omitempty"`
-}
-
-// AppsRule uses a 'jx-apps.yml` file to store apps to be deployed
-type AppsRule struct {
-	// Path to the apps file to modify. Defaults to `jx-apps.yml`
-	Path string `json:"path"`
-	// Namespace if specified the given namespace is used in the `jx-apps.yml` file when using Environments in the
-	// same cluster using the same git repository URL as the dev environment
-	Namespace string `json:"namespace"`
 }
 
 // HelmRule specifies which chart to add the app to the Chart's 'requirements.yaml' file

@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx-apps/pkg/jxapps"
 	"github.com/jenkins-x/jx-helpers/pkg/cmdrunner"
 	"github.com/jenkins-x/jx-helpers/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/pkg/helmer"
@@ -24,9 +23,6 @@ type ValuesFiles struct {
 type ModifyChartFn func(requirements *helmer.Requirements, metadata *chart.Metadata, existingValues map[string]interface{},
 	templates map[string]string, dir string, pullRequestDetails *scm.PullRequest) error
 
-// ModifyAppsFn callback for modifying the `jx-apps.yml` in an environment git repository which is using helmfile and helm 3
-type ModifyAppsFn func(appsConfig *jxapps.AppConfig, dir string, pullRequestDetails *scm.PullRequest) error
-
 // ModifyKptFn callback for modifying the kpt based installations of resources
 type ModifyKptFn func(dir string, promoteConfig *v1alpha1.Promote, pullRequestDetails *scm.PullRequest) error
 
@@ -42,7 +38,6 @@ type EnvironmentPullRequestOptions struct {
 	OutDir            string
 	Function          func() error
 	ModifyChartFn     ModifyChartFn
-	ModifyAppsFn      ModifyAppsFn
 	ModifyKptFn       ModifyKptFn
 	Labels            []string
 	BranchName        string
