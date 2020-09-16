@@ -80,19 +80,26 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 		}
 	}
 
+	isRemoteEnv := r.DevEnvContext.DevEnv.Spec.RemoteCluster
+
+	found := false
 	for i := range helmfile.Releases {
 		release := &helmfile.Releases[i]
-		if (release.Name == app || release.Name == details.Name) && release.Namespace == promoteNs {
+		if (release.Name == app || release.Name == details.Name) && (release.Namespace == promoteNs || isRemoteEnv) {
 			release.Version = version
+			found = true
 			return nil
 		}
 	}
-	helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
-		Name:      details.LocalName,
-		Chart:     details.Name,
-		Version:   version,
-		Namespace: promoteNs,
-	})
+
+	if !found {
+		helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
+			Name:      details.LocalName,
+			Chart:     details.Name,
+			Version:   version,
+			Namespace: promoteNs,
+		})
+	}
 
 	return nil
 }
