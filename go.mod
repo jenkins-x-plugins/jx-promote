@@ -3,12 +3,12 @@ module github.com/jenkins-x/jx-promote
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cpuguy83/go-md2man v1.0.10
-	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
-	github.com/jenkins-x/go-scm v1.5.165
+	github.com/jenkins-x/go-scm v1.5.170
 	github.com/jenkins-x/jx-api v0.0.20
 	github.com/jenkins-x/jx-gitops v0.0.294
 	github.com/jenkins-x/jx-helpers v1.0.64
 	github.com/jenkins-x/jx-logging v0.0.11
+	github.com/jenkins-x/lighthouse v0.0.822 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/roboll/helmfile v0.125.7
 	github.com/spf13/cobra v1.0.0
