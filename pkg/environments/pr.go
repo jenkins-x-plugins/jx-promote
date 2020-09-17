@@ -138,9 +138,14 @@ func (o *EnvironmentPullRequestOptions) addLabelsToPullRequest(ctx context.Conte
 
 // CreateScmClient creates a new scm client
 func (o *EnvironmentPullRequestOptions) CreateScmClient(gitServer, owner, gitKind string) (*scm.Client, string, error) {
-	o.ScmClientFactory.GitServerURL = gitServer
 	o.ScmClientFactory.Owner = owner
 	o.ScmClientFactory.GitKind = gitKind
+
+	// lets avoid recreating git clients in unit tests
+	if o.ScmClientFactory.GitServerURL == gitServer && o.ScmClientFactory.ScmClient != nil {
+		return o.ScmClientFactory.ScmClient, o.ScmClientFactory.GitToken, nil
+	}
+	o.ScmClientFactory.GitServerURL = gitServer
 	scmClient, err := o.ScmClientFactory.Create()
 	if err != nil {
 		return scmClient, "", errors.Wrapf(err, "failed to create SCM client for server %s", gitServer)
