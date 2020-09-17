@@ -13,7 +13,7 @@ import (
 )
 
 // HelmfileRule uses a jx-apps.yml file
-func HelmfileRule(r *rules.PromoteRule) error {
+func Rule(r *rules.PromoteRule) error {
 	config := r.Config
 	if config.Spec.HelmfileRule == nil {
 		return errors.Errorf("no helmfileRule configured")
@@ -40,18 +40,18 @@ func modifyHelmfile(r *rules.PromoteRule, file string, promoteNs string) error {
 		return errors.Errorf("file does not exist %s", file)
 	}
 
-	state := &state.HelmState{}
-	err = yaml2s.LoadFile(file, state)
+	st := &state.HelmState{}
+	err = yaml2s.LoadFile(file, st)
 	if err != nil {
 		return errors.Wrapf(err, "failed to load file %s", file)
 	}
 
-	err = modifyHelmfileApps(r, state, promoteNs)
+	err = modifyHelmfileApps(r, st, promoteNs)
 	if err != nil {
 		return err
 	}
 
-	err = yaml2s.SaveFile(state, file)
+	err = yaml2s.SaveFile(st, file)
 	if err != nil {
 		return errors.Wrapf(err, "failed to save file %s", file)
 	}

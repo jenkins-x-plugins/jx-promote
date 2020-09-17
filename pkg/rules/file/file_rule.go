@@ -16,7 +16,7 @@ import (
 )
 
 // FileRule uses a file rule to create promote pull requests
-func FileRule(r *rules.PromoteRule) error {
+func Rule(r *rules.PromoteRule) error {
 	config := r.Config
 	if config.Spec.FileRule == nil {
 		return errors.Errorf("no fileRule configured")

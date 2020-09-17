@@ -9,6 +9,7 @@ import (
 	"github.com/jenkins-x/jx-helpers/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/pkg/gitclient/cli"
 	"github.com/jenkins-x/jx-helpers/pkg/gitclient/giturl"
+	"github.com/jenkins-x/jx-helpers/pkg/scmhelpers"
 	"github.com/jenkins-x/jx-helpers/pkg/termcolor"
 	"github.com/jenkins-x/jx-logging/pkg/log"
 	"github.com/pkg/errors"
@@ -108,6 +109,30 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(dir string, gitURL str
 	link := strings.TrimSuffix(pr.Link, ".diff")
 	pr.Link = link
 	log.Logger().Infof("created Pull Request %s from dir %s", termcolor.ColorInfo(link), termcolor.ColorInfo(dir))
+
+	return o.addLabelsToPullRequest(ctx, scmClient, repoFullName, pr)
+}
+
+func (o *EnvironmentPullRequestOptions) addLabelsToPullRequest(ctx context.Context, scmClient *scm.Client, repoFullName string, pr *scm.PullRequest) (*scm.PullRequest, error) {
+	prNumber := pr.Number
+	modified := false
+	for _, label := range o.Labels {
+		if !scmhelpers.ContainsLabel(pr.Labels, label) {
+			_, err := scmClient.PullRequests.AddLabel(ctx, repoFullName, prNumber, label)
+			if err != nil {
+				return pr, errors.Wrapf(err, "failed to add label %s to PR #%d on repo %s", label, prNumber, repoFullName)
+			}
+			modified = true
+		}
+	}
+	if !modified {
+		return pr, nil
+	}
+	var err error
+	pr, _, err = scmClient.PullRequests.Find(ctx, repoFullName, prNumber)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to lookup PullRequest #%d on repo %s", prNumber, repoFullName)
+	}
 	return pr, nil
 }
 
