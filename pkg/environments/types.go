@@ -30,10 +30,14 @@ type ModifyKptFn func(dir string, promoteConfig *v1alpha1.Promote, pullRequestDe
 // The provide a Gitter client for performing git operations, a GitProvider client for talking to the git provider,
 // a callback ModifyChartFn which is where the changes you want to make are defined,
 type EnvironmentPullRequestOptions struct {
-	DevEnvContext     envctx.EnvironmentContext
-	ScmClientFactory  scmhelpers.Factory
-	Gitter            gitclient.Interface
-	CommandRunner     cmdrunner.CommandRunner
+	// PullRequestFilter used to find an existing Pull Request to rebase/modify
+	PullRequestFilter *PullRequestFilter
+
+	DevEnvContext    envctx.EnvironmentContext
+	ScmClientFactory scmhelpers.Factory
+	Gitter           gitclient.Interface
+	CommandRunner    cmdrunner.CommandRunner
+
 	GitKind           string
 	OutDir            string
 	Function          func() error
@@ -49,4 +53,10 @@ type EnvironmentPullRequestOptions struct {
 	UseGitHubOAuth    bool
 	Fork              bool
 	commitBody        strings.Builder
+}
+
+// A PullRequestFilter defines a filter for finding pull requests
+type PullRequestFilter struct {
+	Labels []string
+	Number *int
 }

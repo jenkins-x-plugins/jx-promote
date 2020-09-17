@@ -1,11 +1,14 @@
 package environments
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
+	"sort"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-helpers/pkg/gitclient"
+	"github.com/jenkins-x/jx-helpers/pkg/scmhelpers"
 	"github.com/jenkins-x/jx-helpers/pkg/termcolor"
 	"github.com/pkg/errors"
 
@@ -26,6 +29,25 @@ const (
 // and the pullRequestInfo for any existing PR that exists to modify the environment that we want to merge these
 // changes into.
 func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequestDetails *scm.PullRequest, autoMerge bool) (*scm.PullRequest, error) {
+	scmClient, repoFullName, err := o.GetScmClient(gitURL, o.GitKind)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create ScmClient")
+	}
+	if scmClient == nil {
+		return nil, nil
+	}
+
+	existingPr, err := o.FindExistingPullRequest(scmClient, repoFullName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find existing PullRequest")
+	}
+
+	if existingPr != nil {
+		log.Logger().Infof("rebasing existing PR %d", existingPr.Number)
+
+		// TODO
+	}
+
 	if prDir == "" {
 		tempDir, err := ioutil.TempDir("", "create-pr")
 		if err != nil {
@@ -94,9 +116,41 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 		}
 	}
 
-	prInfo, err := o.CreatePullRequest(dir, gitURL, o.GitKind, doneCommit)
+	prInfo, err := o.CreatePullRequest(scmClient, gitURL, repoFullName, dir, doneCommit)
 	if err != nil {
 		return prInfo, errors.Wrapf(err, "failed to create pull request in dir %s", dir)
 	}
 	return prInfo, nil
+}
+
+func (o *EnvironmentPullRequestOptions) FindExistingPullRequest(scmClient *scm.Client, repoFullName string) (*scm.PullRequest, error) {
+	if o.PullRequestFilter == nil {
+		return nil, nil
+	}
+	ctx := context.Background()
+	prs, _, err := scmClient.PullRequests.List(ctx, repoFullName, scm.PullRequestListOptions{
+		Size:   100,
+		Open:   true,
+		Labels: o.PullRequestFilter.Labels,
+	})
+	if scmhelpers.IsScmNotFound(err) || len(prs) == 0 {
+		return nil, nil
+	}
+
+	// sort in descending order of PR numbers (assumes PRs numbers increment!)
+	sort.Slice(prs, func(i, j int) bool {
+		pi := prs[i]
+		pj := prs[j]
+		return pi.Number > pj.Number
+	})
+
+	// lets find the latest PR which is not closed
+	for i := range prs {
+		pr := prs[i]
+		if pr.Closed || pr.Merged {
+			continue
+		}
+		return pr, nil
+	}
+	return nil, nil
 }
