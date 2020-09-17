@@ -6,9 +6,9 @@ require (
 	github.com/jenkins-x/go-scm v1.5.170
 	github.com/jenkins-x/jx-api v0.0.20
 	github.com/jenkins-x/jx-gitops v0.0.294
-	github.com/jenkins-x/jx-helpers v1.0.64
+	github.com/jenkins-x/jx-helpers v1.0.68
 	github.com/jenkins-x/jx-logging v0.0.11
-	github.com/jenkins-x/lighthouse v0.0.822 // indirect
+	github.com/jenkins-x/lighthouse v0.0.824 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/roboll/helmfile v0.125.7
 	github.com/spf13/cobra v1.0.0
