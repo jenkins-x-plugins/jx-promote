@@ -13,7 +13,7 @@ import (
 )
 
 // KptRule performs kpt upgrades
-func KptRule(r *rules.PromoteRule) error {
+func Rule(r *rules.PromoteRule) error {
 	config := r.Config
 	if config.Spec.KptRule == nil {
 		return errors.Errorf("no appsRule configured")

@@ -118,11 +118,11 @@ func GetRequirementsConfigFromTeamSettings(settings *v1.TeamSettings) (*config.R
 		return nil, nil
 	}
 
-	config := &config.RequirementsConfig{}
+	requirements := &config.RequirementsConfig{}
 	data := []byte(settings.BootRequirements)
-	err := yaml.Unmarshal(data, config)
+	err := yaml.Unmarshal(data, requirements)
 	if err != nil {
-		return config, fmt.Errorf("failed to unmarshal requirements from team settings due to %s", err)
+		return requirements, fmt.Errorf("failed to unmarshal requirements from team settings due to %s", err)
 	}
-	return config, nil
+	return requirements, nil
 }

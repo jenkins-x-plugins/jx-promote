@@ -10,7 +10,7 @@ import (
 )
 
 // HelmRule uses a helm rule to create promote pull requests
-func HelmRule(r *rules.PromoteRule) error {
+func Rule(r *rules.PromoteRule) error {
 	config := r.Config
 	if config.Spec.HelmRule == nil {
 		return errors.Errorf("no helmRule configured")

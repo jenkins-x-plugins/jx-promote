@@ -12,16 +12,16 @@ import (
 func NewFunction(r *rules.PromoteRule) rules.RuleFunction {
 	spec := r.Config.Spec
 	if spec.FileRule != nil {
-		return file.FileRule
+		return file.Rule
 	}
 	if spec.HelmRule != nil {
-		return helm.HelmRule
+		return helm.Rule
 	}
 	if spec.HelmfileRule != nil {
-		return helmfile.HelmfileRule
+		return helmfile.Rule
 	}
 	if spec.KptRule != nil {
-		return kpt.KptRule
+		return kpt.Rule
 	}
 	return nil
 }

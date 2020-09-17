@@ -10,14 +10,6 @@ import (
 	"github.com/jenkins-x/jx-helpers/pkg/versionstream"
 )
 
-const (
-	KindApp = "apps"
-)
-
-var (
-	valuesFileNames = []string{"values.yaml", "values.yaml.gotmpl"}
-)
-
 // EnvironmentContext contains the common interfaces and structs needed for working with a development environment
 type EnvironmentContext struct {
 	// GitOps whether we are using gitops to manage this environment
