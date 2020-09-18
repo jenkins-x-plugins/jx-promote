@@ -9,6 +9,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-helpers/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/pkg/scmhelpers"
+	"github.com/jenkins-x/jx-helpers/pkg/stringhelpers"
 	"github.com/jenkins-x/jx-helpers/pkg/termcolor"
 	"github.com/pkg/errors"
 
@@ -79,23 +80,16 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 		return nil, errors.Wrapf(err, "failed to invoke change function in dir %s", dir)
 	}
 
-	labels := make([]string, 0)
-	labels = append(labels, o.Labels...)
-	if autoMerge {
-		value := LabelUpdatebot
-		contains := false
-		for _, l := range pullRequestDetails.Labels {
-			if l != nil {
-				if l.Name == value {
-					contains = true
-					break
-				}
+	// lets merge any labels together...
+	if autoMerge && stringhelpers.StringArrayIndex(o.Labels, LabelUpdatebot) < 0 {
+		o.Labels = append(o.Labels, LabelUpdatebot)
+	}
+	for _, l := range pullRequestDetails.Labels {
+		if l != nil {
+			label := l.Name
+			if label != "" && stringhelpers.StringArrayIndex(o.Labels, label) < 0 {
+				o.Labels = append(o.Labels, label)
 			}
-		}
-		if !contains {
-			pullRequestDetails.Labels = append(pullRequestDetails.Labels, &scm.Label{
-				Name: value,
-			})
 		}
 	}
 
