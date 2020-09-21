@@ -89,7 +89,7 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 	// the URL should not really end in .diff - fix in go-scm
 	link := strings.TrimSuffix(pr.Link, ".diff")
 	pr.Link = link
-	log.Logger().Infof("created Pull Request %s from dir %s", termcolor.ColorInfo(link), termcolor.ColorInfo(dir))
+	log.Logger().Infof("Created Pull Request: %s", termcolor.ColorInfo(link))
 
 	return o.addLabelsToPullRequest(ctx, scmClient, repoFullName, pr)
 }
