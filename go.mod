@@ -4,9 +4,9 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cpuguy83/go-md2man v1.0.10
 	github.com/jenkins-x/go-scm v1.5.170
-	github.com/jenkins-x/jx-api v0.0.20
-	github.com/jenkins-x/jx-gitops v0.0.308
-	github.com/jenkins-x/jx-helpers v1.0.73
+	github.com/jenkins-x/jx-api v0.0.23
+	github.com/jenkins-x/jx-gitops v0.0.320
+	github.com/jenkins-x/jx-helpers v1.0.74
 	github.com/jenkins-x/jx-logging v0.0.11
 	github.com/pkg/errors v0.9.1
 	github.com/roboll/helmfile v0.125.7
