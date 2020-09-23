@@ -44,12 +44,24 @@ Promotes a version of an application to an Environment
     The Build number which is used to update the PipelineActivity. If not specified its defaulted from  the '$BUILD\_NUMBER' environment variable
 
 .PP
+\fB\-\-default\-app\-namespace\fP=""
+    The default namespace for promoting to remote clusters for the first
+
+.PP
 \fB\-e\fP, \fB\-\-env\fP=""
     The Environment to promote to
 
 .PP
 \fB\-f\fP, \fB\-\-filter\fP=""
     The search filter to find charts to promote
+
+.PP
+\fB\-\-git\-token\fP=""
+    Git token used to clone the development environment. If not specified its loaded from the git credentials file
+
+.PP
+\fB\-\-git\-user\fP=""
+    Git username used to clone the development environment. If not specified its loaded from the git credentials file
 
 .PP
 \fB\-r\fP, \fB\-\-helm\-repo\-name\fP="releases"
@@ -90,6 +102,10 @@ Promotes a version of an application to an Environment
 .PP
 \fB\-\-pipeline\fP=""
     The Pipeline string in the form 'folderName/repoName/branch' which is used to update the PipelineActivity. If not specified its defaulted from  the '$BUILD\_NUMBER' environment variable
+
+.PP
+\fB\-\-promotion\-environments\fP=[]
+    The environments considered for promotion
 
 .PP
 \fB\-\-pull\-request\-poll\-time\fP="20s"

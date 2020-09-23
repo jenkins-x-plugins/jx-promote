@@ -80,19 +80,6 @@ PromoteSpec
 <table>
 <tr>
 <td>
-<code>appsRule</code></br>
-<em>
-<a href="#promote.jenkins-x.io/v1alpha1.AppsRule">
-AppsRule
-</a>
-</em>
-</td>
-<td>
-<p>AppsRule uses a &lsquo;jx-apps.yml` file to store apps to be deployed</p>
-</td>
-</tr>
-<tr>
-<td>
 <code>fileRule</code></br>
 <em>
 <a href="#promote.jenkins-x.io/v1alpha1.FileRule">
@@ -145,48 +132,6 @@ KptRule
 </td>
 </tr>
 </table>
-</td>
-</tr>
-</tbody>
-</table>
-<h3 id="promote.jenkins-x.io/v1alpha1.AppsRule">AppsRule
-</h3>
-<p>
-(<em>Appears on:</em>
-<a href="#promote.jenkins-x.io/v1alpha1.PromoteSpec">PromoteSpec</a>)
-</p>
-<p>
-<p>AppsRule uses a &lsquo;jx-apps.yml` file to store apps to be deployed</p>
-</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<code>path</code></br>
-<em>
-string
-</em>
-</td>
-<td>
-<p>Path to the apps file to modify. Defaults to <code>jx-apps.yml</code></p>
-</td>
-</tr>
-<tr>
-<td>
-<code>namespace</code></br>
-<em>
-string
-</em>
-</td>
-<td>
-<p>Namespace if specified the given namespace is used in the <code>jx-apps.yml</code> file when using Environments in the
-same cluster using the same git repository URL as the dev environment</p>
 </td>
 </tr>
 </tbody>
@@ -327,6 +272,18 @@ string
 <p>Path to the helmfile to modify</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>namespace</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>Namespace if specified the given namespace is used in the <code>helmfile.yml</code> file when using Environments in the
+same cluster using the same git repository URL as the dev environment</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="promote.jenkins-x.io/v1alpha1.KptRule">KptRule
@@ -433,19 +390,6 @@ string
 <tbody>
 <tr>
 <td>
-<code>appsRule</code></br>
-<em>
-<a href="#promote.jenkins-x.io/v1alpha1.AppsRule">
-AppsRule
-</a>
-</em>
-</td>
-<td>
-<p>AppsRule uses a &lsquo;jx-apps.yml` file to store apps to be deployed</p>
-</td>
-</tr>
-<tr>
-<td>
 <code>fileRule</code></br>
 <em>
 <a href="#promote.jenkins-x.io/v1alpha1.FileRule">
@@ -502,5 +446,5 @@ KptRule
 <hr/>
 <p><em>
 Generated with <code>gen-crd-api-reference-docs</code>
-on git commit <code>138b41c</code>.
+on git commit <code>112102f</code>.
 </em></p>
