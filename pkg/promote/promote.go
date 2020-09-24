@@ -415,7 +415,7 @@ func (o *Options) Run() error {
 			return fmt.Errorf("Could not find an Environment called %s", o.Environment)
 		}
 	}
-	releaseInfo, err := o.Promote(targetNS, env, true)
+	releaseInfo, err := o.Promote(targetNS, env, true, false)
 	if err != nil {
 		return err
 	}
@@ -513,13 +513,14 @@ func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 	}
 	jxenv.SortEnvironments(environments)
 
+	count := 0
 	for _, env := range environments {
 		if pred(&env) {
 			ns := env.Spec.Namespace
 			if ns == "" {
 				return fmt.Errorf("No namespace for environment %s", env.Name)
 			}
-			releaseInfo, err := o.Promote(ns, &env, false)
+			releaseInfo, err := o.Promote(ns, &env, false, count > 0)
 			if err != nil {
 				return err
 			}
@@ -530,12 +531,13 @@ func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 					return err
 				}
 			}
+			count++
 		}
 	}
 	return nil
 }
 
-func (o *Options) Promote(targetNS string, env *v1.Environment, warnIfAuto bool) (*ReleaseInfo, error) {
+func (o *Options) Promote(targetNS string, env *v1.Environment, warnIfAuto, draftPR bool) (*ReleaseInfo, error) {
 	app := o.Application
 	if app == "" {
 		log.Logger().Warnf("No application name could be detected so cannot promote via Helm. If the detection of the helm chart name is not working consider adding it with the --%s argument on the 'jx alpha promote' command", optionApplication)
@@ -588,7 +590,7 @@ func (o *Options) Promote(targetNS string, env *v1.Environment, warnIfAuto bool)
 		}
 
 		if source.URL != "" {
-			err := o.PromoteViaPullRequest(env, releaseInfo)
+			err := o.PromoteViaPullRequest(env, releaseInfo, draftPR)
 			if err == nil {
 				startPromotePR := func(a *v1.PipelineActivity, s *v1.PipelineActivityStep, ps *v1.PromoteActivityStep, p *v1.PromotePullRequestStep) error {
 					activities.StartPromotionPullRequest(a, s, ps, p)
@@ -932,7 +934,7 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, relea
 				if !pr.Mergeable {
 					log.Logger().Info("Rebasing PullRequest due to conflict")
 
-					err = o.PromoteViaPullRequest(env, releaseInfo)
+					err = o.PromoteViaPullRequest(env, releaseInfo, false)
 					if releaseInfo.PullRequestInfo != nil {
 						pullRequestInfo = releaseInfo.PullRequestInfo
 					}
