@@ -17,7 +17,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *ReleaseInfo) error {
+func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *ReleaseInfo, draftPR bool) error {
 	configureDependencyMatrix()
 
 	version := o.Version
@@ -27,10 +27,21 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 	}
 	app := o.Application
 
+	envName := env.Spec.Label
+	if envName == "" {
+		envName = env.Name
+	}
 	details := scm.PullRequest{
-		Source: "promote-" + app + "-" + versionName,
-		Title:  "chore: " + app + " to " + versionName,
-		Body:   fmt.Sprintf("chore: Promote %s to version %s", app, versionName),
+		Source: "promote-" + app + "-" + versionName + "-" + env.Name,
+		Title:  "chore: " + app + " to " + versionName + " in " + envName,
+		Body:   fmt.Sprintf("chore: Promote %s to version %s to environment %s", app, versionName, envName),
+		Draft:  draftPR,
+		Labels: []*scm.Label{
+			{
+				Name:        env.Name,
+				Description: envName,
+			},
+		},
 	}
 
 	o.EnvironmentPullRequestOptions.CommitTitle = details.Title
