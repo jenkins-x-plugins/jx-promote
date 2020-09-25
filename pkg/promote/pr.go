@@ -118,7 +118,11 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 		o.PullRequestNumber = releaseInfo.PullRequestInfo.Number
 	}
 	gitURL := env.Spec.Source.URL
-	info, err := o.Create(gitURL, envDir, &details, true)
+	autoMerge := true
+	if draftPR {
+		autoMerge = false
+	}
+	info, err := o.Create(gitURL, envDir, &details, autoMerge)
 	releaseInfo.PullRequestInfo = info
 	return err
 }
