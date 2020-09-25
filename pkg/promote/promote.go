@@ -3,7 +3,9 @@ package promote
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	"github.com/jenkins-x/jx-api/pkg/config"
 	"github.com/jenkins-x/jx-gitops/pkg/cmd/git/setup"
 	"github.com/jenkins-x/jx-helpers/pkg/builds"
+	"github.com/jenkins-x/jx-helpers/pkg/files"
 	"github.com/jenkins-x/jx-helpers/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/pkg/gitclient/gitdiscovery"
 	"github.com/jenkins-x/jx-helpers/pkg/gitclient/giturl"
@@ -76,6 +79,7 @@ type Options struct {
 	Pipeline                string
 	Build                   string
 	Version                 string
+	VersionFile             string
 	ReleaseName             string
 	LocalHelmRepoName       string
 	HelmRepositoryURL       string
@@ -179,6 +183,7 @@ func (o *Options) AddOptions(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.Pipeline, "pipeline", "", "", "The Pipeline string in the form 'folderName/repoName/branch' which is used to update the PipelineActivity. If not specified its defaulted from  the '$BUILD_NUMBER' environment variable")
 	cmd.Flags().StringVarP(&o.Build, "build", "", "", "The Build number which is used to update the PipelineActivity. If not specified its defaulted from  the '$BUILD_NUMBER' environment variable")
 	cmd.Flags().StringVarP(&o.Version, "version", "v", "", "The Version to promote. If no version is specified it defaults to $VERSION which is usually populated in a pipeline. If no value can be found you will be prompted to pick the version")
+	cmd.Flags().StringVarP(&o.VersionFile, "version-file", "", "", "the file to load the version from if not specified directly or via a $VERSION environment variable. Defaults to VERSION in the current dir")
 	cmd.Flags().StringVarP(&o.LocalHelmRepoName, "helm-repo-name", "r", kube.LocalHelmRepoName, "The name of the helm repository that contains the app")
 	cmd.Flags().StringVarP(&o.HelmRepositoryURL, "helm-repo-url", "u", "", "The Helm Repository URL to use for the App")
 	cmd.Flags().StringVarP(&o.ReleaseName, "release", "", "", "The name of the helm release")
@@ -286,6 +291,9 @@ func (o *Options) Validate() error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to create the jx client")
 	}
+	if o.VersionFile == "" {
+		o.VersionFile = filepath.Join(o.Dir, "VERSION")
+	}
 	return nil
 }
 
@@ -303,15 +311,31 @@ func (o *Options) Run() error {
 	}
 
 	if o.Version == "" {
-		o.Version = os.Getenv("VERSION")
-		if o.Version != "" {
-			log.Logger().Infof("defaulting to the version %s from $VERSION", termcolor.ColorInfo(o.Version))
+		exists, err := files.FileExists(o.VersionFile)
+		if err != nil {
+			return errors.Wrapf(err, "failed to check for file %s", o.VersionFile)
 		}
-		if o.Version == "" && o.Application != "" {
-			o.Version, err = o.findLatestVersion(o.Application)
+		if exists {
+			data, err := ioutil.ReadFile(o.VersionFile)
 			if err != nil {
-				return errors.Wrapf(err, "failed to find latest version of app %s", o.Application)
+				return errors.Wrapf(err, "failed to read version file %s", o.VersionFile)
 			}
+			o.Version = strings.TrimSpace(string(data))
+		}
+		if o.Version != "" {
+			log.Logger().Infof("defaulting to the version %s from file %s", termcolor.ColorInfo(o.Version), termcolor.ColorInfo(o.VersionFile))
+		}
+		if o.Version == "" {
+			o.Version = os.Getenv("VERSION")
+			if o.Version != "" {
+				log.Logger().Infof("defaulting to the version %s from $VERSION", termcolor.ColorInfo(o.Version))
+			}
+		}
+	}
+	if o.Version == "" && o.Application != "" {
+		o.Version, err = o.findLatestVersion(o.Application)
+		if err != nil {
+			return errors.Wrapf(err, "failed to find latest version of app %s", o.Application)
 		}
 	}
 
