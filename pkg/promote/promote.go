@@ -544,6 +544,8 @@ func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 			if ns == "" {
 				return fmt.Errorf("No namespace for environment %s", env.Name)
 			}
+			// lets clear the branch name so that we create a new branch for each PR...
+			o.BranchName = ""
 			releaseInfo, err := o.Promote(ns, &env, false, count > 0)
 			if err != nil {
 				return err
