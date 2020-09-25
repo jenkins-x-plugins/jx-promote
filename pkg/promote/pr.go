@@ -33,12 +33,12 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 	}
 	details := scm.PullRequest{
 		Source: "promote-" + app + "-" + versionName + "-" + env.Name,
-		Title:  "chore: " + app + " to " + versionName + " in " + envName,
-		Body:   fmt.Sprintf("chore: Promote %s to version %s to environment %s", app, versionName, envName),
+		Title:  "fix: " + app + " to " + versionName + " in " + envName,
+		Body:   fmt.Sprintf("fix: Promote %s to version %s to environment %s", app, versionName, envName),
 		Draft:  draftPR,
 		Labels: []*scm.Label{
 			{
-				Name:        env.Name,
+				Name:        "env/" + env.Name,
 				Description: envName,
 			},
 		},
@@ -118,7 +118,11 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 		o.PullRequestNumber = releaseInfo.PullRequestInfo.Number
 	}
 	gitURL := env.Spec.Source.URL
-	info, err := o.Create(gitURL, envDir, &details, true)
+	autoMerge := true
+	if draftPR {
+		autoMerge = false
+	}
+	info, err := o.Create(gitURL, envDir, &details, autoMerge)
 	releaseInfo.PullRequestInfo = info
 	return err
 }
