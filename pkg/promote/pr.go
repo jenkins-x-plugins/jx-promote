@@ -44,6 +44,13 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 		},
 	}
 
+	if draftPR {
+		details.Labels = append(details.Labels, &scm.Label{
+			Name:        "do-not-merge/hold",
+			Description: "do not merge yet",
+		})
+	}
+
 	o.EnvironmentPullRequestOptions.CommitTitle = details.Title
 	o.EnvironmentPullRequestOptions.CommitMessage = details.Body
 
