@@ -1166,19 +1166,23 @@ func (o *Options) GetPipelineName(gitInfo *giturl.GitRepository, pipeline string
 	if build == "" {
 		build = builds.GetBuildNumber()
 	}
-	if gitInfo != nil && pipeline == "" {
+	branch := os.Getenv("BRANCH_NAME")
+	if branch == "" {
+		var err error
 		// lets default the pipeline name from the Git repo
-		branch, err := gitclient.Branch(o.Git(), ".")
+		branch, err = gitclient.Branch(o.Git(), ".")
 		if err != nil {
 			log.Logger().Warnf("Could not find the branch name: %s", err)
 		}
-		if branch == "" {
-			branch = "master"
-		}
+	}
+	if branch == "" {
+		branch = "master"
+	}
+	if gitInfo != nil && pipeline == "" {
 		pipeline = stringhelpers.UrlJoin(gitInfo.Organisation, gitInfo.Name, branch)
 	}
 	if pipeline == "" && appName != "" {
-		suffix := appName + "/master"
+		suffix := appName + "/" + branch
 
 		// lets try deduce the pipeline name via the app name
 		jxClient := o.JXClient
