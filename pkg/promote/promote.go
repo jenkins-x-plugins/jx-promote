@@ -627,10 +627,13 @@ func (o *Options) Promote(targetNS string, env *v1.Environment, warnIfAuto, draf
 					if version != "" && a.Spec.Version == "" {
 						a.Spec.Version = version
 					}
-					if !noPoll {
+					if noPoll {
 						p.Status = v1.ActivityStatusTypeSucceeded
 						ps.Status = v1.ActivityStatusTypeSucceeded
 					}
+
+					// if all steps are completed lets mark succeeded/failed
+					activities.UpdateStatus(a, false, nil)
 					return nil
 				}
 				err = promoteKey.OnPromotePullRequest(kubeClient, jxClient, o.Namespace, startPromotePR)

@@ -19,6 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	"sigs.k8s.io/yaml"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -114,12 +115,12 @@ func AssertPromoteIntegration(t *testing.T, testCases ...PromoteTestCase) {
 		po.KubeClient = fake.NewSimpleClientset(kubeObjects...)
 		po.JXClient = v1fake.NewSimpleClientset(jxObjects...)
 		po.Namespace = ns
+		po.Build = "1"
+		po.Pipeline = "myorg/myapp/master"
 		po.DevEnvContext.VersionResolver = jxtesthelpers.CreateTestVersionResolver(t)
 
 		err = po.Run()
 		require.NoError(t, err, "failed test %s s", name)
-
-		//testhelpers.AssertTextFilesEqual(t, filepath.Join(expectedDir, "jx-apps.yml"), filepath.Join(resultDir, "jx-apps.yml"), name)
 
 		scmClient := po.ScmClient
 		require.NotNil(t, scmClient, "no ScmClient created")
@@ -132,6 +133,17 @@ func AssertPromoteIntegration(t *testing.T, testCases ...PromoteTestCase) {
 		t.Logf("PR title: %s", pr.Title)
 		t.Logf("PR body: %s", pr.Body)
 
+		// lets assert we have a PipelineActivity...
+		paList, err := po.JXClient.JenkinsV1().PipelineActivities(ns).List(metav1.ListOptions{})
+		require.NoError(t, err, "failed to load PipelineActivity resources in namespace %s", ns)
+		require.Len(t, paList.Items, 1, "should have a PipelineActivity in namespace %s", ns)
+		pa := paList.Items[0]
+
+		data, err := yaml.Marshal(pa)
+		require.NoError(t, err, "failed to marshal PipelineActivity")
+
+		t.Logf("got PipelineActivity %s\n", string(data))
+		assert.Equal(t, v1.ActivityStatusTypeSucceeded, pa.Spec.Status, "pipelineActivity.Spec.Status")
 	}
 }
 
