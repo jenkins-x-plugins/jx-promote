@@ -37,14 +37,6 @@ func TestPromoteIntegrationHelmfile(t *testing.T) {
 	})
 }
 
-func TestPromoteIntegrationJXApps(t *testing.T) {
-	// lets deprecate the jx-apps.yml approach
-	t.SkipNow()
-	AssertPromoteIntegration(t, PromoteTestCase{
-		gitURL: "https://github.com/jstrachan/environment-fake-dev",
-	})
-}
-
 func TestPromoteIntegrationMakefileKpt(t *testing.T) {
 	AssertPromoteIntegration(t, PromoteTestCase{
 		gitURL: "https://github.com/jstrachan/env-test-promote-makefile",

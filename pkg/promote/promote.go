@@ -439,7 +439,7 @@ func (o *Options) Run() error {
 			return fmt.Errorf("Could not find an Environment called %s", o.Environment)
 		}
 	}
-	releaseInfo, err := o.Promote(targetNS, env, true, false)
+	releaseInfo, err := o.Promote(targetNS, env, true, false, o.NoPoll)
 	if err != nil {
 		return err
 	}
@@ -546,7 +546,7 @@ func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 			}
 			// lets clear the branch name so that we create a new branch for each PR...
 			o.BranchName = ""
-			releaseInfo, err := o.Promote(ns, &env, false, count > 0)
+			releaseInfo, err := o.Promote(ns, &env, false, count > 0, o.NoPoll)
 			if err != nil {
 				return err
 			}
@@ -563,7 +563,7 @@ func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 	return nil
 }
 
-func (o *Options) Promote(targetNS string, env *v1.Environment, warnIfAuto, draftPR bool) (*ReleaseInfo, error) {
+func (o *Options) Promote(targetNS string, env *v1.Environment, warnIfAuto, draftPR, noPoll bool) (*ReleaseInfo, error) {
 	app := o.Application
 	if app == "" {
 		log.Logger().Warnf("No application name could be detected so cannot promote via Helm. If the detection of the helm chart name is not working consider adding it with the --%s argument on the 'jx alpha promote' command", optionApplication)
@@ -626,6 +626,10 @@ func (o *Options) Promote(targetNS string, env *v1.Environment, warnIfAuto, draf
 					}
 					if version != "" && a.Spec.Version == "" {
 						a.Spec.Version = version
+					}
+					if !noPoll {
+						p.Status = v1.ActivityStatusTypeSucceeded
+						ps.Status = v1.ActivityStatusTypeSucceeded
 					}
 					return nil
 				}
