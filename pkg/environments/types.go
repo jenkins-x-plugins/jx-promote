@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx-helpers/pkg/cmdrunner"
 	"github.com/jenkins-x/jx-helpers/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/pkg/helmer"
@@ -38,16 +39,18 @@ type EnvironmentPullRequestOptions struct {
 	Gitter           gitclient.Interface
 	CommandRunner    cmdrunner.CommandRunner
 
-	GitKind           string
-	OutDir            string
 	Function          func() error
 	ModifyChartFn     ModifyChartFn
 	ModifyKptFn       ModifyKptFn
-	Labels            []string
-	BranchName        string
 	PullRequestNumber int
+	Labels            []string
+	GitKind           string
+	OutDir            string
+	BranchName        string
 	CommitTitle       string
 	CommitMessage     string
+	Namespace         string
+	JXClient          versioned.Interface
 	ScmClient         *scm.Client
 	BatchMode         bool
 	UseGitHubOAuth    bool

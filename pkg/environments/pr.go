@@ -142,6 +142,14 @@ func (o *EnvironmentPullRequestOptions) addLabelsToPullRequest(ctx context.Conte
 
 // CreateScmClient creates a new scm client
 func (o *EnvironmentPullRequestOptions) CreateScmClient(gitServer, owner, gitKind string) (*scm.Client, string, error) {
+	if gitKind == "" {
+		var err error
+		gitKind, err = scmhelpers.DiscoverGitKind(o.JXClient, o.Namespace, gitServer)
+		if err != nil {
+			return nil, "", errors.Wrapf(err, "failed to discover the git kind for git server %s", gitServer)
+		}
+	}
+
 	o.ScmClientFactory.Owner = owner
 	o.ScmClientFactory.GitKind = gitKind
 
