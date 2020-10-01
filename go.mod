@@ -5,7 +5,7 @@ require (
 	github.com/cpuguy83/go-md2man v1.0.10
 	github.com/jenkins-x/go-scm v1.5.177
 	github.com/jenkins-x/jx-api v0.0.24
-	github.com/jenkins-x/jx-gitops v0.0.352
+	github.com/jenkins-x/jx-gitops v0.0.354
 	github.com/jenkins-x/jx-helpers v1.0.86
 	github.com/jenkins-x/jx-logging v0.0.11
 	github.com/jenkins-x/lighthouse v0.0.836 // indirect
