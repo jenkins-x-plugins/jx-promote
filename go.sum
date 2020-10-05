@@ -1107,6 +1107,8 @@ github.com/jenkins-x/jx-gitops v0.0.352 h1:soM7jRT43B8gwzrlIdE9cAd20WKxgPAdoljoL
 github.com/jenkins-x/jx-gitops v0.0.352/go.mod h1:b0AqnIk1OmDdwPzk2TTh6CUHFp55S5huLzpSVEkPNTw=
 github.com/jenkins-x/jx-gitops v0.0.372 h1:rnI94lw0Ge7cNADciwOnvkIEadaOlcXW/nZD9XxlVcA=
 github.com/jenkins-x/jx-gitops v0.0.372/go.mod h1:Aw0BfCE2zwN3qd+c5Aa2doUbSxeUS4mU8sPue3vbSK8=
+github.com/jenkins-x/jx-gitops v0.0.374 h1:mWDJsK/WW6jObwl04uiq+zJxVl4NDHvemRHL/ij8szI=
+github.com/jenkins-x/jx-gitops v0.0.374/go.mod h1:Aw0BfCE2zwN3qd+c5Aa2doUbSxeUS4mU8sPue3vbSK8=
 github.com/jenkins-x/jx-helpers v1.0.62/go.mod h1:3ayhv3uQFtPh4IJ8zkxrF8JegyrzoFpr9gBRAoYspQk=
 github.com/jenkins-x/jx-helpers v1.0.68/go.mod h1:TQDbxIJGEYTHMYlF44GyvemibIIzc/aBzKk1Acq4F9E=
 github.com/jenkins-x/jx-helpers v1.0.70/go.mod h1:TQDbxIJGEYTHMYlF44GyvemibIIzc/aBzKk1Acq4F9E=
