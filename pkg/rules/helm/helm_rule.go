@@ -3,8 +3,8 @@ package helm
 import (
 	"path/filepath"
 
-	"github.com/jenkins-x/jx-helpers/pkg/files"
-	"github.com/jenkins-x/jx-helpers/pkg/helmer"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/helmer"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/pkg/errors"
 )

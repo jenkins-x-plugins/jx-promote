@@ -12,39 +12,39 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
-	"github.com/jenkins-x/jx-api/pkg/config"
+	"github.com/jenkins-x/jx-api/v3/pkg/client/clientset/versioned"
+	"github.com/jenkins-x/jx-api/v3/pkg/config"
 	"github.com/jenkins-x/jx-gitops/pkg/cmd/git/setup"
-	"github.com/jenkins-x/jx-helpers/pkg/builds"
-	"github.com/jenkins-x/jx-helpers/pkg/files"
-	"github.com/jenkins-x/jx-helpers/pkg/gitclient"
-	"github.com/jenkins-x/jx-helpers/pkg/gitclient/gitdiscovery"
-	"github.com/jenkins-x/jx-helpers/pkg/gitclient/giturl"
-	"github.com/jenkins-x/jx-helpers/pkg/input"
-	"github.com/jenkins-x/jx-helpers/pkg/input/survey"
-	"github.com/jenkins-x/jx-helpers/pkg/kube/activities"
-	"github.com/jenkins-x/jx-helpers/pkg/kube/jxclient"
-	"github.com/jenkins-x/jx-helpers/pkg/kube/jxenv"
-	"github.com/jenkins-x/jx-helpers/pkg/kube/services"
-	"github.com/jenkins-x/jx-helpers/pkg/options"
-	"github.com/jenkins-x/jx-helpers/pkg/stringhelpers"
-	"github.com/jenkins-x/jx-helpers/pkg/termcolor"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/builds"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient/gitdiscovery"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient/giturl"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/input"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/input/survey"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/kube/activities"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/kube/jxclient"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/kube/jxenv"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/kube/services"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/options"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/stringhelpers"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/termcolor"
 	"github.com/jenkins-x/jx-promote/pkg/environments"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/jenkins-x/jx-helpers/pkg/cobras/helper"
-	"github.com/jenkins-x/jx-helpers/pkg/kube/naming"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/cobras/helper"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/kube/naming"
 
 	"github.com/pkg/errors"
 
-	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
+	v1 "github.com/jenkins-x/jx-api/v3/pkg/apis/jenkins.io/v1"
 
 	"github.com/blang/semver"
-	typev1 "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned/typed/jenkins.io/v1"
-	"github.com/jenkins-x/jx-helpers/pkg/cobras/templates"
-	helm "github.com/jenkins-x/jx-helpers/pkg/helmer"
-	"github.com/jenkins-x/jx-helpers/pkg/kube"
-	"github.com/jenkins-x/jx-logging/pkg/log"
+	typev1 "github.com/jenkins-x/jx-api/v3/pkg/client/clientset/versioned/typed/jenkins.io/v1"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/cobras/templates"
+	helm "github.com/jenkins-x/jx-helpers/v3/pkg/helmer"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/kube"
+	"github.com/jenkins-x/jx-logging/v3/pkg/log"
 	"github.com/spf13/cobra"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -431,7 +431,7 @@ func (o *Options) Run() error {
 		if o.Environment == "" {
 			return options.MissingOption(optionEnvironment)
 		}
-		env, err := jxClient.JenkinsV1().Environments(ns).Get(o.Environment, metav1.GetOptions{})
+		env, err := jxClient.JenkinsV1().Environments(ns).Get(context.TODO(), o.Environment, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -525,7 +525,7 @@ func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 		return err
 	}
 	jxClient := o.JXClient
-	envs, err := jxClient.JenkinsV1().Environments(team).List(metav1.ListOptions{})
+	envs, err := jxClient.JenkinsV1().Environments(team).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		log.Logger().Warnf("No Environments found: %s/n", err)
 		return nil
@@ -1090,7 +1090,7 @@ func (o *Options) CreatePromoteKey(env *v1.Environment) *activities.PromoteStepA
 		if o.releaseResource == nil && releaseName != "" {
 			jxClient := o.JXClient
 			if err == nil && jxClient != nil {
-				release, err := jxClient.JenkinsV1().Releases(env.Spec.Namespace).Get(releaseName, metav1.GetOptions{})
+				release, err := jxClient.JenkinsV1().Releases(env.Spec.Namespace).Get(context.TODO(), releaseName, metav1.GetOptions{})
 				if err == nil && release != nil {
 					o.releaseResource = release
 				}
@@ -1136,7 +1136,7 @@ func (o *Options) GetLatestPipelineBuildByCRD(pipeline string) (string, error) {
 	// lets find the latest build number
 	jxClient := o.JXClient
 	ns := o.Namespace
-	pipelines, err := jxClient.JenkinsV1().PipelineActivities(ns).List(metav1.ListOptions{})
+	pipelines, err := jxClient.JenkinsV1().PipelineActivities(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -1187,7 +1187,7 @@ func (o *Options) GetPipelineName(gitInfo *giturl.GitRepository, pipeline string
 		// lets try deduce the pipeline name via the app name
 		jxClient := o.JXClient
 		ns := o.Namespace
-		pipelineList, err := jxClient.JenkinsV1().PipelineActivities(ns).List(metav1.ListOptions{})
+		pipelineList, err := jxClient.JenkinsV1().PipelineActivities(ns).List(context.TODO(), metav1.ListOptions{})
 		if err == nil {
 			for _, pipelineResource := range pipelineList.Items {
 				pipelineName := pipelineResource.Spec.Pipeline
@@ -1279,9 +1279,9 @@ func (o *Options) CommentOnIssues(targetNS string, environment *v1.Environment, 
 	}
 
 	if available == "" {
-		ing, err := kubeClient.ExtensionsV1beta1().Ingresses(ens).Get(app, metav1.GetOptions{})
+		ing, err := kubeClient.ExtensionsV1beta1().Ingresses(ens).Get(context.TODO(), app, metav1.GetOptions{})
 		if err != nil || ing == nil && o.ReleaseName != "" && o.ReleaseName != app {
-			ing, err = kubeClient.ExtensionsV1beta1().Ingresses(ens).Get(o.ReleaseName, metav1.GetOptions{})
+			ing, err = kubeClient.ExtensionsV1beta1().Ingresses(ens).Get(context.TODO(), o.ReleaseName, metav1.GetOptions{})
 		}
 		if ing != nil {
 			if len(ing.Spec.Rules) > 0 {
@@ -1300,7 +1300,7 @@ func (o *Options) CommentOnIssues(targetNS string, environment *v1.Environment, 
 		log.Logger().Debugf("Application is available at: %s", termcolor.ColorInfo(url))
 	}
 
-	release, err := jxClient.JenkinsV1().Releases(ens).Get(releaseName, metav1.GetOptions{})
+	release, err := jxClient.JenkinsV1().Releases(ens).Get(context.TODO(), releaseName, metav1.GetOptions{})
 	if err == nil && release != nil {
 		o.releaseResource = release
 		issues := release.Spec.Issues

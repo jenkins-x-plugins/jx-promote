@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
-	v1fake "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned/fake"
-	"github.com/jenkins-x/jx-helpers/pkg/cmdrunner"
-	"github.com/jenkins-x/jx-helpers/pkg/cmdrunner/fakerunner"
-	"github.com/jenkins-x/jx-helpers/pkg/stringhelpers"
+	v1 "github.com/jenkins-x/jx-api/v3/pkg/apis/jenkins.io/v1"
+	v1fake "github.com/jenkins-x/jx-api/v3/pkg/client/clientset/versioned/fake"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/cmdrunner"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/cmdrunner/fakerunner"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/stringhelpers"
 	"github.com/jenkins-x/jx-promote/pkg/jxtesthelpers"
 	"github.com/jenkins-x/jx-promote/pkg/promote"
 	"github.com/stretchr/testify/require"
@@ -134,7 +134,7 @@ func AssertPromoteIntegration(t *testing.T, testCases ...PromoteTestCase) {
 		t.Logf("PR body: %s", pr.Body)
 
 		// lets assert we have a PipelineActivity...
-		paList, err := po.JXClient.JenkinsV1().PipelineActivities(ns).List(metav1.ListOptions{})
+		paList, err := po.JXClient.JenkinsV1().PipelineActivities(ns).List(context.TODO(), metav1.ListOptions{})
 		require.NoError(t, err, "failed to load PipelineActivity resources in namespace %s", ns)
 		require.Len(t, paList.Items, 1, "should have a PipelineActivity in namespace %s", ns)
 		pa := paList.Items[0]

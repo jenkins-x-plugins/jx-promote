@@ -1,7 +1,7 @@
 package helmfile
 
 import (
-	"github.com/jenkins-x/jx-helpers/pkg/yaml2s"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/yaml2s"
 	"github.com/pkg/errors"
 	"github.com/roboll/helmfile/pkg/state"
 )
