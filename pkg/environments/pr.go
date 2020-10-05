@@ -6,12 +6,12 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx-helpers/pkg/gitclient"
-	"github.com/jenkins-x/jx-helpers/pkg/gitclient/cli"
-	"github.com/jenkins-x/jx-helpers/pkg/gitclient/giturl"
-	"github.com/jenkins-x/jx-helpers/pkg/scmhelpers"
-	"github.com/jenkins-x/jx-helpers/pkg/termcolor"
-	"github.com/jenkins-x/jx-logging/pkg/log"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient/cli"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient/giturl"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/scmhelpers"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/termcolor"
+	"github.com/jenkins-x/jx-logging/v3/pkg/log"
 	"github.com/pkg/errors"
 )
 
@@ -141,7 +141,7 @@ func (o *EnvironmentPullRequestOptions) addLabelsToPullRequest(ctx context.Conte
 }
 
 // CreateScmClient creates a new scm client
-func (o *EnvironmentPullRequestOptions) CreateScmClient(gitServer, owner, gitKind string) (*scm.Client, string, error) {
+func (o *EnvironmentPullRequestOptions) CreateScmClient(gitServer, _, gitKind string) (*scm.Client, string, error) {
 	if gitKind == "" {
 		var err error
 		gitKind, err = scmhelpers.DiscoverGitKind(o.JXClient, o.Namespace, gitServer)
@@ -150,7 +150,6 @@ func (o *EnvironmentPullRequestOptions) CreateScmClient(gitServer, owner, gitKin
 		}
 	}
 
-	o.ScmClientFactory.Owner = owner
 	o.ScmClientFactory.GitKind = gitKind
 
 	// lets avoid recreating git clients in unit tests

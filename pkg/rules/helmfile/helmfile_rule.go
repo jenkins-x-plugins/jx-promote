@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/jenkins-x/jx-helpers/pkg/files"
-	"github.com/jenkins-x/jx-helpers/pkg/yaml2s"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/yaml2s"
 	"github.com/jenkins-x/jx-promote/pkg/envctx"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/pkg/errors"

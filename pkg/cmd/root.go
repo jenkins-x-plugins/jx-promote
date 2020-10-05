@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/jenkins-x/jx-helpers/pkg/cobras/helper"
-	"github.com/jenkins-x/jx-helpers/pkg/cobras/templates"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/cobras/helper"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/cobras/templates"
 	"github.com/jenkins-x/jx-promote/pkg/common"
 	"github.com/jenkins-x/jx-promote/pkg/promote"
 	"github.com/spf13/cobra"
