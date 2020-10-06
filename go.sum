@@ -1107,6 +1107,8 @@ github.com/jenkins-x/jx-gitops v0.0.352 h1:soM7jRT43B8gwzrlIdE9cAd20WKxgPAdoljoL
 github.com/jenkins-x/jx-gitops v0.0.352/go.mod h1:b0AqnIk1OmDdwPzk2TTh6CUHFp55S5huLzpSVEkPNTw=
 github.com/jenkins-x/jx-gitops v0.0.372 h1:rnI94lw0Ge7cNADciwOnvkIEadaOlcXW/nZD9XxlVcA=
 github.com/jenkins-x/jx-gitops v0.0.372/go.mod h1:Aw0BfCE2zwN3qd+c5Aa2doUbSxeUS4mU8sPue3vbSK8=
+github.com/jenkins-x/jx-gitops v0.0.378 h1:NkQU7UEjeDzQcKSP7H7RO63kUb+TlXaL8xbRGlab64g=
+github.com/jenkins-x/jx-gitops v0.0.378/go.mod h1:YWLQkzz/rh0fEiA66MtpcYTW8UnTcSNHZ7I++fhpJT4=
 github.com/jenkins-x/jx-helpers v1.0.62/go.mod h1:3ayhv3uQFtPh4IJ8zkxrF8JegyrzoFpr9gBRAoYspQk=
 github.com/jenkins-x/jx-helpers v1.0.68/go.mod h1:TQDbxIJGEYTHMYlF44GyvemibIIzc/aBzKk1Acq4F9E=
 github.com/jenkins-x/jx-helpers v1.0.70/go.mod h1:TQDbxIJGEYTHMYlF44GyvemibIIzc/aBzKk1Acq4F9E=
@@ -1127,6 +1129,7 @@ github.com/jenkins-x/jx-helpers v1.0.86 h1:JStM7wjeFV2YD8fiSY2ILXHmkCvg1U52R4+OB
 github.com/jenkins-x/jx-helpers v1.0.86/go.mod h1:k0xQ0xL1/BC2ENb7Z5EAZQJbv5BitD2hcOst+Od51UM=
 github.com/jenkins-x/jx-helpers/v3 v3.0.0 h1:4RLFZRxa5fq07XK8aDe+xuYucMPxYLwwDDnxrf+3vzQ=
 github.com/jenkins-x/jx-helpers/v3 v3.0.0/go.mod h1:gwTYDwvCi4qduS2qRSbn6P/isyObDDxmOeM5CTMfn+s=
+github.com/jenkins-x/jx-helpers/v3 v3.0.3/go.mod h1:gwTYDwvCi4qduS2qRSbn6P/isyObDDxmOeM5CTMfn+s=
 github.com/jenkins-x/jx-kube-client v0.0.8 h1:XK/TP2qnhHPb/vhaGHmvVilWGDtARIZ1DOEHp/6/h0Y=
 github.com/jenkins-x/jx-kube-client v0.0.8/go.mod h1:XvNZQAAF95wzQzSfCpehXwb5FI6WCg+5GiwVA2S4SPA=
 github.com/jenkins-x/jx-kube-client/v3 v3.0.0 h1:42Io8YswcXhIulUEMniSU21y9LscNrxPmsZ5/uZa+So=
