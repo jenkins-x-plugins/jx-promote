@@ -46,7 +46,7 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 	if existingPr != nil {
 		log.Logger().Infof("rebasing existing PR %d", existingPr.Number)
 
-		// TODO
+		// TODO handle rebasing an existing PR!
 	}
 
 	if prDir == "" {
@@ -58,7 +58,15 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 		defer os.RemoveAll(tempDir)
 	}
 
-	dir, err := gitclient.CloneToDir(o.Gitter, gitURL, "")
+	cloneGitURL := gitURL
+	if o.ScmClientFactory.GitToken != "" && o.ScmClientFactory.GitUsername != "" {
+		cloneGitURL, err = o.ScmClientFactory.CreateAuthenticatedURL(gitURL)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create authenticated git URL to clone with for private repositories")
+		}
+	}
+
+	dir, err := gitclient.CloneToDir(o.Gitter, cloneGitURL, "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to clone git URL %s", gitURL)
 	}
