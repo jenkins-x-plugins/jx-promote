@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/cmdrunner"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient/cli"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient/giturl"
@@ -18,6 +19,10 @@ import (
 // Git lazily create a gitter if its not specified
 func (o *EnvironmentPullRequestOptions) Git() gitclient.Interface {
 	if o.Gitter == nil {
+		if o.CommandRunner == nil {
+			// lets use a quiet runner to avoid outputting the user/token on git clones
+			o.CommandRunner = cmdrunner.QuietCommandRunner
+		}
 		o.Gitter = cli.NewCLIClient("", o.CommandRunner)
 	}
 	return o.Gitter
