@@ -1094,6 +1094,8 @@ github.com/jenkins-x/go-scm v1.5.183/go.mod h1:xk/KnuS3rVHKBEASsShBZGABm9cGrwntQ
 github.com/jenkins-x/go-scm v1.5.186/go.mod h1:pTp8HHrCEVGs24H/8Cy+X/CDXFlKv9VC6zmrXBYNkfE=
 github.com/jenkins-x/go-scm v1.5.188 h1:TEBhHO9kRFHT29euG+JGm6bF/jSXwAGEZfwiOW6NL7c=
 github.com/jenkins-x/go-scm v1.5.188/go.mod h1:pTp8HHrCEVGs24H/8Cy+X/CDXFlKv9VC6zmrXBYNkfE=
+github.com/jenkins-x/go-scm v1.5.189 h1:WQc3bUSsOTR1b8KBi4CPaU50HiApWRYBCJITOdikKdM=
+github.com/jenkins-x/go-scm v1.5.189/go.mod h1:pTp8HHrCEVGs24H/8Cy+X/CDXFlKv9VC6zmrXBYNkfE=
 github.com/jenkins-x/jx-api/v3 v0.0.17/go.mod h1:QKLHk4VzI+sDBPSzN4K+QdEjNIBnCHS3DKY5YbGeCdY=
 github.com/jenkins-x/jx-api/v3 v0.0.20/go.mod h1:QKLHk4VzI+sDBPSzN4K+QdEjNIBnCHS3DKY5YbGeCdY=
 github.com/jenkins-x/jx-api/v3 v0.0.23 h1:friiM9jHl6h4Ican7jRZiPxsilTE9lrkM/tuqgrnlcU=
@@ -1125,6 +1127,8 @@ github.com/jenkins-x/jx-gitops v0.0.382 h1:JrVj0EX/1o6NqIilz19TsmMOVhVpqDpN+DCHQ
 github.com/jenkins-x/jx-gitops v0.0.382/go.mod h1:HUckBbfwoXn5dlbiBy4OqC7OUoE01eUwkQpQZeeeN+Q=
 github.com/jenkins-x/jx-gitops v0.0.394 h1:+uQJhljoPq4KcgS0hn8Us7RYJiRWxztpg/+/wGiWNG0=
 github.com/jenkins-x/jx-gitops v0.0.394/go.mod h1:GgmrJQ2JFluPLouWcbMgoqtVc5xgdwnFxoA5ohz8/4E=
+github.com/jenkins-x/jx-gitops v0.0.404 h1:nPlnPjBpcEt/tol8YvU6+OI1NsC0IlVUyHW1ukzmScU=
+github.com/jenkins-x/jx-gitops v0.0.404/go.mod h1:qwuLNO62/gaN+8u+TxMQm2pmOzDJ6/scbI70KGHPlUM=
 github.com/jenkins-x/jx-helpers v1.0.62/go.mod h1:3ayhv3uQFtPh4IJ8zkxrF8JegyrzoFpr9gBRAoYspQk=
 github.com/jenkins-x/jx-helpers v1.0.68/go.mod h1:TQDbxIJGEYTHMYlF44GyvemibIIzc/aBzKk1Acq4F9E=
 github.com/jenkins-x/jx-helpers v1.0.70/go.mod h1:TQDbxIJGEYTHMYlF44GyvemibIIzc/aBzKk1Acq4F9E=
@@ -1150,6 +1154,9 @@ github.com/jenkins-x/jx-helpers/v3 v3.0.6 h1:frb2DCcYmm9npJ+Pw551EuUf3oZmasdgl34
 github.com/jenkins-x/jx-helpers/v3 v3.0.6/go.mod h1:r3QYErQdwy+5ceg9/ipwPJLLsdwipjL8tRFwZR7SZSY=
 github.com/jenkins-x/jx-helpers/v3 v3.0.8 h1:apVEJ+4yIyfR+XncHSjld0jtorfXyw+LLIQjdWiB1K8=
 github.com/jenkins-x/jx-helpers/v3 v3.0.8/go.mod h1:YulZCWgM+W49nkW7juaOwIEOyXkmwfaMdsC6/W5b+H8=
+github.com/jenkins-x/jx-helpers/v3 v3.0.9/go.mod h1:YulZCWgM+W49nkW7juaOwIEOyXkmwfaMdsC6/W5b+H8=
+github.com/jenkins-x/jx-helpers/v3 v3.0.14 h1:o8uUVxKaGObWb5WQYMaiiT1BhqJoTvGPkdkRAyKfxbE=
+github.com/jenkins-x/jx-helpers/v3 v3.0.14/go.mod h1:YulZCWgM+W49nkW7juaOwIEOyXkmwfaMdsC6/W5b+H8=
 github.com/jenkins-x/jx-kube-client v0.0.8 h1:XK/TP2qnhHPb/vhaGHmvVilWGDtARIZ1DOEHp/6/h0Y=
 github.com/jenkins-x/jx-kube-client v0.0.8/go.mod h1:XvNZQAAF95wzQzSfCpehXwb5FI6WCg+5GiwVA2S4SPA=
 github.com/jenkins-x/jx-kube-client/v3 v3.0.0 h1:42Io8YswcXhIulUEMniSU21y9LscNrxPmsZ5/uZa+So=
@@ -1175,6 +1182,8 @@ github.com/jenkins-x/jx-secret v0.0.144/go.mod h1:WL6lEL99kgz73dIaP2z13iuQdJvJSO
 github.com/jenkins-x/jx-secret v0.0.164/go.mod h1:LiAbgafyk+F1mqTxdaB+BdknRwAGoO9mGCbr/apKlAo=
 github.com/jenkins-x/jx-secret v0.0.170 h1:KdT+i1ZHhluv4G+x5KH3AGrctGWdvPsRY9jmOIExGB4=
 github.com/jenkins-x/jx-secret v0.0.170/go.mod h1:2SEyGLytO12I7MoCwmggerKExKQg4yY0MOHRbCTzqqc=
+github.com/jenkins-x/jx-secret v0.0.172 h1:Xzzjs6sAglbdHTZ/YjSYYnmuzhRMqSvZiwPgvSN+xE8=
+github.com/jenkins-x/jx-secret v0.0.172/go.mod h1:1p58leAkNkypZlG35UbcfV7zbFfCoYiRY7RoQpl5csA=
 github.com/jenkins-x/lighthouse v0.0.824/go.mod h1:o4ZQzQmaLX8OKLMP/3Lap4OloAP7QUJpZRPY7tUI6LA=
 github.com/jenkins-x/lighthouse v0.0.826/go.mod h1:PDdUKNyQjbPlu1uA/IbvRgm0QXgU9wkHV+DpwWipKkE=
 github.com/jenkins-x/lighthouse v0.0.827/go.mod h1:PDdUKNyQjbPlu1uA/IbvRgm0QXgU9wkHV+DpwWipKkE=
@@ -2318,6 +2327,7 @@ google.golang.org/api v0.31.0 h1:1w5Sz/puhxFo9lTtip2n47k7toB/U2nCqOKNHd3Yrbo=
 google.golang.org/api v0.31.0/go.mod h1:CL+9IBCa2WWU6gRuBWaKqGWLFFwbEUXkfeMkHLQWYWo=
 google.golang.org/api v0.32.0 h1:Le77IccnTqEa8ryp9wIpX5W3zYm7Gf9LhOp9PHcwFts=
 google.golang.org/api v0.33.0 h1:+gL0XvACeMIvpwLZ5rQZzLn5cwOsgg8dIcfJ2SYfBVw=
+google.golang.org/api v0.34.0 h1:k40adF3uR+6x/+hO5Dh4ZFUqFp67vxvbpafFiJxl10A=
 google.golang.org/appengine v1.1.0/go.mod h1:EbEs0AVv82hx2wNQdGPgUI5lhzA/G0D9YwlJXL52JkM=
 google.golang.org/appengine v1.2.0/go.mod h1:xpcJRLb0r/rnEns0DIKYYv+WjYCduHsrkT7/EB5XEv4=
 google.golang.org/appengine v1.3.0/go.mod h1:xpcJRLb0r/rnEns0DIKYYv+WjYCduHsrkT7/EB5XEv4=

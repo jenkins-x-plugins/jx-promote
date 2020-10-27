@@ -83,6 +83,7 @@ type Options struct {
 	ReleaseName             string
 	LocalHelmRepoName       string
 	HelmRepositoryURL       string
+	AutoMerge               bool
 	NoHelmUpdate            bool
 	AllAutomatic            bool
 	NoMergePullRequest      bool
@@ -199,6 +200,7 @@ func (o *Options) AddOptions(cmd *cobra.Command) {
 	cmd.Flags().BoolVarP(&o.NoPoll, "no-poll", "", false, "Disables polling for Pull Request or Pipeline status")
 	cmd.Flags().BoolVarP(&o.NoWaitAfterMerge, "no-wait", "", false, "Disables waiting for completing promotion after the Pull request is merged")
 	cmd.Flags().BoolVarP(&o.IgnoreLocalFiles, "ignore-local-file", "", false, "Ignores the local file system when deducing the Git repository")
+	cmd.Flags().BoolVarP(&o.AutoMerge, "auto-merge", "", false, "If enabled add the 'updatebot' label to tell lighthouse to eagerly merge. Usually the Pull Request pipeline will add this label during the Pull Request pipeline after any extra generation/commits have been done and the PR is valid")
 }
 
 func (o *Options) hasApplicationFlag() bool {
