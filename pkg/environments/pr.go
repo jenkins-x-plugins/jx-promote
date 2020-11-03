@@ -40,6 +40,12 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 		return nil, nil
 	}
 
+	baseBranch, err := gitclient.Branch(gitter, dir)
+	if err != nil {
+	  return nil, errors.Wrapf(err, "failed to find main branch in dir %s", dir)
+	}
+	log.Logger().Debugf("creating Pull Request from %s branch", baseBranch)
+
 	if o.BranchName == "" {
 		o.BranchName, err = gitclient.CreateBranch(gitter, dir)
 		if err != nil {
@@ -83,7 +89,7 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 	pri := &scm.PullRequestInput{
 		Title: commitTitle,
 		Head:  head,
-		Base:  "master",
+		Base:  baseBranch,
 		Body:  commitBody,
 	}
 	pr, _, err := scmClient.PullRequests.Create(ctx, repoFullName, pri)
