@@ -46,6 +46,8 @@ type EnvironmentPullRequestOptions struct {
 	Labels            []string
 	GitKind           string
 	OutDir            string
+	RemoteName        string
+	BaseBranchName    string
 	BranchName        string
 	CommitTitle       string
 	CommitMessage     string

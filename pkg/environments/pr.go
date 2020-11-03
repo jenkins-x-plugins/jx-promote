@@ -40,11 +40,26 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 		return nil, nil
 	}
 
-	baseBranch, err := gitclient.Branch(gitter, dir)
-	if err != nil {
-	  return nil, errors.Wrapf(err, "failed to find main branch in dir %s", dir)
+	baseBranch := o.BaseBranchName
+	if baseBranch == "" {
+		if o.RemoteName == "" {
+			o.RemoteName = "origin"
+		}
+		text, err := gitter.Command(dir, "rev-parse", "--abbrev-ref", o.RemoteName+"/HEAD")
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find remote branch in dir %s", dir)
+		}
+		text = strings.TrimSpace(text)
+		text = strings.TrimPrefix(text, o.RemoteName)
+		baseBranch = strings.TrimPrefix(text, "/")
 	}
-	log.Logger().Debugf("creating Pull Request from %s branch", baseBranch)
+	if baseBranch == "" {
+		baseBranch, err = gitclient.Branch(gitter, dir)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find branch in dir %s", dir)
+		}
+	}
+	log.Logger().Infof("creating Pull Request from %s branch", baseBranch)
 
 	if o.BranchName == "" {
 		o.BranchName, err = gitclient.CreateBranch(gitter, dir)
