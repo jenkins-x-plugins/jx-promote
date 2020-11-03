@@ -78,7 +78,7 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 			return nil, errors.Wrapf(err, "failed to find branch in dir %s", dir)
 		}
 	}
-	log.Logger().Infof("creating Pull Request from %s branch", baseBranch)
+	log.Logger().Debugf("creating Pull Request from %s branch", baseBranch)
 
 	if o.BranchName == "" {
 		o.BranchName, err = gitclient.CreateBranch(gitter, dir)
