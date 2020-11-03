@@ -40,6 +40,7 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 		return nil, nil
 	}
 
+	const headBranchPrefix = "HEAD branch:"
 	baseBranch := o.BaseBranchName
 	if baseBranch == "" {
 		if o.RemoteName == "" {
@@ -47,11 +48,29 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 		}
 		text, err := gitter.Command(dir, "rev-parse", "--abbrev-ref", o.RemoteName+"/HEAD")
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find remote branch in dir %s", dir)
+			text, err = gitter.Command(dir, "remote", "show", o.RemoteName)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get the remote branch name for %s", o.RemoteName)
+			}
+
+			lines := strings.Split(text, "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if strings.HasPrefix(line, headBranchPrefix) {
+					baseBranch = strings.TrimSpace(strings.TrimPrefix(line, headBranchPrefix))
+					if baseBranch != "" {
+						break
+					}
+				}
+			}
+			if baseBranch == "" {
+				return nil, errors.Errorf("output of git remote show %s has no prefix %s as was: %s", o.RemoteName, headBranchPrefix, text)
+			}
+		} else {
+			text = strings.TrimSpace(text)
+			text = strings.TrimPrefix(text, o.RemoteName)
+			baseBranch = strings.TrimPrefix(text, "/")
 		}
-		text = strings.TrimSpace(text)
-		text = strings.TrimPrefix(text, o.RemoteName)
-		baseBranch = strings.TrimPrefix(text, "/")
 	}
 	if baseBranch == "" {
 		baseBranch, err = gitclient.Branch(gitter, dir)
