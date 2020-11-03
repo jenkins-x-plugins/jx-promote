@@ -1096,6 +1096,8 @@ github.com/jenkins-x/go-scm v1.5.188 h1:TEBhHO9kRFHT29euG+JGm6bF/jSXwAGEZfwiOW6N
 github.com/jenkins-x/go-scm v1.5.188/go.mod h1:pTp8HHrCEVGs24H/8Cy+X/CDXFlKv9VC6zmrXBYNkfE=
 github.com/jenkins-x/go-scm v1.5.189 h1:WQc3bUSsOTR1b8KBi4CPaU50HiApWRYBCJITOdikKdM=
 github.com/jenkins-x/go-scm v1.5.189/go.mod h1:pTp8HHrCEVGs24H/8Cy+X/CDXFlKv9VC6zmrXBYNkfE=
+github.com/jenkins-x/go-scm v1.5.190 h1:fJKQJmn+WsIcojwFQEorpb7JXFxVJeaYY8y+4lbyweU=
+github.com/jenkins-x/go-scm v1.5.190/go.mod h1:pTp8HHrCEVGs24H/8Cy+X/CDXFlKv9VC6zmrXBYNkfE=
 github.com/jenkins-x/jx-api/v3 v0.0.17/go.mod h1:QKLHk4VzI+sDBPSzN4K+QdEjNIBnCHS3DKY5YbGeCdY=
 github.com/jenkins-x/jx-api/v3 v0.0.20/go.mod h1:QKLHk4VzI+sDBPSzN4K+QdEjNIBnCHS3DKY5YbGeCdY=
 github.com/jenkins-x/jx-api/v3 v0.0.23 h1:friiM9jHl6h4Ican7jRZiPxsilTE9lrkM/tuqgrnlcU=
@@ -1129,6 +1131,8 @@ github.com/jenkins-x/jx-gitops v0.0.394 h1:+uQJhljoPq4KcgS0hn8Us7RYJiRWxztpg/+/w
 github.com/jenkins-x/jx-gitops v0.0.394/go.mod h1:GgmrJQ2JFluPLouWcbMgoqtVc5xgdwnFxoA5ohz8/4E=
 github.com/jenkins-x/jx-gitops v0.0.404 h1:nPlnPjBpcEt/tol8YvU6+OI1NsC0IlVUyHW1ukzmScU=
 github.com/jenkins-x/jx-gitops v0.0.404/go.mod h1:qwuLNO62/gaN+8u+TxMQm2pmOzDJ6/scbI70KGHPlUM=
+github.com/jenkins-x/jx-gitops v0.0.409 h1:2/wu+4pakEnNVJoL2dVACgqwiFN4cWmU2gNb5Gh0CaM=
+github.com/jenkins-x/jx-gitops v0.0.409/go.mod h1:Gv5Kp9FM8ZbHexDhPwrHZiA4tSEoXDnNQhQvfD9w4+U=
 github.com/jenkins-x/jx-helpers v1.0.62/go.mod h1:3ayhv3uQFtPh4IJ8zkxrF8JegyrzoFpr9gBRAoYspQk=
 github.com/jenkins-x/jx-helpers v1.0.68/go.mod h1:TQDbxIJGEYTHMYlF44GyvemibIIzc/aBzKk1Acq4F9E=
 github.com/jenkins-x/jx-helpers v1.0.70/go.mod h1:TQDbxIJGEYTHMYlF44GyvemibIIzc/aBzKk1Acq4F9E=
@@ -1157,6 +1161,8 @@ github.com/jenkins-x/jx-helpers/v3 v3.0.8/go.mod h1:YulZCWgM+W49nkW7juaOwIEOyXkm
 github.com/jenkins-x/jx-helpers/v3 v3.0.9/go.mod h1:YulZCWgM+W49nkW7juaOwIEOyXkmwfaMdsC6/W5b+H8=
 github.com/jenkins-x/jx-helpers/v3 v3.0.14 h1:o8uUVxKaGObWb5WQYMaiiT1BhqJoTvGPkdkRAyKfxbE=
 github.com/jenkins-x/jx-helpers/v3 v3.0.14/go.mod h1:YulZCWgM+W49nkW7juaOwIEOyXkmwfaMdsC6/W5b+H8=
+github.com/jenkins-x/jx-helpers/v3 v3.0.15 h1:AQ0H2krcz6NbugyiqXzhNAZY5Os8PFdDhk+5FZYTU1g=
+github.com/jenkins-x/jx-helpers/v3 v3.0.15/go.mod h1:YulZCWgM+W49nkW7juaOwIEOyXkmwfaMdsC6/W5b+H8=
 github.com/jenkins-x/jx-kube-client v0.0.8 h1:XK/TP2qnhHPb/vhaGHmvVilWGDtARIZ1DOEHp/6/h0Y=
 github.com/jenkins-x/jx-kube-client v0.0.8/go.mod h1:XvNZQAAF95wzQzSfCpehXwb5FI6WCg+5GiwVA2S4SPA=
 github.com/jenkins-x/jx-kube-client/v3 v3.0.0 h1:42Io8YswcXhIulUEMniSU21y9LscNrxPmsZ5/uZa+So=
@@ -1184,6 +1190,8 @@ github.com/jenkins-x/jx-secret v0.0.170 h1:KdT+i1ZHhluv4G+x5KH3AGrctGWdvPsRY9jmO
 github.com/jenkins-x/jx-secret v0.0.170/go.mod h1:2SEyGLytO12I7MoCwmggerKExKQg4yY0MOHRbCTzqqc=
 github.com/jenkins-x/jx-secret v0.0.172 h1:Xzzjs6sAglbdHTZ/YjSYYnmuzhRMqSvZiwPgvSN+xE8=
 github.com/jenkins-x/jx-secret v0.0.172/go.mod h1:1p58leAkNkypZlG35UbcfV7zbFfCoYiRY7RoQpl5csA=
+github.com/jenkins-x/jx-secret v0.0.173 h1:7bHGTylHU8YyOrWFddi1NrcTe7Gq75PZZL/r07VczGI=
+github.com/jenkins-x/jx-secret v0.0.173/go.mod h1:1p58leAkNkypZlG35UbcfV7zbFfCoYiRY7RoQpl5csA=
 github.com/jenkins-x/lighthouse v0.0.824/go.mod h1:o4ZQzQmaLX8OKLMP/3Lap4OloAP7QUJpZRPY7tUI6LA=
 github.com/jenkins-x/lighthouse v0.0.826/go.mod h1:PDdUKNyQjbPlu1uA/IbvRgm0QXgU9wkHV+DpwWipKkE=
 github.com/jenkins-x/lighthouse v0.0.827/go.mod h1:PDdUKNyQjbPlu1uA/IbvRgm0QXgU9wkHV+DpwWipKkE=
@@ -2649,6 +2657,7 @@ k8s.io/gengo v0.0.0-20200114144118-36b2048a9120/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8
 k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12 h1:pZzawYyz6VRNPVYpqGv61LWCimQv1BihyeqFrp50/G4=
 k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8IAqLxYwwyPxAX1Pzy0ii0=
 k8s.io/gengo v0.0.0-20200413195148-3a45101e95ac/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8IAqLxYwwyPxAX1Pzy0ii0=
+k8s.io/gengo v0.0.0-20200428234225-8167cfdcfc14 h1:t4L10Qfx/p7ASH3gXCdIUtPbbIuegCoUJf3TMSFekjw=
 k8s.io/gengo v0.0.0-20200428234225-8167cfdcfc14/go.mod h1:ezvh/TsK7cY6rbqRK0oQQ8IAqLxYwwyPxAX1Pzy0ii0=
 k8s.io/helm v2.16.10+incompatible h1:eFksERw3joHEL62TrcDX8I5fgEQJvit4qxxPXAkYTyQ=
 k8s.io/helm v2.16.10+incompatible/go.mod h1:LZzlS4LQBHfciFOurYBFkCMTaZ0D1l+p0teMg7TSULI=
