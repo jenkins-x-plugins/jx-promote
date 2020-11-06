@@ -88,14 +88,14 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 	}
 
 	commitTitle := strings.TrimSpace(o.CommitTitle)
-	commitBody := o.commitBody.String()
+	commitBody := o.CommitMessage
 
 	commitMessageStart := o.CommitMessage
 	if commitMessageStart == "" {
 		commitMessageStart = commitTitle
 	}
-	commitMessage := fmt.Sprintf("%s\n\n%s", commitMessageStart, commitBody)
-	_, err = gitclient.AddAndCommitFiles(gitter, dir, commitMessage)
+	commitMessage := fmt.Sprintf("%s\n\n%s", commitTitle, o.CommitMessageSuffix)
+	_, err = gitclient.AddAndCommitFiles(gitter, dir, strings.TrimSpace(commitMessage))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to commit changes in dir %s", dir)
 	}
