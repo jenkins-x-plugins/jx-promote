@@ -1,8 +1,6 @@
 package environments
 
 import (
-	"strings"
-
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-api/v3/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/cmdrunner"
@@ -39,25 +37,25 @@ type EnvironmentPullRequestOptions struct {
 	Gitter           gitclient.Interface
 	CommandRunner    cmdrunner.CommandRunner
 
-	Function          func() error
-	ModifyChartFn     ModifyChartFn
-	ModifyKptFn       ModifyKptFn
-	PullRequestNumber int
-	Labels            []string
-	GitKind           string
-	OutDir            string
-	RemoteName        string
-	BaseBranchName    string
-	BranchName        string
-	CommitTitle       string
-	CommitMessage     string
-	Namespace         string
-	JXClient          versioned.Interface
-	ScmClient         *scm.Client
-	BatchMode         bool
-	UseGitHubOAuth    bool
-	Fork              bool
-	commitBody        strings.Builder
+	Function            func() error
+	ModifyChartFn       ModifyChartFn
+	ModifyKptFn         ModifyKptFn
+	PullRequestNumber   int
+	Labels              []string
+	GitKind             string
+	OutDir              string
+	RemoteName          string
+	BaseBranchName      string
+	BranchName          string
+	CommitTitle         string
+	CommitMessage       string
+	CommitMessageSuffix string
+	Namespace           string
+	JXClient            versioned.Interface
+	ScmClient           *scm.Client
+	BatchMode           bool
+	UseGitHubOAuth      bool
+	Fork                bool
 }
 
 // A PullRequestFilter defines a filter for finding pull requests
