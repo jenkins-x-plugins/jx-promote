@@ -31,7 +31,7 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 	if envName == "" {
 		envName = env.Name
 	}
-	comment := fmt.Sprintf("chore: promote %s to version %s in %s environment", app, versionName, envName) + "\n\n\this commit will trigger a pipeline to [generate the actual kubernetes resources to perform the promotion](https://jenkins-x.io/docs/v3/about/how-it-works/#promotion) which will create a second commit on this Pull Request before it can merge\","
+	comment := fmt.Sprintf("chore: promote %s to version %s in %s environment", app, versionName, envName) + "\n\nthis commit will trigger a pipeline to [generate the actual kubernetes resources to perform the promotion](https://jenkins-x.io/docs/v3/about/how-it-works/#promotion) which will create a second commit on this Pull Request before it can merge"
 	details := scm.PullRequest{
 		Source: "promote-" + app + "-" + versionName + "-" + env.Name,
 		Title:  fmt.Sprintf("chore: promote %s to version %s in %s environment", app, versionName, envName),
