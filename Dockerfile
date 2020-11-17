@@ -1,5 +1,15 @@
-FROM gcr.io/jenkinsxio/jx-cli-base:0.0.21
+FROM gcr.io/jenkinsxio/jx-boot:latest
 
-ENTRYPOINT ["jx-promote"]
+ARG BUILD_DATE
+ARG VERSION
+ARG REVISION
+ARG TARGETARCH
+ARG TARGETOS
 
-COPY ./build/linux/jx-promote /usr/bin/jx-promote
+LABEL maintainer="jenkins-x"
+
+RUN echo using jx-promote version ${VERSION} and OS ${TARGETOS} arch ${TARGETARCH} && \
+  mkdir -p /home/.jx3 && \
+  curl -L https://github.com/jenkins-x/jx-promote/releases/download/v${VERSION}/jx-promote-${TARGETOS}-${TARGETARCH}.tar.gz | tar xzv && \
+  mv jx-promote /usr/bin
+
