@@ -78,7 +78,8 @@ func modifyHelmfile(r *rules.PromoteRule, rule *v1alpha1.HelmfileRule, file stri
 	}
 	nestedPath := rule.Path
 	for _, s := range rootState.Helmfiles {
-		if s.Path == nestedPath {
+		matches, err := filepath.Match(s.Path, nestedPath)
+		if err == nil && matches {
 			return nil
 		}
 	}
