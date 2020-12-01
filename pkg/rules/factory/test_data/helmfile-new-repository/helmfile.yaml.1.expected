@@ -11,9 +11,14 @@ releases:
   name: dbmigrator
   labels:
     job: dbmigrator
+  forceNamespace: ""
+  skipDeps: null
 - chart: dev2/myapp
   version: 1.2.3
   name: myapp
   namespace: jx
+  forceNamespace: ""
+  skipDeps: null
 templates: {}
 missingFileHandler: ""
+renderedvalues: {}
