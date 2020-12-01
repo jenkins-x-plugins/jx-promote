@@ -4,8 +4,8 @@ import (
 	"path"
 	"testing"
 
-	v1 "github.com/jenkins-x/jx-api/v3/pkg/apis/jenkins.io/v1"
-	"github.com/jenkins-x/jx-api/v3/pkg/config"
+	v1 "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
+	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/kube/jxenv"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/versionstream"
 	"github.com/jenkins-x/jx-promote/pkg/envctx"
@@ -21,7 +21,7 @@ func CreateTestDevEnvironment(ns string) (*v1.Environment, error) {
 	devEnv.Namespace = ns
 
 	// lets add a requirements object
-	req := CreateTestRequirements(ns)
+	req := CreateTestRequirements()
 	data, err := yaml.Marshal(req)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal requirements %#v to YAML", req)
@@ -30,10 +30,9 @@ func CreateTestDevEnvironment(ns string) (*v1.Environment, error) {
 	return devEnv, err
 }
 
-func CreateTestRequirements(ns string) *config.RequirementsConfig {
-	req := config.NewRequirementsConfig()
-	req.Cluster.Namespace = ns
-	return req
+func CreateTestRequirements() *jxcore.RequirementsConfig {
+	req := jxcore.NewRequirementsConfig()
+	return &req.Spec
 }
 
 func CreateTestVersionResolver(t *testing.T) *versionstream.VersionResolver {
@@ -47,7 +46,7 @@ func CreateTestVersionResolver(t *testing.T) *versionstream.VersionResolver {
 
 func CreateTestDevEnvironmentContext(t *testing.T, ns string) *envctx.EnvironmentContext {
 	vr := CreateTestVersionResolver(t)
-	requirementsConfig := CreateTestRequirements(ns)
+	requirementsConfig := CreateTestRequirements()
 
 	devEnv, err := CreateTestDevEnvironment(ns)
 	require.NoError(t, err, "failed to create test dev Environemnt")

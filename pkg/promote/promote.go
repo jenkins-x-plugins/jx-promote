@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx-api/v3/pkg/client/clientset/versioned"
-	"github.com/jenkins-x/jx-api/v3/pkg/config"
+	"github.com/jenkins-x/jx-api/v4/pkg/client/clientset/versioned"
+	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
 	"github.com/jenkins-x/jx-gitops/pkg/cmd/git/setup"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/builds"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
@@ -37,10 +37,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	v1 "github.com/jenkins-x/jx-api/v3/pkg/apis/jenkins.io/v1"
+	v1 "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
 
 	"github.com/blang/semver"
-	typev1 "github.com/jenkins-x/jx-api/v3/pkg/client/clientset/versioned/typed/jenkins.io/v1"
+	typev1 "github.com/jenkins-x/jx-api/v4/pkg/client/clientset/versioned/typed/core/v4beta1"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/cobras/templates"
 	helm "github.com/jenkins-x/jx-helpers/v3/pkg/helmer"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/kube"
@@ -410,7 +410,7 @@ func (o *Options) Run() error {
 		return err
 	}
 
-	o.Activities = jxClient.JenkinsV1().PipelineActivities(ns)
+	o.Activities = jxClient.CoreV4beta1().PipelineActivities(ns)
 
 	releaseName := o.ReleaseName
 	if releaseName == "" {
@@ -433,7 +433,7 @@ func (o *Options) Run() error {
 		if o.Environment == "" {
 			return options.MissingOption(optionEnvironment)
 		}
-		env, err := jxClient.JenkinsV1().Environments(ns).Get(context.TODO(), o.Environment, metav1.GetOptions{})
+		env, err := jxClient.CoreV4beta1().Environments(ns).Get(context.TODO(), o.Environment, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -527,7 +527,7 @@ func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 		return err
 	}
 	jxClient := o.JXClient
-	envs, err := jxClient.JenkinsV1().Environments(team).List(context.TODO(), metav1.ListOptions{})
+	envs, err := jxClient.CoreV4beta1().Environments(team).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		log.Logger().Warnf("No Environments found: %s/n", err)
 		return nil
@@ -678,7 +678,7 @@ func (o *Options) ResolveChartRepositoryURL() (string, error) {
 			err = nil
 		}
 		if env != nil {
-			requirements, err := config.GetRequirementsConfigFromTeamSettings(&env.Spec.TeamSettings)
+			requirements, err := jxcore.GetRequirementsConfigFromTeamSettings(&env.Spec.TeamSettings)
 			if err != nil {
 				return answer, errors.Wrapf(err, "getting requirements from dev Environment")
 			}
@@ -1092,7 +1092,7 @@ func (o *Options) CreatePromoteKey(env *v1.Environment) *activities.PromoteStepA
 		if o.releaseResource == nil && releaseName != "" {
 			jxClient := o.JXClient
 			if err == nil && jxClient != nil {
-				release, err := jxClient.JenkinsV1().Releases(env.Spec.Namespace).Get(context.TODO(), releaseName, metav1.GetOptions{})
+				release, err := jxClient.CoreV4beta1().Releases(env.Spec.Namespace).Get(context.TODO(), releaseName, metav1.GetOptions{})
 				if err == nil && release != nil {
 					o.releaseResource = release
 				}
@@ -1138,7 +1138,7 @@ func (o *Options) GetLatestPipelineBuildByCRD(pipeline string) (string, error) {
 	// lets find the latest build number
 	jxClient := o.JXClient
 	ns := o.Namespace
-	pipelines, err := jxClient.JenkinsV1().PipelineActivities(ns).List(context.TODO(), metav1.ListOptions{})
+	pipelines, err := jxClient.CoreV4beta1().PipelineActivities(ns).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -1189,7 +1189,7 @@ func (o *Options) GetPipelineName(gitInfo *giturl.GitRepository, pipeline string
 		// lets try deduce the pipeline name via the app name
 		jxClient := o.JXClient
 		ns := o.Namespace
-		pipelineList, err := jxClient.JenkinsV1().PipelineActivities(ns).List(context.TODO(), metav1.ListOptions{})
+		pipelineList, err := jxClient.CoreV4beta1().PipelineActivities(ns).List(context.TODO(), metav1.ListOptions{})
 		if err == nil {
 			for _, pipelineResource := range pipelineList.Items {
 				pipelineName := pipelineResource.Spec.Pipeline
@@ -1229,7 +1229,7 @@ func (o *Options) GetLatestPipelineBuild(pipeline string) (string, string, error
 		return "", "", errors.Wrapf(err, "failed to find dev env")
 	}
 	webhookEngine := devEnv.Spec.WebHookEngine
-	if webhookEngine == v1.WebHookEngineProw || webhookEngine == v1.WebHookEngineLighthouse {
+	if webhookEngine == v1.WebHookEngineLighthouse {
 		return pipeline, build, nil
 	}
 	return pipeline, build, nil
@@ -1302,7 +1302,7 @@ func (o *Options) CommentOnIssues(targetNS string, environment *v1.Environment, 
 		log.Logger().Debugf("Application is available at: %s", termcolor.ColorInfo(url))
 	}
 
-	release, err := jxClient.JenkinsV1().Releases(ens).Get(context.TODO(), releaseName, metav1.GetOptions{})
+	release, err := jxClient.CoreV4beta1().Releases(ens).Get(context.TODO(), releaseName, metav1.GetOptions{})
 	if err == nil && release != nil {
 		o.releaseResource = release
 		issues := release.Spec.Issues
