@@ -5,11 +5,9 @@ import (
 	"path/filepath"
 
 	"github.com/jenkins-x/go-scm/scm"
-	v1 "github.com/jenkins-x/jx-api/v3/pkg/apis/jenkins.io/v1"
-	api_config "github.com/jenkins-x/jx-api/v3/pkg/config"
+	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient/gitconfig"
-	"github.com/jenkins-x/jx-helpers/v3/pkg/yaml2s"
 	"github.com/jenkins-x/jx-promote/pkg/promoteconfig"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/jenkins-x/jx-promote/pkg/rules/factory"
@@ -17,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *ReleaseInfo, draftPR bool) error {
+func (o *Options) PromoteViaPullRequest(env *jxcore.Environment, releaseInfo *ReleaseInfo, draftPR bool) error {
 	configureDependencyMatrix()
 
 	version := o.Version
@@ -141,7 +139,7 @@ func configureDependencyMatrix() {
 	//dependencymatrix.DependencyMatrixDirName = filepath.Join(".jx", "dependencies")
 }
 
-func getRemoteNamespace(o *Options, env *v1.Environment, app string) (*string, error) {
+func getRemoteNamespace(o *Options, env *jxcore.Environment, app string) (*string, error) {
 	var promoteNS *string = nil
 	// 1. Load helmfile
 	hf := filepath.Join(o.OutDir, "helmfile.yaml")
@@ -165,7 +163,8 @@ func getRemoteNamespace(o *Options, env *v1.Environment, app string) (*string, e
 		if o.DefaultAppNamespace != "" {
 			promoteNS = &o.DefaultAppNamespace
 		} else { // 3.2 Load namespace from `jx-requirements.yml`
-			promoteNS, err = getNamespaceFromRequirements(o.OutDir)
+			ns, err := getNamespaceFromRequirements(o.OutDir)
+			promoteNS = &ns
 			if err != nil {
 				return nil, err
 			}
@@ -175,12 +174,14 @@ func getRemoteNamespace(o *Options, env *v1.Environment, app string) (*string, e
 	return promoteNS, nil
 }
 
-func getNamespaceFromRequirements(outdir string) (*string, error) {
-	path := filepath.Join(outdir, "jx-requirements.yml")
-	state := api_config.RequirementsConfig{}
-	err := yaml2s.LoadFile(path, state)
-	if err != nil {
-		return nil, err
-	}
-	return &state.Cluster.Namespace, nil
+func getNamespaceFromRequirements(outdir string) (string, error) {
+
+	//path := filepath.Join(outdir, "jx-requirements.yml")
+	//state := jxcore.RequirementsConfig{}
+	//err := yaml2s.LoadFile(path, state)
+	//if err != nil {
+	//	return nil, err
+	//}
+	// for now we are only using jx namespace
+	return jxcore.DefaultNamespace, nil
 }

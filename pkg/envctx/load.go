@@ -14,9 +14,9 @@ import (
 	"github.com/jenkins-x/jx-logging/v3/pkg/log"
 	"sigs.k8s.io/yaml"
 
-	v1 "github.com/jenkins-x/jx-api/v3/pkg/apis/jenkins.io/v1"
-	"github.com/jenkins-x/jx-api/v3/pkg/client/clientset/versioned"
-	"github.com/jenkins-x/jx-api/v3/pkg/config"
+	v1 "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
+	"github.com/jenkins-x/jx-api/v4/pkg/client/clientset/versioned"
+	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
 	"github.com/pkg/errors"
 )
 
@@ -108,7 +108,7 @@ func (e *EnvironmentContext) LazyLoad(jxClient versioned.Interface, ns string, g
 }
 
 // GetRequirementsConfigFromTeamSettings reads the BootRequirements string from TeamSettings and unmarshals it
-func GetRequirementsConfigFromTeamSettings(settings *v1.TeamSettings) (*config.RequirementsConfig, error) {
+func GetRequirementsConfigFromTeamSettings(settings *v1.TeamSettings) (*jxcore.RequirementsConfig, error) {
 	if settings == nil {
 		return nil, nil
 	}
@@ -118,7 +118,7 @@ func GetRequirementsConfigFromTeamSettings(settings *v1.TeamSettings) (*config.R
 		return nil, nil
 	}
 
-	requirements := &config.RequirementsConfig{}
+	requirements := &jxcore.RequirementsConfig{}
 	data := []byte(settings.BootRequirements)
 	err := yaml.Unmarshal(data, requirements)
 	if err != nil {

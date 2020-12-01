@@ -6,16 +6,18 @@ require (
 	github.com/hashicorp/vault v1.2.3 // indirect
 	github.com/jenkins-x/go-scm v1.5.192
 	github.com/jenkins-x/jx-api/v4 v4.0.10
-	github.com/jenkins-x/jx-gitops v0.0.443
+	github.com/jenkins-x/jx-gitops v0.0.444
 	github.com/jenkins-x/jx-helpers/v3 v3.0.27
 	github.com/jenkins-x/jx-logging/v3 v3.0.2
 	github.com/pkg/errors v0.9.1
-	github.com/roboll/helmfile v0.125.7
-	github.com/spf13/cobra v1.0.0
+	github.com/roboll/helmfile v0.135.0
+	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
+	go.mozilla.org/sops v0.0.0-20190912205235-14a22d7a7060 // indirect
+	golang.org/x/build v0.0.0-20190111050920-041ab4dc3f9d // indirect
 	k8s.io/api v0.19.2
-	k8s.io/apimachinery v0.19.2
+	k8s.io/apimachinery v0.19.3
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	k8s.io/helm v2.16.10+incompatible
 	sigs.k8s.io/yaml v1.2.0
