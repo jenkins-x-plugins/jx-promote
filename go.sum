@@ -975,6 +975,8 @@ github.com/jenkins-x/jx-api/v3 v3.0.3 h1:jiRlPKn5hebsfHDi+Pq3IPKGPcTnvyfLXTQYuMF
 github.com/jenkins-x/jx-api/v3 v3.0.3/go.mod h1:8akIl/53O1P/DfyXz6ZysWl/9AfdVlJpZK/xOajgXos=
 github.com/jenkins-x/jx-api/v4 v4.0.10 h1:CJLdVv8esIonmAQ+DptZWPz/JaLruZDSxICRht9vxnI=
 github.com/jenkins-x/jx-api/v4 v4.0.10/go.mod h1:3n+xwDoSuALVUSlIUj8nK105k7hqP5HoTh7cch/FScc=
+github.com/jenkins-x/jx-api/v4 v4.0.11 h1:O+kfza0EvHkRhbOTS7OnO6F2f9qF4RT4xcfnjPK7lK8=
+github.com/jenkins-x/jx-api/v4 v4.0.11/go.mod h1:3n+xwDoSuALVUSlIUj8nK105k7hqP5HoTh7cch/FScc=
 github.com/jenkins-x/jx-gitops v0.0.409 h1:2/wu+4pakEnNVJoL2dVACgqwiFN4cWmU2gNb5Gh0CaM=
 github.com/jenkins-x/jx-gitops v0.0.409/go.mod h1:Gv5Kp9FM8ZbHexDhPwrHZiA4tSEoXDnNQhQvfD9w4+U=
 github.com/jenkins-x/jx-gitops v0.0.413 h1:xvyY2zXwwG3ZNJc3SusEVb44rty6nPWcVHqZPqiCR34=
@@ -993,12 +995,17 @@ github.com/jenkins-x/jx-helpers/v3 v3.0.23 h1:iryewvK0YJJOy8kRC2s+RjkC3AVzNIZAse
 github.com/jenkins-x/jx-helpers/v3 v3.0.23/go.mod h1:YulZCWgM+W49nkW7juaOwIEOyXkmwfaMdsC6/W5b+H8=
 github.com/jenkins-x/jx-helpers/v3 v3.0.27 h1:KWrVjpWyzdy0b4ivrwwgLXTP2ISkDn83Sct7c0TNBv8=
 github.com/jenkins-x/jx-helpers/v3 v3.0.27/go.mod h1:hzWZN1H9nPJMIiDdgfQ6Nops1Oo+KwKxmU1ATBdqYGI=
+<<<<<<< HEAD
 =======
 github.com/jenkins-x/jx-api/v4 v4.0.11 h1:O+kfza0EvHkRhbOTS7OnO6F2f9qF4RT4xcfnjPK7lK8=
 github.com/jenkins-x/jx-api/v4 v4.0.11/go.mod h1:3n+xwDoSuALVUSlIUj8nK105k7hqP5HoTh7cch/FScc=
 github.com/jenkins-x/jx-helpers/v3 v3.0.29 h1:ueVTYYsxhm2RFlUlHBMoXxP6Wu2e/HSrmLF6oVr+g48=
 github.com/jenkins-x/jx-helpers/v3 v3.0.29/go.mod h1:nmXx3EyNNco3C3BOumzKysDMgz3YQuGtG7PxS+1KPSI=
 >>>>>>> 20f93eb... chore: bump jx-gitops and fix unit tests, adding in new defaults
+=======
+github.com/jenkins-x/jx-helpers/v3 v3.0.29 h1:ueVTYYsxhm2RFlUlHBMoXxP6Wu2e/HSrmLF6oVr+g48=
+github.com/jenkins-x/jx-helpers/v3 v3.0.29/go.mod h1:nmXx3EyNNco3C3BOumzKysDMgz3YQuGtG7PxS+1KPSI=
+>>>>>>> 40c034f... refactor: move traditional CRDs back to jenkins.io group so we dont need to create new CRDs
 github.com/jenkins-x/jx-kube-client/v3 v3.0.1 h1:zMnxoLRXJJ85PAd9OVPlgXT5T8xHgbmxSMhpYPTF5mw=
 github.com/jenkins-x/jx-kube-client/v3 v3.0.1/go.mod h1:0CYp1ACEgSmOxul1bx5qbZgQGEcyAeGdBOBa+u62zZY=
 github.com/jenkins-x/jx-logging/v3 v3.0.0/go.mod h1:bOYlj+Cdd9v7/vDXjkwlUylxGs5sfQJvYnuYbCL0IrY=
