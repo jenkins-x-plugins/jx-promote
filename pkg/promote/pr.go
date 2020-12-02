@@ -2,6 +2,7 @@ package promote
 
 import (
 	"fmt"
+	v1 "github.com/jenkins-x/jx-api/v4/pkg/apis/jenkins.io/v1"
 	"path/filepath"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -15,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (o *Options) PromoteViaPullRequest(env *jxcore.Environment, releaseInfo *ReleaseInfo, draftPR bool) error {
+func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *ReleaseInfo, draftPR bool) error {
 	configureDependencyMatrix()
 
 	version := o.Version
@@ -139,7 +140,7 @@ func configureDependencyMatrix() {
 	//dependencymatrix.DependencyMatrixDirName = filepath.Join(".jx", "dependencies")
 }
 
-func getRemoteNamespace(o *Options, env *jxcore.Environment, app string) (*string, error) {
+func getRemoteNamespace(o *Options, env *v1.Environment, app string) (*string, error) {
 	var promoteNS *string = nil
 	// 1. Load helmfile
 	hf := filepath.Join(o.OutDir, "helmfile.yaml")
