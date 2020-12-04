@@ -5,7 +5,7 @@ require (
 	github.com/cpuguy83/go-md2man v1.0.10
 	github.com/hashicorp/vault v1.2.3 // indirect
 	github.com/jenkins-x/go-scm v1.5.192
-	github.com/jenkins-x/jx-api/v4 v4.0.11
+	github.com/jenkins-x/jx-api/v4 v4.0.12
 	github.com/jenkins-x/jx-gitops v0.0.445
 	github.com/jenkins-x/jx-helpers/v3 v3.0.29
 	github.com/jenkins-x/jx-logging/v3 v3.0.2
