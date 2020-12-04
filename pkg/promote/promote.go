@@ -11,9 +11,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jenkins-x/jx-helpers/v3/pkg/requirements"
+
+	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient/cli"
+
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-api/v4/pkg/client/clientset/versioned"
-	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
 	"github.com/jenkins-x/jx-gitops/pkg/cmd/git/setup"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/builds"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
@@ -101,6 +104,7 @@ type Options struct {
 	JXClient   versioned.Interface
 	Helmer     helm.Helmer
 	Input      input.Interface
+	GitClient  gitclient.Interface
 
 	// calculated fields
 	TimeoutDuration         *time.Duration
@@ -346,7 +350,11 @@ func (o *Options) Run() error {
 		return errors.Errorf("no namespace defined")
 	}
 	jxClient := o.JXClient
-	err = o.DevEnvContext.LazyLoad(o.JXClient, o.Namespace, o.Git())
+	if o.GitClient == nil {
+		o.GitClient = cli.NewCLIClient("", o.CommandRunner)
+	}
+
+	err = o.DevEnvContext.LazyLoad(o.GitClient, o.JXClient, o.Namespace, o.Git())
 	if err != nil {
 		return errors.Wrap(err, "failed to lazy load the EnvironmentContext")
 	}
@@ -678,7 +686,10 @@ func (o *Options) ResolveChartRepositoryURL() (string, error) {
 			err = nil
 		}
 		if env != nil {
-			requirements, err := jxcore.GetRequirementsConfigFromTeamSettings(&env.Spec.TeamSettings)
+			if o.GitClient == nil {
+				o.GitClient = cli.NewCLIClient("", o.CommandRunner)
+			}
+			requirements, err := requirements.GetClusterRequirementsConfig(o.GitClient, jxClient)
 			if err != nil {
 				return answer, errors.Wrapf(err, "getting requirements from dev Environment")
 			}

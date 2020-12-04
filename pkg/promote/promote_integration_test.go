@@ -72,8 +72,7 @@ func AssertPromoteIntegration(t *testing.T, testCases ...PromoteTestCase) {
 
 		targetFullName := "jenkins-x/default-environment-helmfile"
 
-		devEnv, err := jxtesthelpers.CreateTestDevEnvironment(ns)
-		require.NoError(t, err, "failed to create dev environment")
+		devEnv := jxtesthelpers.CreateTestDevEnvironment(ns)
 
 		kubeObjects := []runtime.Object{
 			&corev1.Namespace{
@@ -119,7 +118,7 @@ func AssertPromoteIntegration(t *testing.T, testCases ...PromoteTestCase) {
 		po.Pipeline = "myorg/myapp/master"
 		po.DevEnvContext.VersionResolver = jxtesthelpers.CreateTestVersionResolver(t)
 
-		err = po.Run()
+		err := po.Run()
 		require.NoError(t, err, "failed test %s s", name)
 
 		scmClient := po.ScmClient

@@ -1,8 +1,9 @@
 package envctx
 
 import (
-	"fmt"
 	"path/filepath"
+
+	"github.com/jenkins-x/jx-helpers/v3/pkg/requirements"
 
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
@@ -12,16 +13,13 @@ import (
 	"github.com/jenkins-x/jx-helpers/v3/pkg/stringhelpers"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/versionstream"
 	"github.com/jenkins-x/jx-logging/v3/pkg/log"
-	"sigs.k8s.io/yaml"
 
-	v1 "github.com/jenkins-x/jx-api/v4/pkg/apis/jenkins.io/v1"
 	"github.com/jenkins-x/jx-api/v4/pkg/client/clientset/versioned"
-	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
 	"github.com/pkg/errors"
 )
 
 // LazyLoad lazy loads any missing values
-func (e *EnvironmentContext) LazyLoad(jxClient versioned.Interface, ns string, gitter gitclient.Interface) error {
+func (e *EnvironmentContext) LazyLoad(gclient gitclient.Interface, jxClient versioned.Interface, ns string, gitter gitclient.Interface) error {
 	var err error
 	if e.DevEnv == nil {
 		e.DevEnv, err = jxenv.GetDevEnvironment(jxClient, ns)
@@ -33,9 +31,9 @@ func (e *EnvironmentContext) LazyLoad(jxClient versioned.Interface, ns string, g
 		return errors.Errorf("no dev environemnt in namespace %s", ns)
 	}
 	if e.Requirements == nil {
-		e.Requirements, err = GetRequirementsConfigFromTeamSettings(&e.DevEnv.Spec.TeamSettings)
+		e.Requirements, err = requirements.GetClusterRequirementsConfig(gclient, jxClient)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read requirements from dev environment in namespace %s", ns)
+			return errors.Wrapf(err, "failed to load requirements from dev environment")
 		}
 	}
 	if e.Requirements == nil {
@@ -105,24 +103,4 @@ func (e *EnvironmentContext) LazyLoad(jxClient versioned.Interface, ns string, g
 		return nil
 	}
 	return nil
-}
-
-// GetRequirementsConfigFromTeamSettings reads the BootRequirements string from TeamSettings and unmarshals it
-func GetRequirementsConfigFromTeamSettings(settings *v1.TeamSettings) (*jxcore.RequirementsConfig, error) {
-	if settings == nil {
-		return nil, nil
-	}
-
-	// TeamSettings does not have a real value for BootRequirements, so this is probably not a boot cluster.
-	if settings.BootRequirements == "" {
-		return nil, nil
-	}
-
-	requirements := &jxcore.RequirementsConfig{}
-	data := []byte(settings.BootRequirements)
-	err := yaml.Unmarshal(data, requirements)
-	if err != nil {
-		return requirements, fmt.Errorf("failed to unmarshal requirements from team settings due to %s", err)
-	}
-	return requirements, nil
 }
