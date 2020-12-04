@@ -1,4 +1,4 @@
-FROM gcr.io/jenkinsxio/jx-boot:3.0.768
+FROM gcr.io/jenkinsxio/jx-boot:3.0.788
 
 ARG BUILD_DATE
 ARG VERSION
