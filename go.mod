@@ -4,7 +4,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cpuguy83/go-md2man v1.0.10
 	github.com/hashicorp/vault/api v1.0.5-0.20190909201928-35325e2c3262 // indirect
-	github.com/jenkins-x/go-scm v1.5.192
+	github.com/jenkins-x/go-scm v1.5.194
 	github.com/jenkins-x/jx-api v0.0.24 // indirect
 	github.com/jenkins-x/jx-api/v4 v4.0.12
 	github.com/jenkins-x/jx-gitops v0.0.445
