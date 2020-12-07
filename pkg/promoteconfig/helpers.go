@@ -16,7 +16,7 @@ import (
 //
 // if an explicit configuration is found (in a current or parent directory of '.jx/promote.yaml' then that is used.
 // otherwise the env/Chart.yaml or 'jx-apps.yaml' are detected
-func Discover(dir string, promoteNamespace string) (*v1alpha1.Promote, string, error) {
+func Discover(dir, promoteNamespace string) (*v1alpha1.Promote, string, error) {
 	config, fileName, err := LoadPromote(dir, false)
 	if err != nil {
 		return config, fileName, errors.Wrapf(err, "failed to load Promote configuration from %s", dir)
@@ -43,26 +43,36 @@ func Discover(dir string, promoteNamespace string) (*v1alpha1.Promote, string, e
 		}
 		return &config, "", nil
 	}
-	hf := filepath.Join(dir, "helmfile.yaml")
-	exists, err = files.FileExists(hf)
+
+	path, err := findHelmfile(dir, promoteNamespace)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to check if file exists %s", hf)
+		return nil, "", errors.Wrapf(err, "failed to find helmfile")
 	}
-	if exists {
-		config := v1alpha1.Promote{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "generated",
+	config = &v1alpha1.Promote{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "generated",
+		},
+		Spec: v1alpha1.PromoteSpec{
+			HelmfileRule: &v1alpha1.HelmfileRule{
+				Path:      path,
+				Namespace: promoteNamespace,
 			},
-			Spec: v1alpha1.PromoteSpec{
-				HelmfileRule: &v1alpha1.HelmfileRule{
-					Path:      "helmfile.yaml",
-					Namespace: promoteNamespace,
-				},
-			},
-		}
-		return &config, "", nil
+		},
 	}
-	return nil, "", errors.Errorf("no '.jx/promote.yaml' file found and could not discover env/Chart.yaml in directory %s", dir)
+	return config, "", nil
+}
+
+func findHelmfile(dir, promoteNamespace string) (string, error) {
+	helmfilesDir := filepath.Join(dir, "helmfiles")
+	exists, err := files.DirExists(helmfilesDir)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to detect if dir exists %s", helmfilesDir)
+	}
+	if !exists || promoteNamespace == "" {
+		return "helmfile.yaml", nil
+	}
+	// lets assume we are using a nested helmfile
+	return filepath.Join("helmfiles", promoteNamespace, "helmfile.yaml"), nil
 }
 
 // LoadPromote loads the boot config from the given directory
