@@ -1,0 +1,9 @@
+filepath: ""
+helmfiles:
+- path: helmfiles/nginx/helmfile.yaml
+  environment: {}
+- path: helmfiles/jx/helmfile.yaml
+  environment: {}
+templates: {}
+missingFileHandler: ""
+renderedvalues: {}

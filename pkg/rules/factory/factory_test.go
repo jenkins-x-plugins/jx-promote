@@ -26,8 +26,8 @@ func TestRuleFactory(t *testing.T) {
 	fileSlice, err := ioutil.ReadDir(sourceData)
 	assert.NoError(t, err)
 
-	testPromoteNS := ""
 	ns := "jx"
+	testPromoteNS := "jx"
 	for _, f := range fileSlice {
 		if f.IsDir() {
 			name := f.Name()
@@ -77,6 +77,10 @@ func TestRuleFactory(t *testing.T) {
 			require.NoError(t, err, "failed to run FileRule at dir %s", dir)
 
 			testhelpers.AssertTextFilesEqual(t, filepath.Join(src, fileName+".2.expected"), target, fileName)
+
+			if name == "helmfile-nested" {
+				testhelpers.AssertTextFilesEqual(t, filepath.Join(src, "helmfile.yaml.expected"), filepath.Join(dir, "helmfile.yaml"), fileName)
+			}
 		}
 	}
 }
