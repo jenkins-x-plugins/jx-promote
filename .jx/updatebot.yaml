@@ -9,3 +9,11 @@ spec:
             pattern: "jenkinsxio/jx-promote:(.*)"
             files:
               - "**/*.yaml"
+    - urls:
+        - https://github.com/jenkins-x/jx-cli
+      changes:
+        - regex:
+            pattern: |
+              \s+PromoteVersion = "(.*)"
+            files:
+              - "pkg/plugins/versions.go"
