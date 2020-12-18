@@ -1180,13 +1180,16 @@ func (o *Options) GetPipelineName(gitInfo *giturl.GitRepository, pipeline string
 		build = builds.GetBuildNumber()
 	}
 	branch := os.Getenv("BRANCH_NAME")
-	if branch == "" {
+	if branch == "" || branch == "HEAD" {
 		var err error
 		// lets default the pipeline name from the Git repo
 		branch, err = gitclient.Branch(o.Git(), ".")
 		if err != nil {
 			log.Logger().Warnf("Could not find the branch name: %s", err)
 		}
+	}
+	if branch == "" || branch == "HEAD" {
+		branch = os.Getenv("PULL_BASE_REF")
 	}
 	if branch == "" {
 		branch = "master"
