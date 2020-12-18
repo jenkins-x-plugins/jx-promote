@@ -72,7 +72,7 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 	}
 
 	o.OutDir = dir
-	log.Logger().Infof("cloned %s to %s", termcolor.ColorInfo(gitURL), termcolor.ColorInfo(dir))
+	log.Logger().Debugf("cloned %s to %s", termcolor.ColorInfo(gitURL), termcolor.ColorInfo(dir))
 
 	// TODO fork if needed?
 	currentSha, err := gitclient.GetLatestCommitSha(o.Gitter, dir)
