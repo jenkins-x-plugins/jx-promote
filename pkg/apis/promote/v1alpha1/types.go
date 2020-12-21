@@ -51,6 +51,9 @@ type HelmfileRule struct {
 	// Namespace if specified the given namespace is used in the `helmfile.yml` file when using Environments in the
 	// same cluster using the same git repository URL as the dev environment
 	Namespace string `json:"namespace"`
+
+	// KeepOldReleases if specified will cause the old releases to be retailed in the helfile
+	KeepOldReleases bool `json:"keepOldReleases"`
 }
 
 // KptRule specifies to fetch the apps resource via kpt : https://googlecontainertools.github.io/kpt/

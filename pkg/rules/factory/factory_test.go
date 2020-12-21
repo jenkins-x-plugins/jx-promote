@@ -3,6 +3,7 @@ package factory_test
 import (
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
@@ -78,7 +79,7 @@ func TestRuleFactory(t *testing.T) {
 
 			testhelpers.AssertTextFilesEqual(t, filepath.Join(src, fileName+".2.expected"), target, fileName)
 
-			if name == "helmfile-nested" {
+			if strings.HasPrefix(name, "helmfile-nested") {
 				testhelpers.AssertTextFilesEqual(t, filepath.Join(src, "helmfile.yaml.expected"), filepath.Join(dir, "helmfile.yaml"), fileName)
 			}
 		}

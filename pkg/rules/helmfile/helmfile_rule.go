@@ -124,15 +124,16 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 			helmfile.OverrideNamespace = promoteNs
 		}
 		found := false
-		for i := range helmfile.Releases {
-			release := &helmfile.Releases[i]
-			if release.Name == app || release.Name == details.Name {
-				release.Version = version
-				found = true
-				return nil
+		if !r.Config.Spec.HelmfileRule.KeepOldReleases {
+			for i := range helmfile.Releases {
+				release := &helmfile.Releases[i]
+				if release.Name == app || release.Name == details.Name {
+					release.Version = version
+					found = true
+					return nil
+				}
 			}
 		}
-
 		if !found {
 			ns := ""
 			if promoteNs != helmfile.OverrideNamespace {
@@ -148,12 +149,14 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 		return nil
 	}
 	found := false
-	for i := range helmfile.Releases {
-		release := &helmfile.Releases[i]
-		if (release.Name == app || release.Name == details.Name) && (release.Namespace == promoteNs || isRemoteEnv) {
-			release.Version = version
-			found = true
-			return nil
+	if !r.Config.Spec.HelmfileRule.KeepOldReleases {
+		for i := range helmfile.Releases {
+			release := &helmfile.Releases[i]
+			if (release.Name == app || release.Name == details.Name) && (release.Namespace == promoteNs || isRemoteEnv) {
+				release.Version = version
+				found = true
+				return nil
+			}
 		}
 	}
 
