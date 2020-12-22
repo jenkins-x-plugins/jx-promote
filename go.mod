@@ -7,7 +7,7 @@ require (
 	github.com/jenkins-x/go-scm v1.5.199
 	github.com/jenkins-x/jx-api/v4 v4.0.14
 	github.com/jenkins-x/jx-gitops v0.0.496
-	github.com/jenkins-x/jx-helpers/v3 v3.0.40
+	github.com/jenkins-x/jx-helpers/v3 v3.0.43
 	github.com/jenkins-x/jx-logging/v3 v3.0.2
 	github.com/pkg/errors v0.9.1
 	github.com/roboll/helmfile v0.135.1-0.20201213020320-54eb73b4239a
