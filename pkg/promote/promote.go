@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -71,35 +70,34 @@ var (
 type Options struct {
 	environments.EnvironmentPullRequestOptions
 
-	Dir                     string
-	Args                    []string
-	Namespace               string
-	DefaultAppNamespace     string
-	Environment             string
-	PromoteEnvironments     []string
-	Application             string
-	AppGitURL               string
-	Pipeline                string
-	Build                   string
-	Version                 string
-	VersionFile             string
-	ReleaseName             string
-	LocalHelmRepoName       string
-	HelmRepositoryURL       string
-	AutoMerge               bool
-	NoHelmUpdate            bool
-	All                     bool
-	AllAutomatic            bool
-	NoMergePullRequest      bool
-	NoPoll                  bool
-	NoWaitAfterMerge        bool
-	IgnoreLocalFiles        bool
-	NoWaitForUpdatePipeline bool
-	DisableGitConfig        bool //  to disable git init in unit tests
-	Timeout                 string
-	PullRequestPollTime     string
-	Filter                  string
-	Alias                   string
+	Dir                 string
+	Args                []string
+	Namespace           string
+	DefaultAppNamespace string
+	Environment         string
+	PromoteEnvironments []string
+	Application         string
+	AppGitURL           string
+	Pipeline            string
+	Build               string
+	Version             string
+	VersionFile         string
+	ReleaseName         string
+	LocalHelmRepoName   string
+	HelmRepositoryURL   string
+	AutoMerge           bool
+	NoHelmUpdate        bool
+	All                 bool
+	AllAutomatic        bool
+	NoMergePullRequest  bool
+	NoPoll              bool
+	NoWaitAfterMerge    bool
+	IgnoreLocalFiles    bool
+	DisableGitConfig    bool //  to disable git init in unit tests
+	Timeout             string
+	PullRequestPollTime string
+	Filter              string
+	Alias               string
 
 	KubeClient kubernetes.Interface
 	JXClient   versioned.Interface
@@ -114,7 +112,6 @@ type Options struct {
 	GitInfo                 *giturl.GitRepository
 	releaseResource         *v1.Release
 	ReleaseInfo             *ReleaseInfo
-	prow                    bool
 
 	// Used for testing
 	CloneDir string
@@ -369,10 +366,6 @@ func (o *Options) Run() error {
 			return errors.Wrapf(err, "failed to init git")
 		}
 	}
-
-	// TODO we should remove these flags
-	o.prow = true
-	o.NoWaitForUpdatePipeline = true
 
 	if o.HelmRepositoryURL == "" {
 		o.HelmRepositoryURL, err = o.ResolveChartRepositoryURL()
@@ -785,10 +778,6 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, relea
 	logMergeFailure := false
 	logNoMergeCommitSha := false
 	logHasMergeSha := false
-	logMergeStatusError := false
-	logNoMergeStatuses := false
-	urlStatusMap := map[string]scm.State{}
-	urlStatusTargetURLMap := map[string]string{}
 
 	jxClient := o.JXClient
 	if jxClient == nil {
@@ -844,87 +833,11 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, relea
 
 						promoteKey.OnPromoteUpdate(kubeClient, jxClient, o.Namespace, activities.StartPromotionUpdate)
 
-						if o.NoWaitForUpdatePipeline {
-							err = o.CommentOnIssues(ns, env, promoteKey)
-							if err == nil {
-								err = promoteKey.OnPromoteUpdate(kubeClient, jxClient, o.Namespace, activities.CompletePromotionUpdate)
-							}
-							return err
+						err = o.CommentOnIssues(ns, env, promoteKey)
+						if err == nil {
+							err = promoteKey.OnPromoteUpdate(kubeClient, jxClient, o.Namespace, activities.CompletePromotionUpdate)
 						}
-
-						statuses, _, err := scmClient.Repositories.ListStatus(ctx, fullName, mergeSha, scm.ListOptions{})
-						if err != nil {
-							if !logMergeStatusError {
-								logMergeStatusError = true
-								log.Logger().Warnf("Failed to query merge status of repo %s with merge sha %s due to: %s", fullName, mergeSha, err)
-							}
-						} else {
-							if len(statuses) == 0 {
-								if !logNoMergeStatuses {
-									logNoMergeStatuses = true
-									log.Logger().Infof("Merge commit has not yet any statuses on repo %s merge sha %s", fullName, mergeSha)
-								}
-							} else {
-								for _, status := range statuses {
-									if status.State == scm.StateFailure {
-										log.Logger().Warnf("merge status: %s URL: %s description: %s",
-											status.State, status.Target, status.Desc)
-										return fmt.Errorf("Status: %s URL: %s description: %s\n",
-											status.State, status.Target, status.Desc)
-									}
-									url := status.Link
-									if url == "" {
-										url = status.Target
-									}
-									state := status.State
-									if urlStatusMap[url] == scm.StateUnknown || urlStatusMap[url] != scm.StateSuccess {
-										if urlStatusMap[url] != state {
-											urlStatusMap[url] = state
-											urlStatusTargetURLMap[url] = status.Target
-											log.Logger().Infof("merge status: %s for URL %s with target: %s description: %s",
-												termcolor.ColorInfo(state), termcolor.ColorInfo(url), termcolor.ColorInfo(status.Target), termcolor.ColorInfo(status.Desc))
-										}
-									}
-								}
-								prStatuses := []v1.GitStatus{}
-								keys := []string{}
-								for k := range urlStatusMap {
-									keys = append(keys, k)
-								}
-								sort.Strings(keys)
-								for _, url := range keys {
-									state := urlStatusMap[url]
-									targetURL := urlStatusTargetURLMap[url]
-									if targetURL == "" {
-										targetURL = url
-									}
-									prStatuses = append(prStatuses, v1.GitStatus{
-										URL:    targetURL,
-										Status: state.String(),
-									})
-								}
-								updateStatuses := func(a *v1.PipelineActivity, s *v1.PipelineActivityStep, ps *v1.PromoteActivityStep, p *v1.PromoteUpdateStep) error {
-									p.Statuses = prStatuses
-									return nil
-								}
-								promoteKey.OnPromoteUpdate(kubeClient, jxClient, o.Namespace, updateStatuses)
-
-								succeeded := true
-								for _, v := range urlStatusMap {
-									if v != scm.StateSuccess {
-										succeeded = false
-									}
-								}
-								if succeeded {
-									log.Logger().Info("Merge status checks all passed so the promotion worked!")
-									err = o.CommentOnIssues(ns, env, promoteKey)
-									if err == nil {
-										err = promoteKey.OnPromoteUpdate(kubeClient, jxClient, o.Namespace, activities.CompletePromotionUpdate)
-									}
-									return err
-								}
-							}
-						}
+						return err
 					}
 				} else {
 					if pr.Closed {

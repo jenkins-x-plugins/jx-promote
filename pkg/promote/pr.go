@@ -15,8 +15,6 @@ import (
 )
 
 func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *ReleaseInfo, draftPR bool) error {
-	configureDependencyMatrix()
-
 	version := o.Version
 	versionName := version
 	if versionName == "" {
@@ -60,8 +58,6 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 	promoteNS := env.Spec.Namespace
 
 	o.Function = func() error {
-		configureDependencyMatrix()
-
 		dir := o.OutDir
 		promoteConfig, _, err := promoteconfig.Discover(dir, promoteNS)
 		if err != nil {
@@ -118,10 +114,4 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 	info, err := o.Create(gitURL, envDir, &details, autoMerge)
 	releaseInfo.PullRequestInfo = info
 	return err
-}
-
-func configureDependencyMatrix() {
-	// lets configure the dependency matrix path
-	// TODO
-	//dependencymatrix.DependencyMatrixDirName = filepath.Join(".jx", "dependencies")
 }
