@@ -4,9 +4,11 @@ package promote_test
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/jenkins-x/go-scm/scm"
 	v1 "github.com/jenkins-x/jx-api/v4/pkg/apis/jenkins.io/v1"
 	v1fake "github.com/jenkins-x/jx-api/v4/pkg/client/clientset/versioned/fake"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/cmdrunner"
@@ -145,6 +147,156 @@ func TestPromoteHelmfileAllAutomaticAndManual(t *testing.T) {
 
 	t.Logf("got PipelineActivity %s\n", string(data))
 	assert.Equal(t, v1.ActivityStatusTypeSucceeded, pa.Spec.Status, "pipelineActivity.Spec.Status")
+}
+
+func TestPromoteHelmfileAllAutomaticsInOneOrMorePRs(t *testing.T) {
+	targetFullName := "jenkins-x-labs-bdd-tests/jx3-kubernetes-jenkins"
+
+	testCases := []struct {
+		name                     string
+		envSourceURL             string
+		noGroupPullRequest       bool
+		expectedPullRequestCount map[string]int
+	}{
+		{
+			name:               "separate-prs-for-urls",
+			noGroupPullRequest: false,
+			envSourceURL:       "https://github.com/jx3-gitops-repositories/jx3-gke-terraform-vault",
+			expectedPullRequestCount: map[string]int{
+				targetFullName: 1,
+				"jx3-gitops-repositories/jx3-gke-terraform-vault": 1,
+			},
+		},
+		{
+			name:               "group-prs",
+			noGroupPullRequest: false,
+			expectedPullRequestCount: map[string]int{
+				targetFullName: 1,
+			},
+		},
+		{
+			name:               "separate-prs",
+			noGroupPullRequest: true,
+			expectedPullRequestCount: map[string]int{
+				targetFullName: 2,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		version := "1.2.3"
+		appName := "myapp"
+		ns := "jx"
+
+		runner := NewFakeRunnerWithGitClone()
+
+		_, po := promote.NewCmdPromote()
+		name := tc.name
+		po.DisableGitConfig = true
+		po.Application = appName
+		po.Version = version
+		po.All = true
+
+		po.NoPoll = true
+		po.BatchMode = true
+		po.NoGroupPullRequest = tc.noGroupPullRequest
+		po.GitKind = "fake"
+		po.CommandRunner = runner.Run
+		po.AppGitURL = "https://github.com/myorg/myapp.git"
+
+		devEnv := jxtesthelpers.CreateTestDevEnvironment(ns)
+		devEnv.Spec.Source.URL = "https://github.com/" + targetFullName
+
+		kubeObjects := []runtime.Object{
+			&corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: ns,
+					Labels: map[string]string{
+						"tag":  "",
+						"team": "jx",
+						"env":  "dev",
+					},
+				},
+			},
+		}
+		jxObjects := []runtime.Object{
+			devEnv,
+			&v1.Environment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "staging",
+					Namespace: ns,
+				},
+				Spec: v1.EnvironmentSpec{
+					Label:             "Staging",
+					Namespace:         "jx-staging",
+					PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
+					Order:             100,
+					Kind:              v1.EnvironmentKindTypePermanent,
+				},
+			},
+			&v1.Environment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "production",
+					Namespace: ns,
+				},
+				Spec: v1.EnvironmentSpec{
+					Label:             "Production",
+					Namespace:         "jx-production",
+					PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
+					Order:             200,
+					Kind:              v1.EnvironmentKindTypePermanent,
+					Source: v1.EnvironmentRepository{
+						URL: tc.envSourceURL,
+					},
+				},
+			},
+		}
+
+		po.KubeClient = fake.NewSimpleClientset(kubeObjects...)
+		po.JXClient = v1fake.NewSimpleClientset(jxObjects...)
+		po.Namespace = ns
+		po.Build = "1"
+		po.Pipeline = "myorg/myapp/master"
+		po.DevEnvContext.VersionResolver = jxtesthelpers.CreateTestVersionResolver(t)
+
+		err := po.Run()
+		require.NoError(t, err, "failed test %s s", name)
+
+		scmClient := po.ScmClient
+		require.NotNil(t, scmClient, "no ScmClient created")
+		ctx := context.Background()
+
+		for repoFullName, expectedCount := range tc.expectedPullRequestCount {
+			prs, _, err := scmClient.PullRequests.List(ctx, repoFullName, scm.PullRequestListOptions{
+				Size: 100,
+				Open: true,
+			})
+			require.NoError(t, err, "failed to query PullRequests for repository %s test %s", repoFullName, name)
+			require.Len(t, prs, expectedCount, "PullRequests for repository %s test %s", repoFullName, name)
+
+			for _, pr := range prs {
+				prNumber := pr.Number
+				if pr.Link == "" {
+					pr.Link = "https://github.com/" + repoFullName + "/pull/" + strconv.Itoa(prNumber)
+				}
+				t.Logf("%s created PullRequest %s #%d", name, pr.Link, prNumber)
+				t.Logf("%s PR title: %s", name, pr.Title)
+				t.Logf("%s PR body: %s", name, pr.Body)
+			}
+		}
+
+		// lets assert we have a PipelineActivity...
+		paList, err := po.JXClient.JenkinsV1().PipelineActivities(ns).List(context.TODO(), metav1.ListOptions{})
+		require.NoError(t, err, "failed to load PipelineActivity resources in namespace %s", ns)
+		require.Len(t, paList.Items, 1, "should have a PipelineActivity in namespace %s", ns)
+		pa := paList.Items[0]
+
+		data, err := yaml.Marshal(pa)
+		require.NoError(t, err, "failed to marshal PipelineActivity")
+
+		t.Logf("got PipelineActivity %s\n", string(data))
+		assert.Equal(t, v1.ActivityStatusTypeSucceeded, pa.Spec.Status, "pipelineActivity.Spec.Status")
+	}
 }
 
 // AssertPromoteIntegration asserts the test cases work

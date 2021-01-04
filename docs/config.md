@@ -284,6 +284,17 @@ string
 same cluster using the same git repository URL as the dev environment</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>keepOldReleases</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<p>KeepOldReleases if specified will cause the old releases to be retailed in the helfile</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="promote.jenkins-x.io/v1alpha1.KptRule">KptRule
@@ -446,5 +457,5 @@ KptRule
 <hr/>
 <p><em>
 Generated with <code>gen-crd-api-reference-docs</code>
-on git commit <code>112102f</code>.
+on git commit <code>8404900</code>.
 </em></p>
