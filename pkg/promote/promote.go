@@ -547,7 +547,6 @@ func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 	}
 	jxenv.SortEnvironments(environments)
 
-	count := 0
 	for _, env := range environments {
 		if pred(&env) {
 			ns := env.Spec.Namespace
@@ -556,7 +555,7 @@ func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 			}
 			// lets clear the branch name so that we create a new branch for each PR...
 			o.BranchName = ""
-			releaseInfo, err := o.Promote(ns, &env, false, count > 0, o.NoPoll)
+			releaseInfo, err := o.Promote(ns, &env, false, env.Spec.PromotionStrategy != v1.PromotionStrategyTypeAutomatic, o.NoPoll)
 			if err != nil {
 				return err
 			}
@@ -567,7 +566,6 @@ func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 					return err
 				}
 			}
-			count++
 		}
 	}
 	return nil

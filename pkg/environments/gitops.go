@@ -88,8 +88,9 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 		return nil, errors.Wrapf(err, "failed to invoke change function in dir %s", dir)
 	}
 
+	o.Labels = nil
 	// lets merge any labels together...
-	if autoMerge && stringhelpers.StringArrayIndex(o.Labels, LabelUpdatebot) < 0 {
+	if autoMerge {
 		o.Labels = append(o.Labels, LabelUpdatebot)
 	}
 	for _, l := range pullRequestDetails.Labels {

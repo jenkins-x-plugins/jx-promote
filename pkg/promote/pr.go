@@ -2,17 +2,15 @@ package promote
 
 import (
 	"fmt"
+
 	v1 "github.com/jenkins-x/jx-api/v4/pkg/apis/jenkins.io/v1"
-	"path/filepath"
 
 	"github.com/jenkins-x/go-scm/scm"
-	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient/gitconfig"
 	"github.com/jenkins-x/jx-promote/pkg/promoteconfig"
 	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/jenkins-x/jx-promote/pkg/rules/factory"
-	"github.com/jenkins-x/jx-promote/pkg/rules/helmfile"
 	"github.com/pkg/errors"
 )
 
@@ -30,10 +28,10 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 	if envName == "" {
 		envName = env.Name
 	}
-	comment := fmt.Sprintf("chore: promote %s to version %s in %s environment", app, versionName, envName) + "\n\nthis commit will trigger a pipeline to [generate the actual kubernetes resources to perform the promotion](https://jenkins-x.io/docs/v3/about/how-it-works/#promotion) which will create a second commit on this Pull Request before it can merge"
+	comment := fmt.Sprintf("chore: promote %s to version %s in %s", app, versionName, envName) + "\n\nthis commit will trigger a pipeline to [generate the actual kubernetes resources to perform the promotion](https://jenkins-x.io/docs/v3/about/how-it-works/#promotion) which will create a second commit on this Pull Request before it can merge"
 	details := scm.PullRequest{
 		Source: "promote-" + app + "-" + versionName + "-" + env.Name,
-		Title:  fmt.Sprintf("chore: promote %s to version %s in %s environment", app, versionName, envName),
+		Title:  fmt.Sprintf("chore: promote %s to version %s in %s", app, versionName, envName),
 		Body:   comment,
 		Draft:  draftPR,
 		Labels: []*scm.Label{
@@ -59,19 +57,7 @@ func (o *Options) PromoteViaPullRequest(env *v1.Environment, releaseInfo *Releas
 		envDir = o.CloneDir
 	}
 
-	promoteNS := ""
-	if o.DevEnvContext.DevEnv != nil && o.DevEnvContext.DevEnv.Spec.Source.URL == env.Spec.Source.URL {
-		promoteNS = env.Spec.Namespace
-	}
-	if env.Spec.RemoteCluster == true {
-		ns, err := getRemoteNamespace(o, env, app)
-		if err != nil {
-			return err
-		}
-		if ns != nil {
-			promoteNS = *ns
-		}
-	}
+	promoteNS := env.Spec.Namespace
 
 	o.Function = func() error {
 		configureDependencyMatrix()
@@ -138,51 +124,4 @@ func configureDependencyMatrix() {
 	// lets configure the dependency matrix path
 	// TODO
 	//dependencymatrix.DependencyMatrixDirName = filepath.Join(".jx", "dependencies")
-}
-
-func getRemoteNamespace(o *Options, env *v1.Environment, app string) (*string, error) {
-	var promoteNS *string = nil
-	// 1. Load helmfile
-	hf := filepath.Join(o.OutDir, "helmfile.yaml")
-	helmfile, err := helmfile.LoadHelmfile(hf)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to load helmfile for %s environment", env.GetName())
-	}
-
-	// 2. Check if app exists
-	foundApp := false
-	for i := range helmfile.Releases {
-		release := &helmfile.Releases[i]
-		if release.Name == app {
-			foundApp = true
-		}
-	}
-
-	// 3. If not found figure out proper namespace
-	if !foundApp {
-		// 3.1 Running with default app namespace
-		if o.DefaultAppNamespace != "" {
-			promoteNS = &o.DefaultAppNamespace
-		} else { // 3.2 Load namespace from `jx-requirements.yml`
-			ns, err := getNamespaceFromRequirements(o.OutDir)
-			promoteNS = &ns
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return promoteNS, nil
-}
-
-func getNamespaceFromRequirements(outdir string) (string, error) {
-
-	//path := filepath.Join(outdir, "jx-requirements.yml")
-	//state := jxcore.RequirementsConfig{}
-	//err := yaml2s.LoadFile(path, state)
-	//if err != nil {
-	//	return nil, err
-	//}
-	// for now we are only using jx namespace
-	return jxcore.DefaultNamespace, nil
 }
