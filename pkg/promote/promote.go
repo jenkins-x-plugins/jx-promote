@@ -88,6 +88,7 @@ type Options struct {
 	HelmRepositoryURL       string
 	AutoMerge               bool
 	NoHelmUpdate            bool
+	All                     bool
 	AllAutomatic            bool
 	NoMergePullRequest      bool
 	NoPoll                  bool
@@ -137,17 +138,17 @@ var (
 	promoteExample = templates.Examples(`
 		# Promote a version of the current application to staging
         # discovering the application name from the source code
-		jx alpha promote --version 1.2.3 --env staging
+		jx promote --version 1.2.3 --env staging
 
 		# Promote a version of the myapp application to production
-		jx alpha promote --app myapp --version 1.2.3 --env production
+		jx promote --app myapp --version 1.2.3 --env production
 
 		# To search for all the available charts for a given name use -f.
 		# e.g. to find a redis chart to install
-		jx alpha promote -f redis
+		jx promote -f redis
 
 		# To promote a postgres chart using an alias
-		jx alpha promote -f postgres --alias mydb
+		jx promote -f postgres --alias mydb
 
 		# To create or update a Preview Environment please see the 'jx preview' command if you are inside a git clone of a repo
 		jx preview
@@ -174,6 +175,9 @@ func NewCmdPromote() (*cobra.Command, *Options) {
 	cmd.Flags().StringVarP(&options.DefaultAppNamespace, "default-app-namespace", "", "", "The default namespace for promoting to remote clusters for the first")
 	cmd.Flags().StringArrayP("promotion-environments", "", options.PromoteEnvironments, "The environments considered for promotion")
 	cmd.Flags().BoolVarP(&options.AllAutomatic, "all-auto", "", false, "Promote to all automatic environments in order")
+	cmd.Flags().BoolVarP(&options.All, "all", "", false, "Promote to all automatic and manual environments in order using a draft PR for manual promotion environments")
+
+	cmd.Flags().BoolVarP(&options.BatchMode, "batch-mode", "b", false, "Enables batch mode which avoids prompting for user input")
 
 	options.AddOptions(cmd)
 	return cmd, options
@@ -366,13 +370,9 @@ func (o *Options) Run() error {
 		}
 	}
 
-	prow := true
-	if prow {
-		o.prow = true
-		log.Logger().Warn("prow based install so skip waiting for the merge of Pull Requests to go green as currently there is an issue with getting" +
-			"statuses from the PR, see https://github.com/jenkins-x/jx/issues/2410")
-		o.NoWaitForUpdatePipeline = true
-	}
+	// TODO we should remove these flags
+	o.prow = true
+	o.NoWaitForUpdatePipeline = true
 
 	if o.HelmRepositoryURL == "" {
 		o.HelmRepositoryURL, err = o.ResolveChartRepositoryURL()
@@ -432,6 +432,11 @@ func (o *Options) Run() error {
 		})
 	}
 
+	if o.All {
+		return o.PromoteAll(func(env *v1.Environment) bool {
+			return (env.Spec.PromotionStrategy == v1.PromotionStrategyTypeAutomatic || env.Spec.PromotionStrategy == v1.PromotionStrategyTypeManual) && env.Spec.Kind.IsPermanent()
+		})
+	}
 	if o.AllAutomatic {
 		return o.PromoteAll(func(env *v1.Environment) bool {
 			return env.Spec.PromotionStrategy == v1.PromotionStrategyTypeAutomatic && env.Spec.Kind.IsPermanent()
@@ -574,7 +579,7 @@ func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 func (o *Options) Promote(targetNS string, env *v1.Environment, warnIfAuto, draftPR, noPoll bool) (*ReleaseInfo, error) {
 	app := o.Application
 	if app == "" {
-		log.Logger().Warnf("No application name could be detected so cannot promote via Helm. If the detection of the helm chart name is not working consider adding it with the --%s argument on the 'jx alpha promote' command", optionApplication)
+		log.Logger().Warnf("No application name could be detected so cannot promote via Helm. If the detection of the helm chart name is not working consider adding it with the --%s argument on the 'jx promote' command", optionApplication)
 		return nil, nil
 	}
 	version := o.Version
@@ -748,11 +753,11 @@ func (o *Options) GetTargetNamespace(ns string, env string) (string, *v1.Environ
 
 func (o *Options) WaitForPromotion(ns string, env *v1.Environment, releaseInfo *ReleaseInfo) error {
 	if o.TimeoutDuration == nil {
-		log.Logger().Infof("No --%s option specified on the 'jx alpha promote' command so not waiting for the promotion to succeed", optionTimeout)
+		log.Logger().Infof("No --%s option specified on the 'jx promote' command so not waiting for the promotion to succeed", optionTimeout)
 		return nil
 	}
 	if o.PullRequestPollDuration == nil {
-		log.Logger().Infof("No --%s option specified on the 'jx alpha promote' command so not waiting for the promotion to succeed", optionPullRequestPollTime)
+		log.Logger().Infof("No --%s option specified on the 'jx promote' command so not waiting for the promotion to succeed", optionPullRequestPollTime)
 		return nil
 	}
 	duration := *o.TimeoutDuration
@@ -840,7 +845,6 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, relea
 						promoteKey.OnPromoteUpdate(kubeClient, jxClient, o.Namespace, activities.StartPromotionUpdate)
 
 						if o.NoWaitForUpdatePipeline {
-							log.Logger().Info("Pull Request merged but we are not waiting for the update pipeline to complete!")
 							err = o.CommentOnIssues(ns, env, promoteKey)
 							if err == nil {
 								err = promoteKey.OnPromoteUpdate(kubeClient, jxClient, o.Namespace, activities.CompletePromotionUpdate)
@@ -955,11 +959,11 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, relea
 								}
 								if !tideMerge {
 									prMergeOptions := &scm.PullRequestMergeOptions{
-										CommitTitle: "jx alpha promote automatically merged promotion PR",
+										CommitTitle: "jx promote automatically merged promotion PR",
 									}
 									_, err = scmClient.PullRequests.Merge(ctx, fullName, prNumber, prMergeOptions)
 									// TODO
-									//err = gitProvider.MergePullRequest(pr, "jx alpha promote automatically merged promotion PR")
+									//err = gitProvider.MergePullRequest(pr, "jx promote automatically merged promotion PR")
 									if err != nil {
 										if !logMergeFailure {
 											logMergeFailure = true
