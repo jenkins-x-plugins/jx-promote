@@ -92,6 +92,7 @@ type Options struct {
 	NoMergePullRequest  bool
 	NoPoll              bool
 	NoWaitAfterMerge    bool
+	NoGroupPullRequest  bool
 	IgnoreLocalFiles    bool
 	DisableGitConfig    bool //  to disable git init in unit tests
 	Timeout             string
@@ -203,6 +204,7 @@ func (o *Options) AddOptions(cmd *cobra.Command) {
 	cmd.Flags().BoolVarP(&o.NoMergePullRequest, "no-merge", "", false, "Disables automatic merge of promote Pull Requests")
 
 	cmd.Flags().BoolVarP(&o.NoPoll, "no-poll", "", false, "Disables polling for Pull Request or Pipeline status")
+	cmd.Flags().BoolVarP(&o.NoGroupPullRequest, "no-pr-group", "", false, "Disables grouping Auto promotions to different Environments in the same git repository within a single Pull Request which causes them to use separate Pull Requests")
 	cmd.Flags().BoolVarP(&o.NoWaitAfterMerge, "no-wait", "", false, "Disables waiting for completing promotion after the Pull request is merged")
 	cmd.Flags().BoolVarP(&o.IgnoreLocalFiles, "ignore-local-file", "", false, "Ignores the local file system when deducing the Git repository")
 	cmd.Flags().BoolVarP(&o.AutoMerge, "auto-merge", "", false, "If enabled add the 'updatebot' label to tell lighthouse to eagerly merge. Usually the Pull Request pipeline will add this label during the Pull Request pipeline after any extra generation/commits have been done and the PR is valid")
@@ -447,7 +449,7 @@ func (o *Options) Run() error {
 			return fmt.Errorf("Could not find an Environment called %s", o.Environment)
 		}
 	}
-	releaseInfo, err := o.Promote(targetNS, env, true, false, o.NoPoll)
+	releaseInfo, err := o.Promote([]*v1.Environment{env}, true, o.NoPoll)
 	if err != nil {
 		return err
 	}
@@ -545,31 +547,69 @@ func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 	}
 	jxenv.SortEnvironments(environments)
 
-	for _, env := range environments {
-		if pred(&env) {
+	var promoteEnvs []*v1.Environment
+	for i := range environments {
+		env := &environments[i]
+		if pred(env) {
 			ns := env.Spec.Namespace
 			if ns == "" {
 				return fmt.Errorf("No namespace for environment %s", env.Name)
 			}
-			// lets clear the branch name so that we create a new branch for each PR...
-			o.BranchName = ""
-			releaseInfo, err := o.Promote(ns, &env, false, env.Spec.PromotionStrategy != v1.PromotionStrategyTypeAutomatic, o.NoPoll)
+			source := &env.Spec.Source
+			if source.URL == "" && !env.Spec.RemoteCluster && o.DevEnvContext.DevEnv != nil {
+				// lets default to the git repository of the dev environment as we are sharing the git repository across multiple namespaces
+				source.URL = o.DevEnvContext.DevEnv.Spec.Source.URL
+			}
+			promoteEnvs = append(promoteEnvs, env)
+		}
+	}
+
+	// lets group Auto env promotions together into the same git URL
+	var groups [][]*v1.Environment
+	var group []*v1.Environment
+	for _, env := range promoteEnvs {
+		if len(group) == 0 {
+			group = append(group, env)
+			continue
+		}
+
+		// lets see if the env is the same
+		if o.NoGroupPullRequest || env.Spec.PromotionStrategy != v1.PromotionStrategyTypeAutomatic || env.Spec.Source.URL != group[0].Spec.Source.URL {
+			// lets use a different group...
+			groups = append(groups, group)
+			group = []*v1.Environment{env}
+		} else {
+			group = append(group, env)
+		}
+	}
+	if len(group) > 0 {
+		groups = append(groups, group)
+	}
+	for _, group = range groups {
+		firstEnv := group[0]
+		ns := firstEnv.Spec.Namespace
+
+		// lets clear the branch name so that we create a new branch for each PR...
+		o.BranchName = ""
+		releaseInfo, err := o.Promote(group, false, o.NoPoll)
+		if err != nil {
+			return err
+		}
+		o.ReleaseInfo = releaseInfo
+		if !o.NoPoll {
+			err = o.WaitForPromotion(ns, firstEnv, releaseInfo)
 			if err != nil {
 				return err
-			}
-			o.ReleaseInfo = releaseInfo
-			if !o.NoPoll {
-				err = o.WaitForPromotion(ns, &env, releaseInfo)
-				if err != nil {
-					return err
-				}
 			}
 		}
 	}
 	return nil
 }
 
-func (o *Options) Promote(targetNS string, env *v1.Environment, warnIfAuto, draftPR, noPoll bool) (*ReleaseInfo, error) {
+func (o *Options) Promote(envs []*v1.Environment, warnIfAuto, noPoll bool) (*ReleaseInfo, error) {
+	if len(envs) == 0 {
+		return nil, nil
+	}
 	app := o.Application
 	if app == "" {
 		log.Logger().Warnf("No application name could be detected so cannot promote via Helm. If the detection of the helm chart name is not working consider adding it with the --%s argument on the 'jx promote' command", optionApplication)
@@ -577,18 +617,29 @@ func (o *Options) Promote(targetNS string, env *v1.Environment, warnIfAuto, draf
 	}
 	version := o.Version
 	info := termcolor.ColorInfo
-	if version == "" {
-		log.Logger().Infof("Promoting latest version of app %s to namespace %s", info(app), info(targetNS))
-	} else {
-		log.Logger().Infof("Promoting app %s version %s to namespace %s", info(app), info(version), info(targetNS))
+
+	var targetNamespaces []string
+	for _, env := range envs {
+		targetNS := env.Spec.Namespace
+		if targetNS != "" && stringhelpers.StringArrayIndex(targetNamespaces, targetNS) < 0 {
+			targetNamespaces = append(targetNamespaces, targetNS)
+		}
 	}
+	if version == "" {
+		log.Logger().Infof("Promoting latest version of app %s to namespace %s", info(app), info(strings.Join(targetNamespaces, " ")))
+	} else {
+		log.Logger().Infof("Promoting app %s version %s to namespace %s", info(app), info(version), info(strings.Join(targetNamespaces, " ")))
+	}
+
 	fullAppName := app
 	if o.LocalHelmRepoName != "" {
 		fullAppName = o.LocalHelmRepoName + "/" + app
 	}
 	releaseName := o.ReleaseName
 	if releaseName == "" {
-		releaseName = targetNS + "-" + app
+		// TODO don't think we need the ns in the release name any more?
+		//releaseName = targetNS + "-" + app
+		releaseName = app
 		o.ReleaseName = releaseName
 	}
 	releaseInfo := &ReleaseInfo{
@@ -597,59 +648,67 @@ func (o *Options) Promote(targetNS string, env *v1.Environment, warnIfAuto, draf
 		Version:     version,
 	}
 
-	if warnIfAuto && env != nil && env.Spec.PromotionStrategy == v1.PromotionStrategyTypeAutomatic && !o.BatchMode {
-		log.Logger().Infof("%s", termcolor.ColorWarning(fmt.Sprintf("WARNING: The Environment %s is setup to promote automatically as part of the CI/CD Pipelines.\n", env.Name)))
-		flag, err := o.Input.Confirm("Do you wish to promote anyway? :", false, "usually we do not manually promote to Auto promotion environments")
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to confirm promotion")
-		}
-		if !flag {
-			return releaseInfo, nil
-		}
-	}
-
-	jxClient := o.JXClient
-	kubeClient := o.KubeClient
-	promoteKey := o.CreatePromoteKey(env)
-	if env != nil {
-		if !env.Spec.Kind.IsPermanent() {
-			return nil, errors.Errorf("cannot promote to Environment which is not a permanent Environment")
-		}
-		source := &env.Spec.Source
-		if source.URL == "" && !env.Spec.RemoteCluster && o.DevEnvContext.DevEnv != nil {
-			// lets default to the git repository of the dev environment as we are sharing the git repository across multiple namespaces
-			source.URL = o.DevEnvContext.DevEnv.Spec.Source.URL
+	for _, env := range envs {
+		draftPR := env.Spec.PromotionStrategy != v1.PromotionStrategyTypeAutomatic
+		targetNS := env.Spec.Namespace
+		if targetNS == "" {
+			return nil, fmt.Errorf("No namespace for environment %s", env.Name)
 		}
 
-		if source.URL != "" {
-			err := o.PromoteViaPullRequest(env, releaseInfo, draftPR)
-			if err == nil {
-				startPromotePR := func(a *v1.PipelineActivity, s *v1.PipelineActivityStep, ps *v1.PromoteActivityStep, p *v1.PromotePullRequestStep) error {
-					activities.StartPromotionPullRequest(a, s, ps, p)
-					pr := releaseInfo.PullRequestInfo
-					if pr != nil && pr.Link != "" {
-						p.PullRequestURL = pr.Link
-					}
-					if version != "" && a.Spec.Version == "" {
-						a.Spec.Version = version
-					}
-					if noPoll {
-						p.Status = v1.ActivityStatusTypeSucceeded
-						ps.Status = v1.ActivityStatusTypeSucceeded
-					}
-
-					// if all steps are completed lets mark succeeded/failed
-					activities.UpdateStatus(a, false, nil)
-					return nil
-				}
-				err = promoteKey.OnPromotePullRequest(kubeClient, jxClient, o.Namespace, startPromotePR)
-				if err != nil {
-					log.Logger().Warnf("Failed to update PipelineActivity: %s", err)
-				}
-				// lets sleep a little before we try poll for the PR status
-				time.Sleep(waitAfterPullRequestCreated)
+		if warnIfAuto && env != nil && env.Spec.PromotionStrategy == v1.PromotionStrategyTypeAutomatic && !o.BatchMode {
+			log.Logger().Infof("%s", termcolor.ColorWarning(fmt.Sprintf("WARNING: The Environment %s is setup to promote automatically as part of the CI/CD Pipelines.\n", env.Name)))
+			flag, err := o.Input.Confirm("Do you wish to promote anyway? :", false, "usually we do not manually promote to Auto promotion environments")
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to confirm promotion")
 			}
-			return releaseInfo, err
+			if !flag {
+				return releaseInfo, nil
+			}
+		}
+
+		jxClient := o.JXClient
+		kubeClient := o.KubeClient
+		promoteKey := o.CreatePromoteKey(env)
+		if env != nil {
+			if !env.Spec.Kind.IsPermanent() {
+				return nil, errors.Errorf("cannot promote to Environment which is not a permanent Environment")
+			}
+			source := &env.Spec.Source
+			if source.URL == "" && !env.Spec.RemoteCluster && o.DevEnvContext.DevEnv != nil {
+				// lets default to the git repository of the dev environment as we are sharing the git repository across multiple namespaces
+				source.URL = o.DevEnvContext.DevEnv.Spec.Source.URL
+			}
+
+			if source.URL != "" {
+				err := o.PromoteViaPullRequest(envs, releaseInfo, draftPR)
+				if err == nil {
+					startPromotePR := func(a *v1.PipelineActivity, s *v1.PipelineActivityStep, ps *v1.PromoteActivityStep, p *v1.PromotePullRequestStep) error {
+						activities.StartPromotionPullRequest(a, s, ps, p)
+						pr := releaseInfo.PullRequestInfo
+						if pr != nil && pr.Link != "" {
+							p.PullRequestURL = pr.Link
+						}
+						if version != "" && a.Spec.Version == "" {
+							a.Spec.Version = version
+						}
+						if noPoll {
+							p.Status = v1.ActivityStatusTypeSucceeded
+							ps.Status = v1.ActivityStatusTypeSucceeded
+						}
+
+						// if all steps are completed lets mark succeeded/failed
+						activities.UpdateStatus(a, false, nil)
+						return nil
+					}
+					err = promoteKey.OnPromotePullRequest(kubeClient, jxClient, o.Namespace, startPromotePR)
+					if err != nil {
+						log.Logger().Warnf("Failed to update PipelineActivity: %s", err)
+					}
+					// lets sleep a little before we try poll for the PR status
+					time.Sleep(waitAfterPullRequestCreated)
+				}
+				return releaseInfo, err
+			}
 		}
 	}
 	return nil, errors.Errorf("no source repository URL available on  environment %s", o.Environment)
@@ -895,7 +954,7 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, relea
 				if !pr.Mergeable {
 					log.Logger().Info("Rebasing PullRequest due to conflict")
 
-					err = o.PromoteViaPullRequest(env, releaseInfo, false)
+					err = o.PromoteViaPullRequest([]*v1.Environment{env}, releaseInfo, false)
 					if releaseInfo.PullRequestInfo != nil {
 						pullRequestInfo = releaseInfo.PullRequestInfo
 					}
