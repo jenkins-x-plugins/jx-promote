@@ -25,13 +25,11 @@ func (o *Options) PromoteViaPullRequest(envs []*v1.Environment, releaseInfo *Rel
 	source := "promote-" + app + "-" + versionName
 	var labels []*scm.Label
 
-	envNames := ""
 	for _, env := range envs {
 		envName := env.Spec.Label
 		if envName == "" {
 			envName = env.Name
 		}
-		envNames += " " + envName
 
 		source += "-" + env.Name
 		labels = append(labels, &scm.Label{
@@ -40,10 +38,10 @@ func (o *Options) PromoteViaPullRequest(envs []*v1.Environment, releaseInfo *Rel
 		})
 	}
 
-	comment := fmt.Sprintf("chore: promote %s to version %s ->%s", app, versionName, envNames) + "\n\nthis commit will trigger a pipeline to [generate the actual kubernetes resources to perform the promotion](https://jenkins-x.io/docs/v3/about/how-it-works/#promotion) which will create a second commit on this Pull Request before it can merge"
+	comment := fmt.Sprintf("chore: promote %s to version %s", app, versionName) + "\n\nthis commit will trigger a pipeline to [generate the actual kubernetes resources to perform the promotion](https://jenkins-x.io/docs/v3/about/how-it-works/#promotion) which will create a second commit on this Pull Request before it can merge"
 	details := scm.PullRequest{
 		Source: source,
-		Title:  fmt.Sprintf("chore: promote %s to version %s ->%s", app, versionName, envNames),
+		Title:  fmt.Sprintf("chore: promote %s to version %s", app, versionName),
 		Body:   comment,
 		Draft:  draftPR,
 		Labels: labels,
