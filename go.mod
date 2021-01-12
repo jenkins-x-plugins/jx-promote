@@ -4,10 +4,10 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cpuguy83/go-md2man v1.0.10
 	github.com/hashicorp/vault/api v1.0.5-0.20190909201928-35325e2c3262 // indirect
-	github.com/jenkins-x/go-scm v1.5.202
-	github.com/jenkins-x/jx-api/v4 v4.0.14
-	github.com/jenkins-x/jx-gitops v0.0.508
-	github.com/jenkins-x/jx-helpers/v3 v3.0.45
+	github.com/jenkins-x/go-scm v1.5.206
+	github.com/jenkins-x/jx-api/v4 v4.0.18
+	github.com/jenkins-x/jx-gitops v0.0.517
+	github.com/jenkins-x/jx-helpers/v3 v3.0.54
 	github.com/jenkins-x/jx-logging/v3 v3.0.2
 	github.com/pkg/errors v0.9.1
 	github.com/roboll/helmfile v0.135.1-0.20201213020320-54eb73b4239a
@@ -18,6 +18,7 @@ require (
 	k8s.io/apimachinery v0.19.4
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	k8s.io/helm v2.16.10+incompatible
+	k8s.io/kube-openapi v0.0.0-20200923155610-8b5066479488 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
