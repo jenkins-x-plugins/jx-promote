@@ -39,6 +39,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
 	v1 "github.com/jenkins-x/jx-api/v4/pkg/apis/jenkins.io/v1"
 
 	"github.com/blang/semver"
@@ -357,7 +358,7 @@ func (o *Options) Run() error {
 		o.GitClient = cli.NewCLIClient("", o.CommandRunner)
 	}
 
-	err = o.DevEnvContext.LazyLoad(o.GitClient, o.JXClient, o.Namespace, o.Git())
+	err = o.DevEnvContext.LazyLoad(o.GitClient, o.JXClient, o.Namespace, o.Git(), o.Dir)
 	if err != nil {
 		return errors.Wrap(err, "failed to lazy load the EnvironmentContext")
 	}
@@ -422,19 +423,19 @@ func (o *Options) Run() error {
 	}
 
 	if len(o.PromoteEnvironments) > 0 {
-		return o.PromoteAll(func(env *v1.Environment) bool {
-			return Contains(o.PromoteEnvironments, env.Spec.Label)
+		return o.PromoteAll(func(env *jxcore.EnvironmentConfig) bool {
+			return Contains(o.PromoteEnvironments, env.Key)
 		})
 	}
 
 	if o.All {
-		return o.PromoteAll(func(env *v1.Environment) bool {
-			return (env.Spec.PromotionStrategy == v1.PromotionStrategyTypeAutomatic || env.Spec.PromotionStrategy == v1.PromotionStrategyTypeManual) && env.Spec.Kind.IsPermanent()
+		return o.PromoteAll(func(env *jxcore.EnvironmentConfig) bool {
+			return (env.PromotionStrategy == v1.PromotionStrategyTypeAutomatic || env.PromotionStrategy == v1.PromotionStrategyTypeManual) && envIsPermanent(env)
 		})
 	}
 	if o.AllAutomatic {
-		return o.PromoteAll(func(env *v1.Environment) bool {
-			return env.Spec.PromotionStrategy == v1.PromotionStrategyTypeAutomatic && env.Spec.Kind.IsPermanent()
+		return o.PromoteAll(func(env *jxcore.EnvironmentConfig) bool {
+			return env.PromotionStrategy == v1.PromotionStrategyTypeAutomatic && envIsPermanent(env)
 		})
 	}
 	if env == nil {
@@ -449,7 +450,7 @@ func (o *Options) Run() error {
 			return fmt.Errorf("Could not find an Environment called %s", o.Environment)
 		}
 	}
-	releaseInfo, err := o.Promote([]*v1.Environment{env}, true, o.NoPoll)
+	releaseInfo, err := o.Promote([]*jxcore.EnvironmentConfig{env}, true, o.NoPoll)
 	if err != nil {
 		return err
 	}
@@ -462,6 +463,10 @@ func (o *Options) Run() error {
 		}
 	}
 	return err
+}
+
+func envIsPermanent(env *jxcore.EnvironmentConfig) bool {
+	return env.Key != "dev"
 }
 
 func Contains(a []string, x string) bool {
@@ -527,57 +532,42 @@ func (o *Options) DefaultChartRepositoryURL() string {
 	return chartRepo
 }
 
-func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
-	kubeClient := o.KubeClient
-	currentNs := o.Namespace
-	team, _, err := jxenv.GetDevNamespace(kubeClient, currentNs)
-	if err != nil {
-		return err
-	}
-	jxClient := o.JXClient
-	envs, err := jxClient.JenkinsV1().Environments(team).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		log.Logger().Warnf("No Environments found: %s/n", err)
-		return nil
-	}
-	environments := envs.Items
+func (o *Options) PromoteAll(pred func(*jxcore.EnvironmentConfig) bool) error {
+	environments := o.DevEnvContext.Requirements.Environments
 	if len(environments) == 0 {
-		log.Logger().Warnf("No Environments have been created yet in team %s. Please create some via 'jx create env'", team)
+		log.Logger().Warnf("No Environments have been specified in the requirements")
 		return nil
 	}
-	jxenv.SortEnvironments(environments)
 
-	var promoteEnvs []*v1.Environment
+	var promoteEnvs []*jxcore.EnvironmentConfig
 	for i := range environments {
 		env := &environments[i]
 		if pred(env) {
-			ns := env.Spec.Namespace
-			if ns == "" {
-				return fmt.Errorf("No namespace for environment %s", env.Name)
-			}
-			source := &env.Spec.Source
-			if source.URL == "" && !env.Spec.RemoteCluster && o.DevEnvContext.DevEnv != nil {
+			sourceURL := requirements.EnvironmentGitURL(o.DevEnvContext.Requirements, env.Key)
+			if sourceURL == "" && !env.RemoteCluster && o.DevEnvContext.DevEnv != nil {
 				// lets default to the git repository of the dev environment as we are sharing the git repository across multiple namespaces
-				source.URL = o.DevEnvContext.DevEnv.Spec.Source.URL
+				env.GitURL = o.DevEnvContext.DevEnv.Spec.Source.URL
 			}
 			promoteEnvs = append(promoteEnvs, env)
 		}
 	}
 
 	// lets group Auto env promotions together into the same git URL
-	var groups [][]*v1.Environment
-	var group []*v1.Environment
+	var groups [][]*jxcore.EnvironmentConfig
+	var group []*jxcore.EnvironmentConfig
 	for _, env := range promoteEnvs {
 		if len(group) == 0 {
 			group = append(group, env)
 			continue
 		}
 
+		sourceURL := requirements.EnvironmentGitURL(o.DevEnvContext.Requirements, env.Key)
+
 		// lets see if the env is the same
-		if o.NoGroupPullRequest || env.Spec.PromotionStrategy != v1.PromotionStrategyTypeAutomatic || env.Spec.Source.URL != group[0].Spec.Source.URL {
+		if o.NoGroupPullRequest || env.PromotionStrategy != v1.PromotionStrategyTypeAutomatic || sourceURL != group[0].GitURL {
 			// lets use a different group...
 			groups = append(groups, group)
-			group = []*v1.Environment{env}
+			group = []*jxcore.EnvironmentConfig{env}
 		} else {
 			group = append(group, env)
 		}
@@ -587,7 +577,7 @@ func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 	}
 	for _, group = range groups {
 		firstEnv := group[0]
-		ns := firstEnv.Spec.Namespace
+		ns := EnvironmentNamespace(firstEnv)
 
 		// lets clear the branch name so that we create a new branch for each PR...
 		o.BranchName = ""
@@ -606,7 +596,16 @@ func (o *Options) PromoteAll(pred func(*v1.Environment) bool) error {
 	return nil
 }
 
-func (o *Options) Promote(envs []*v1.Environment, warnIfAuto, noPoll bool) (*ReleaseInfo, error) {
+// EnvironmentNamespace returns the namespace for the environment
+func EnvironmentNamespace(env *jxcore.EnvironmentConfig) string {
+	ns := env.Namespace
+	if ns == "" {
+		ns = naming.ToValidName("jx-" + env.Key)
+	}
+	return ns
+}
+
+func (o *Options) Promote(envs []*jxcore.EnvironmentConfig, warnIfAuto, noPoll bool) (*ReleaseInfo, error) {
 	if len(envs) == 0 {
 		return nil, nil
 	}
@@ -620,7 +619,7 @@ func (o *Options) Promote(envs []*v1.Environment, warnIfAuto, noPoll bool) (*Rel
 
 	var targetNamespaces []string
 	for _, env := range envs {
-		targetNS := env.Spec.Namespace
+		targetNS := EnvironmentNamespace(env)
 		if targetNS != "" && stringhelpers.StringArrayIndex(targetNamespaces, targetNS) < 0 {
 			targetNamespaces = append(targetNamespaces, targetNS)
 		}
@@ -649,14 +648,14 @@ func (o *Options) Promote(envs []*v1.Environment, warnIfAuto, noPoll bool) (*Rel
 	}
 
 	for _, env := range envs {
-		draftPR := env.Spec.PromotionStrategy != v1.PromotionStrategyTypeAutomatic
-		targetNS := env.Spec.Namespace
+		draftPR := env.PromotionStrategy != v1.PromotionStrategyTypeAutomatic
+		targetNS := EnvironmentNamespace(env)
 		if targetNS == "" {
-			return nil, fmt.Errorf("No namespace for environment %s", env.Name)
+			return nil, fmt.Errorf("No namespace for environment %s", env.Key)
 		}
 
-		if warnIfAuto && env != nil && env.Spec.PromotionStrategy == v1.PromotionStrategyTypeAutomatic && !o.BatchMode {
-			log.Logger().Infof("%s", termcolor.ColorWarning(fmt.Sprintf("WARNING: The Environment %s is setup to promote automatically as part of the CI/CD Pipelines.\n", env.Name)))
+		if warnIfAuto && env != nil && env.PromotionStrategy == v1.PromotionStrategyTypeAutomatic && !o.BatchMode {
+			log.Logger().Infof("%s", termcolor.ColorWarning(fmt.Sprintf("WARNING: The Environment %s is setup to promote automatically as part of the CI/CD Pipelines.\n", env.Key)))
 			flag, err := o.Input.Confirm("Do you wish to promote anyway? :", false, "usually we do not manually promote to Auto promotion environments")
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to confirm promotion")
@@ -670,16 +669,16 @@ func (o *Options) Promote(envs []*v1.Environment, warnIfAuto, noPoll bool) (*Rel
 		kubeClient := o.KubeClient
 		promoteKey := o.CreatePromoteKey(env)
 		if env != nil {
-			if !env.Spec.Kind.IsPermanent() {
+			if !envIsPermanent(env) {
 				return nil, errors.Errorf("cannot promote to Environment which is not a permanent Environment")
 			}
-			source := &env.Spec.Source
-			if source.URL == "" && !env.Spec.RemoteCluster && o.DevEnvContext.DevEnv != nil {
-				// lets default to the git repository of the dev environment as we are sharing the git repository across multiple namespaces
-				source.URL = o.DevEnvContext.DevEnv.Spec.Source.URL
-			}
 
-			if source.URL != "" {
+			sourceURL := requirements.EnvironmentGitURL(o.DevEnvContext.Requirements, env.Key)
+			if sourceURL == "" && !env.RemoteCluster && o.DevEnvContext.DevEnv != nil {
+				// lets default to the git repository of the dev environment as we are sharing the git repository across multiple namespaces
+				sourceURL = o.DevEnvContext.DevEnv.Spec.Source.URL
+			}
+			if sourceURL != "" {
 				err := o.PromoteViaPullRequest(envs, releaseInfo, draftPR)
 				if err == nil {
 					startPromotePR := func(a *v1.PipelineActivity, s *v1.PipelineActivityStep, ps *v1.PromoteActivityStep, p *v1.PromotePullRequestStep) error {
@@ -758,35 +757,25 @@ func (o *Options) ResolveChartRepositoryURL() (string, error) {
 	return answer, err
 }
 
-func (o *Options) GetTargetNamespace(ns string, env string) (string, *v1.Environment, error) {
-	kubeClient := o.KubeClient
-	currentNs := o.Namespace
-	team, _, err := jxenv.GetDevNamespace(kubeClient, currentNs)
-	if err != nil {
-		return "", nil, err
+func (o *Options) GetTargetNamespace(ns string, env string) (string, *jxcore.EnvironmentConfig, error) {
+	environments := o.DevEnvContext.Requirements.Environments
+	if len(environments) == 0 {
+		return "", nil, fmt.Errorf("No Environments have been defined in the requirements and settings files")
 	}
 
-	jxClient := o.JXClient
-	if err != nil {
-		return "", nil, err
-	}
-
-	m, envNames, err := jxenv.GetEnvironments(jxClient, team)
-	if err != nil {
-		return "", nil, err
-	}
-	if len(envNames) == 0 {
-		return "", nil, fmt.Errorf("No Environments have been created yet in team %s. Please create some via 'jx create env'", team)
-	}
-
-	var envResource *v1.Environment
-	targetNS := currentNs
+	var envResource *jxcore.EnvironmentConfig
+	var err error
+	targetNS := o.Namespace
 	if env != "" {
-		envResource = m[env]
-		if envResource == nil {
+		envResource, err = o.DevEnvContext.Requirements.Environment(env)
+		if envResource == nil || err != nil {
+			var envNames []string
+			for _, e := range environments {
+				envNames = append(envNames, e.Key)
+			}
 			return "", nil, options.InvalidOption(optionEnvironment, env, envNames)
 		}
-		targetNS = envResource.Spec.Namespace
+		targetNS = EnvironmentNamespace(envResource)
 		if targetNS == "" {
 			return "", nil, fmt.Errorf("environment %s does not have a namespace associated with it!", env)
 		}
@@ -794,16 +783,18 @@ func (o *Options) GetTargetNamespace(ns string, env string) (string, *v1.Environ
 		targetNS = ns
 	}
 
+	/* TODO we don't need to lazy create namespaces any more during promotion
 	labels := map[string]string{}
 	annotations := map[string]string{}
 	err = jxenv.EnsureNamespaceCreated(kubeClient, targetNS, labels, annotations)
 	if err != nil {
 		return "", nil, err
 	}
+	*/
 	return targetNS, envResource, nil
 }
 
-func (o *Options) WaitForPromotion(ns string, env *v1.Environment, releaseInfo *ReleaseInfo) error {
+func (o *Options) WaitForPromotion(ns string, env *jxcore.EnvironmentConfig, releaseInfo *ReleaseInfo) error {
 	if o.TimeoutDuration == nil {
 		log.Logger().Infof("No --%s option specified on the 'jx promote' command so not waiting for the promotion to succeed", optionTimeout)
 		return nil
@@ -832,7 +823,7 @@ func (o *Options) WaitForPromotion(ns string, env *v1.Environment, releaseInfo *
 }
 
 // TODO This could do with a refactor and some tests...
-func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, releaseInfo *ReleaseInfo, end time.Time, duration time.Duration, promoteKey *activities.PromoteStepActivityKey) error {
+func (o *Options) waitForGitOpsPullRequest(ns string, env *jxcore.EnvironmentConfig, releaseInfo *ReleaseInfo, end time.Time, duration time.Duration, promoteKey *activities.PromoteStepActivityKey) error {
 	pullRequestInfo := releaseInfo.PullRequestInfo
 	logMergeFailure := false
 	logNoMergeCommitSha := false
@@ -954,7 +945,7 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *v1.Environment, relea
 				if !pr.Mergeable {
 					log.Logger().Info("Rebasing PullRequest due to conflict")
 
-					err = o.PromoteViaPullRequest([]*v1.Environment{env}, releaseInfo, false)
+					err = o.PromoteViaPullRequest([]*jxcore.EnvironmentConfig{env}, releaseInfo, false)
 					if releaseInfo.PullRequestInfo != nil {
 						pullRequestInfo = releaseInfo.PullRequestInfo
 					}
@@ -1054,7 +1045,7 @@ func (o *Options) Helm() helm.Helmer {
 	return o.Helmer
 }
 
-func (o *Options) CreatePromoteKey(env *v1.Environment) *activities.PromoteStepActivityKey {
+func (o *Options) CreatePromoteKey(env *jxcore.EnvironmentConfig) *activities.PromoteStepActivityKey {
 	pipeline := o.Pipeline
 	if o.Build == "" {
 		o.Build = builds.GetBuildNumber()
@@ -1077,7 +1068,8 @@ func (o *Options) CreatePromoteKey(env *v1.Environment) *activities.PromoteStepA
 		if o.releaseResource == nil && releaseName != "" {
 			jxClient := o.JXClient
 			if err == nil && jxClient != nil {
-				release, err := jxClient.JenkinsV1().Releases(env.Spec.Namespace).Get(context.TODO(), releaseName, metav1.GetOptions{})
+				ens := EnvironmentNamespace(env)
+				release, err := jxClient.JenkinsV1().Releases(ens).Get(context.TODO(), releaseName, metav1.GetOptions{})
 				if err == nil && release != nil {
 					o.releaseResource = release
 				}
@@ -1114,7 +1106,7 @@ func (o *Options) CreatePromoteKey(env *v1.Environment) *activities.PromoteStepA
 			GitInfo:         gitInfo,
 			ReleaseNotesURL: releaseNotesURL,
 		},
-		Environment: env.Name,
+		Environment: env.Key,
 	}
 }
 
@@ -1224,9 +1216,9 @@ func (o *Options) GetLatestPipelineBuild(pipeline string) (string, string, error
 }
 
 // CommentOnIssues comments on any issues for a release that the fix is available in the given environment
-func (o *Options) CommentOnIssues(targetNS string, environment *v1.Environment, promoteKey *activities.PromoteStepActivityKey) error {
-	ens := environment.Spec.Namespace
-	envName := environment.Spec.Label
+func (o *Options) CommentOnIssues(targetNS string, environment *jxcore.EnvironmentConfig, promoteKey *activities.PromoteStepActivityKey) error {
+	ens := EnvironmentNamespace(environment)
+	envName := environment.Key
 	app := o.Application
 	version := o.Version
 	if ens == "" {
@@ -1417,26 +1409,16 @@ func (o *Options) InitGitConfigAndUser() error {
 	*/
 }
 
-func (o *Options) GetEnvChartValues(targetNS string, env *v1.Environment) ([]string, []string) {
-	kind := string(env.Spec.Kind)
+func (o *Options) GetEnvChartValues(targetNS string, env *jxcore.EnvironmentConfig) ([]string, []string) {
 	values := []string{
 		fmt.Sprintf("tags.jx-ns-%s=true", targetNS),
 		fmt.Sprintf("global.jxNs%s=true", stringhelpers.ToCamelCase(targetNS)),
-		fmt.Sprintf("tags.jx-%s=true", strings.ToLower(kind)),
-		fmt.Sprintf("tags.jx-env-%s=true", env.ObjectMeta.Name),
-		fmt.Sprintf("global.jx%s=true", kind),
-		fmt.Sprintf("global.jxEnv%s=true", stringhelpers.ToCamelCase(env.ObjectMeta.Name)),
+		fmt.Sprintf("tags.jx-env-%s=true", env.Key),
+		fmt.Sprintf("global.jxEnv%s=true", stringhelpers.ToCamelCase(env.Key)),
 	}
 	valueString := []string{
 		fmt.Sprintf("global.jxNs=%s", targetNS),
-		fmt.Sprintf("global.jxTypeEnv=%s", strings.ToLower(kind)),
-		fmt.Sprintf("global.jxEnv=%s", env.ObjectMeta.Name),
-	}
-	if env.Spec.Kind == v1.EnvironmentKindTypePreview {
-		valueString = append(valueString,
-			fmt.Sprintf("global.jxPreviewApp=%s", env.Spec.PreviewGitSpec.ApplicationName),
-			fmt.Sprintf("global.jxPreviewPr=%s", env.Spec.PreviewGitSpec.Name),
-		)
+		fmt.Sprintf("global.jxEnv=%s", env.Key),
 	}
 	return values, valueString
 }

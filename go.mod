@@ -5,9 +5,9 @@ require (
 	github.com/cpuguy83/go-md2man v1.0.10
 	github.com/hashicorp/vault/api v1.0.5-0.20190909201928-35325e2c3262 // indirect
 	github.com/jenkins-x/go-scm v1.5.208
-	github.com/jenkins-x/jx-api/v4 v4.0.19
-	github.com/jenkins-x/jx-gitops v0.0.519
-	github.com/jenkins-x/jx-helpers/v3 v3.0.54
+	github.com/jenkins-x/jx-api/v4 v4.0.20
+	github.com/jenkins-x/jx-gitops v0.0.520
+	github.com/jenkins-x/jx-helpers/v3 v3.0.59
 	github.com/jenkins-x/jx-logging/v3 v3.0.2
 	github.com/pkg/errors v0.9.1
 	github.com/roboll/helmfile v0.135.1-0.20201213020320-54eb73b4239a
