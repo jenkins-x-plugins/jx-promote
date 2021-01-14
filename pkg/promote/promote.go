@@ -357,7 +357,7 @@ func (o *Options) Run() error {
 		o.GitClient = cli.NewCLIClient("", o.CommandRunner)
 	}
 
-	err = o.DevEnvContext.LazyLoad(o.GitClient, o.JXClient, o.Namespace, o.Git())
+	err = o.DevEnvContext.LazyLoad(o.GitClient, o.JXClient, o.Namespace, o.Git(), o.Dir)
 	if err != nil {
 		return errors.Wrap(err, "failed to lazy load the EnvironmentContext")
 	}

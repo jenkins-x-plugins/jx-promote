@@ -1,9 +1,9 @@
 package envctx
 
 import (
+	"github.com/jenkins-x/jx-gitops/pkg/variablefinders"
+	"os"
 	"path/filepath"
-
-	"github.com/jenkins-x/jx-helpers/v3/pkg/requirements"
 
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
@@ -19,7 +19,7 @@ import (
 )
 
 // LazyLoad lazy loads any missing values
-func (e *EnvironmentContext) LazyLoad(gclient gitclient.Interface, jxClient versioned.Interface, ns string, gitter gitclient.Interface) error {
+func (e *EnvironmentContext) LazyLoad(gclient gitclient.Interface, jxClient versioned.Interface, ns string, gitter gitclient.Interface, dir string) error {
 	var err error
 	if e.DevEnv == nil {
 		e.DevEnv, err = jxenv.GetDevEnvironment(jxClient, ns)
@@ -31,7 +31,7 @@ func (e *EnvironmentContext) LazyLoad(gclient gitclient.Interface, jxClient vers
 		return errors.Errorf("no dev environemnt in namespace %s", ns)
 	}
 	if e.Requirements == nil {
-		e.Requirements, err = requirements.GetClusterRequirementsConfig(gclient, jxClient)
+		e.Requirements, err = variablefinders.FindRequirements(gclient, jxClient, ns, dir)
 		if err != nil {
 			return errors.Wrapf(err, "failed to load requirements from dev environment")
 		}
@@ -93,7 +93,12 @@ func (e *EnvironmentContext) LazyLoad(gclient gitclient.Interface, jxClient vers
 			return errors.Wrapf(err, "failed to check if version stream exists %s", versionsDir)
 		}
 		if !exists {
-			return errors.Errorf("dev environment git repository %s does not have a versionStream dir", url)
+			log.Logger().Warnf("dev environment git repository %s does not have a versionStream dir", url)
+			err = os.MkdirAll(versionsDir, files.DefaultDirWritePermissions)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create version stream dir %s", versionsDir)
+			}
+			//return errors.Errorf("dev environment git repository %s does not have a versionStream dir", url)
 		}
 
 		e.VersionResolver = &versionstream.VersionResolver{
