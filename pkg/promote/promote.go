@@ -542,6 +542,14 @@ func (o *Options) PromoteAll(pred func(*jxcore.EnvironmentConfig) bool) error {
 	var promoteEnvs []*jxcore.EnvironmentConfig
 	for i := range environments {
 		env := &environments[i]
+		if string(env.PromotionStrategy) == "" {
+			// lets default values
+			if env.Key == "staging" {
+				env.PromotionStrategy = v1.PromotionStrategyTypeAutomatic
+			} else if env.Key != "dev" {
+				env.PromotionStrategy = v1.PromotionStrategyTypeManual
+			}
+		}
 		if pred(env) {
 			sourceURL := requirements.EnvironmentGitURL(o.DevEnvContext.Requirements, env.Key)
 			if sourceURL == "" && !env.RemoteCluster && o.DevEnvContext.DevEnv != nil {
