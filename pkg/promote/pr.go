@@ -2,8 +2,9 @@ package promote
 
 import (
 	"fmt"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/requirements"
 
-	v1 "github.com/jenkins-x/jx-api/v4/pkg/apis/jenkins.io/v1"
+	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
@@ -14,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (o *Options) PromoteViaPullRequest(envs []*v1.Environment, releaseInfo *ReleaseInfo, draftPR bool) error {
+func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releaseInfo *ReleaseInfo, draftPR bool) error {
 	version := o.Version
 	versionName := version
 	if versionName == "" {
@@ -26,14 +27,10 @@ func (o *Options) PromoteViaPullRequest(envs []*v1.Environment, releaseInfo *Rel
 	var labels []*scm.Label
 
 	for _, env := range envs {
-		envName := env.Spec.Label
-		if envName == "" {
-			envName = env.Name
-		}
-
-		source += "-" + env.Name
+		envName := env.Key
+		source += "-" + envName
 		labels = append(labels, &scm.Label{
-			Name:        "env/" + env.Name,
+			Name:        "env/" + envName,
 			Description: envName,
 		})
 	}
@@ -66,7 +63,7 @@ func (o *Options) PromoteViaPullRequest(envs []*v1.Environment, releaseInfo *Rel
 		dir := o.OutDir
 
 		for _, env := range envs {
-			promoteNS := env.Spec.Namespace
+			promoteNS := EnvironmentNamespace(env)
 			promoteConfig, _, err := promoteconfig.Discover(dir, promoteNS)
 			if err != nil {
 				return errors.Wrapf(err, "failed to discover the PromoteConfig in dir %s", dir)
@@ -110,7 +107,7 @@ func (o *Options) PromoteViaPullRequest(envs []*v1.Environment, releaseInfo *Rel
 			}
 			err = fn(r)
 			if err != nil {
-				return errors.Wrapf(err, "failed to promote to %s", env.Name)
+				return errors.Wrapf(err, "failed to promote to %s", env.Key)
 			}
 		}
 		return nil
@@ -119,7 +116,7 @@ func (o *Options) PromoteViaPullRequest(envs []*v1.Environment, releaseInfo *Rel
 	if releaseInfo.PullRequestInfo != nil {
 		o.PullRequestNumber = releaseInfo.PullRequestInfo.Number
 	}
-	gitURL := envs[0].Spec.Source.URL
+	gitURL := requirements.EnvironmentGitURL(o.DevEnvContext.Requirements, envs[0].Key)
 	autoMerge := o.AutoMerge
 	if draftPR {
 		autoMerge = false

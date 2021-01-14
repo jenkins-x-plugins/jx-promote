@@ -4,8 +4,8 @@ package promote_test
 
 import (
 	"context"
+	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -69,7 +69,8 @@ func TestPromoteHelmfileAllAutomaticAndManual(t *testing.T) {
 	targetFullName := "jenkins-x/default-environment-helmfile"
 
 	devEnv := jxtesthelpers.CreateTestDevEnvironment(ns)
-	devEnv.Spec.Source.URL = "https://github.com/jenkins-x-labs-bdd-tests/jx3-kubernetes-jenkins"
+	devGitURL := "https://github.com/jenkins-x-labs-bdd-tests/jx3-kubernetes-jenkins"
+	devEnv.Spec.Source.URL = devGitURL
 
 	kubeObjects := []runtime.Object{
 		&corev1.Namespace{
@@ -85,32 +86,6 @@ func TestPromoteHelmfileAllAutomaticAndManual(t *testing.T) {
 	}
 	jxObjects := []runtime.Object{
 		devEnv,
-		&v1.Environment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "staging",
-				Namespace: ns,
-			},
-			Spec: v1.EnvironmentSpec{
-				Label:             "Staging",
-				Namespace:         "jx-staging",
-				PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
-				Order:             100,
-				Kind:              v1.EnvironmentKindTypePermanent,
-			},
-		},
-		&v1.Environment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "production",
-				Namespace: ns,
-			},
-			Spec: v1.EnvironmentSpec{
-				Label:             "Production",
-				Namespace:         "jx-production",
-				PromotionStrategy: v1.PromotionStrategyTypeManual,
-				Order:             200,
-				Kind:              v1.EnvironmentKindTypePermanent,
-			},
-		},
 	}
 
 	po.KubeClient = fake.NewSimpleClientset(kubeObjects...)
@@ -119,6 +94,26 @@ func TestPromoteHelmfileAllAutomaticAndManual(t *testing.T) {
 	po.Build = "1"
 	po.Pipeline = "myorg/myapp/master"
 	po.DevEnvContext.VersionResolver = jxtesthelpers.CreateTestVersionResolver(t)
+	po.DevEnvContext.Requirements = &jxcore.RequirementsConfig{
+		Environments: []jxcore.EnvironmentConfig{
+			{
+				Key:               "dev",
+				Namespace:         "jx",
+				PromotionStrategy: v1.PromotionStrategyTypeNever,
+				GitURL:            devGitURL,
+			},
+			{
+				Key:               "staging",
+				Namespace:         "jx-staging",
+				PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
+			},
+			{
+				Key:               "production",
+				Namespace:         "jx-production",
+				PromotionStrategy: v1.PromotionStrategyTypeManual,
+			},
+		},
+	}
 
 	err := po.Run()
 	require.NoError(t, err, "failed test %s s", name)
@@ -205,7 +200,8 @@ func TestPromoteHelmfileAllAutomaticsInOneOrMorePRs(t *testing.T) {
 		po.AppGitURL = "https://github.com/myorg/myapp.git"
 
 		devEnv := jxtesthelpers.CreateTestDevEnvironment(ns)
-		devEnv.Spec.Source.URL = "https://github.com/" + targetFullName
+		devGitURL := "https://github.com/" + targetFullName
+		devEnv.Spec.Source.URL = devGitURL
 
 		kubeObjects := []runtime.Object{
 			&corev1.Namespace{
@@ -221,35 +217,6 @@ func TestPromoteHelmfileAllAutomaticsInOneOrMorePRs(t *testing.T) {
 		}
 		jxObjects := []runtime.Object{
 			devEnv,
-			&v1.Environment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "staging",
-					Namespace: ns,
-				},
-				Spec: v1.EnvironmentSpec{
-					Label:             "Staging",
-					Namespace:         "jx-staging",
-					PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
-					Order:             100,
-					Kind:              v1.EnvironmentKindTypePermanent,
-				},
-			},
-			&v1.Environment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "production",
-					Namespace: ns,
-				},
-				Spec: v1.EnvironmentSpec{
-					Label:             "Production",
-					Namespace:         "jx-production",
-					PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
-					Order:             200,
-					Kind:              v1.EnvironmentKindTypePermanent,
-					Source: v1.EnvironmentRepository{
-						URL: tc.envSourceURL,
-					},
-				},
-			},
 		}
 
 		po.KubeClient = fake.NewSimpleClientset(kubeObjects...)
@@ -258,7 +225,27 @@ func TestPromoteHelmfileAllAutomaticsInOneOrMorePRs(t *testing.T) {
 		po.Build = "1"
 		po.Pipeline = "myorg/myapp/master"
 		po.DevEnvContext.VersionResolver = jxtesthelpers.CreateTestVersionResolver(t)
-
+		po.DevEnvContext.Requirements = &jxcore.RequirementsConfig{
+			Environments: []jxcore.EnvironmentConfig{
+				{
+					Key:               "dev",
+					Namespace:         "jx",
+					PromotionStrategy: v1.PromotionStrategyTypeNever,
+					GitURL:            devGitURL,
+				},
+				{
+					Key:               "staging",
+					Namespace:         "jx-staging",
+					PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
+				},
+				{
+					Key:               "production",
+					Namespace:         "jx-production",
+					PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
+					GitURL:            tc.envSourceURL,
+				},
+			},
+		}
 		err := po.Run()
 		require.NoError(t, err, "failed test %s s", name)
 
@@ -343,35 +330,24 @@ func AssertPromoteIntegration(t *testing.T, testCases ...PromoteTestCase) {
 		}
 		jxObjects := []runtime.Object{
 			devEnv,
-			&v1.Environment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      envName,
-					Namespace: ns,
-				},
-				Spec: v1.EnvironmentSpec{
-					Label:             strings.Title(envName),
+		}
+		po.DevEnvContext.Requirements = &jxcore.RequirementsConfig{
+			Environments: []jxcore.EnvironmentConfig{
+				{
+					Key:               envName,
 					Namespace:         "jx-" + envName,
 					PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
-					Source: v1.EnvironmentRepository{
-						Kind: v1.EnvironmentRepositoryTypeGit,
-						URL:  tc.gitURL,
-						Ref:  tc.gitRef,
-					},
-					Order:          0,
-					Kind:           "",
-					PullRequestURL: "",
-					TeamSettings:   v1.TeamSettings{},
-					RemoteCluster:  tc.remote,
+					GitURL:            tc.gitURL,
 				},
 			},
 		}
+		po.DevEnvContext.VersionResolver = jxtesthelpers.CreateTestVersionResolver(t)
 
 		po.KubeClient = fake.NewSimpleClientset(kubeObjects...)
 		po.JXClient = v1fake.NewSimpleClientset(jxObjects...)
 		po.Namespace = ns
 		po.Build = "1"
 		po.Pipeline = "myorg/myapp/master"
-		po.DevEnvContext.VersionResolver = jxtesthelpers.CreateTestVersionResolver(t)
 
 		err := po.Run()
 		require.NoError(t, err, "failed test %s s", name)
