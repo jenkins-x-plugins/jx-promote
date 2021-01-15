@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/yaml2s"
@@ -118,6 +119,8 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 
 	isRemoteEnv := r.DevEnvContext.DevEnv.Spec.RemoteCluster
 
+	keepOldReleases := r.Config.Spec.HelmfileRule.KeepOldReleases || contains(r.Config.Spec.HelmfileRule.KeepOldVersions, details.Name)
+
 	if nestedHelmfile {
 		// for nested helmfiles we assume we don't need to specify a namespace on each chart
 		// as all the charts will use the same namespace
@@ -125,7 +128,7 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 			helmfile.OverrideNamespace = promoteNs
 		}
 		found := false
-		if !r.Config.Spec.HelmfileRule.KeepOldReleases {
+		if !keepOldReleases {
 			for i := range helmfile.Releases {
 				release := &helmfile.Releases[i]
 				if release.Name == app || release.Name == details.Name {
@@ -140,8 +143,12 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 			if promoteNs != helmfile.OverrideNamespace {
 				ns = promoteNs
 			}
+			newReleaseName := details.LocalName
+			if keepOldReleases {
+				newReleaseName = fmt.Sprintf("%s-%s", details.LocalName, strings.Replace(version, ".", "-", -1))
+			}
 			helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
-				Name:      details.LocalName,
+				Name:      newReleaseName,
 				Chart:     details.Name,
 				Namespace: ns,
 				Version:   version,
@@ -150,7 +157,7 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 		return nil
 	}
 	found := false
-	if !r.Config.Spec.HelmfileRule.KeepOldReleases {
+	if !keepOldReleases {
 		for i := range helmfile.Releases {
 			release := &helmfile.Releases[i]
 			if (release.Name == app || release.Name == details.Name) && (release.Namespace == promoteNs || isRemoteEnv) {
@@ -162,8 +169,12 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 	}
 
 	if !found {
+		newReleaseName := details.LocalName
+		if keepOldReleases {
+			newReleaseName = fmt.Sprintf("%s-%s", details.LocalName, strings.Replace(version, ".", "-", -1))
+		}
 		helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
-			Name:      details.LocalName,
+			Name:      newReleaseName,
 			Chart:     details.Name,
 			Version:   version,
 			Namespace: promoteNs,
@@ -217,4 +228,13 @@ func defaultPrefix(appsConfig *state.HelmState, d *envctx.ChartDetails, defaultP
 
 	}
 	d.SetPrefix(prefix)
+}
+
+func contains(arr []string, str string) bool {
+	for _, a := range arr {
+		if a == str {
+			return true
+		}
+	}
+	return false
 }

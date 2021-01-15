@@ -1,0 +1,7 @@
+apiVersion: promote.jenkins-x.io/v1alpha1
+kind: Promote
+spec:
+  helmfileRule:
+    path: helmfiles/jx/helmfile.yaml
+    keepOldVersions:
+      - dev/myapp
