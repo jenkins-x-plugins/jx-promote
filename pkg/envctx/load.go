@@ -2,6 +2,7 @@ package envctx
 
 import (
 	"github.com/jenkins-x/jx-gitops/pkg/variablefinders"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/requirements"
 	"os"
 	"path/filepath"
 
@@ -35,9 +36,16 @@ func (e *EnvironmentContext) LazyLoad(gclient gitclient.Interface, jxClient vers
 		if err != nil {
 			return errors.Wrapf(err, "failed to load requirements from dev environment")
 		}
+
 	}
 	if e.Requirements == nil {
 		return errors.Errorf("no Requirements in TeamSettings of dev environment in namespace %s", ns)
+	}
+
+	// lets override the dev git URL if its changed in the requirements via the .jx/settings.yaml file
+	devGitURL := requirements.EnvironmentGitURL(e.Requirements, "dev")
+	if devGitURL != "" {
+		e.DevEnv.Spec.Source.URL = devGitURL
 	}
 
 	if e.VersionResolver == nil {
