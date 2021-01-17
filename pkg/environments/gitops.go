@@ -157,10 +157,11 @@ func (o *EnvironmentPullRequestOptions) FindExistingPullRequest(scmClient *scm.C
 		return nil, nil
 	}
 	ctx := context.Background()
+	labels := o.PullRequestFilter.Labels
 	prs, _, err := scmClient.PullRequests.List(ctx, repoFullName, scm.PullRequestListOptions{
 		Size:   100,
 		Open:   true,
-		Labels: o.PullRequestFilter.Labels,
+		Labels: labels,
 	})
 	if scmhelpers.IsScmNotFound(err) || len(prs) == 0 {
 		return nil, nil
@@ -177,6 +178,16 @@ func (o *EnvironmentPullRequestOptions) FindExistingPullRequest(scmClient *scm.C
 	for i := range prs {
 		pr := prs[i]
 		if pr.Closed || pr.Merged {
+			continue
+		}
+		found := false
+		for _, label := range pr.Labels {
+			if stringhelpers.StringArrayIndex(labels, label.Name) >= 0 {
+				found = true
+				break
+			}
+		}
+		if !found {
 			continue
 		}
 		return pr, nil
