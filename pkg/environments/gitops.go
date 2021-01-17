@@ -43,12 +43,6 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 		return nil, errors.Wrapf(err, "failed to find existing PullRequest")
 	}
 
-	if existingPr != nil {
-		log.Logger().Infof("rebasing existing PR %d", existingPr.Number)
-
-		// TODO handle rebasing an existing PR!
-	}
-
 	if prDir == "" {
 		tempDir, err := ioutil.TempDir("", "create-pr")
 		if err != nil {
@@ -73,6 +67,15 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 
 	o.OutDir = dir
 	log.Logger().Debugf("cloned %s to %s", termcolor.ColorInfo(gitURL), termcolor.ColorInfo(dir))
+
+	if existingPr != nil {
+		log.Logger().Infof("rebasing existing Pull Request %s", termcolor.ColorInfo(existingPr.Link))
+
+		err = o.checkoutExistingPullRequest(dir, existingPr)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to checkout existing PullRequest")
+		}
+	}
 
 	// TODO fork if needed?
 	currentSha, err := gitclient.GetLatestCommitSha(o.Gitter, dir)
@@ -119,11 +122,34 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 		}
 	}
 
-	prInfo, err := o.CreatePullRequest(scmClient, gitURL, repoFullName, dir, doneCommit)
+	prInfo, err := o.CreatePullRequest(scmClient, gitURL, repoFullName, dir, doneCommit, existingPr)
 	if err != nil {
 		return prInfo, errors.Wrapf(err, "failed to create pull request in dir %s", dir)
 	}
 	return prInfo, nil
+}
+
+func (o *EnvironmentPullRequestOptions) checkoutExistingPullRequest(dir string, pr *scm.PullRequest) error {
+	if o.RemoteName == "" {
+		o.RemoteName = "origin"
+	}
+	if pr.Source == "" {
+		log.Logger().Warnf("PullRequest %s does not have a source so we cannot use it", pr.Link)
+		return nil
+	}
+
+	// set the base branch to the PR branch
+	o.BaseBranchName = pr.Source
+	o.BranchName = o.BaseBranchName
+
+	// checkout the remote tracking branch
+	_, err := o.Git().Command(dir, "checkout", "--track", o.RemoteName+"/"+o.BaseBranchName)
+	if err != nil {
+		return errors.Wrapf(err, "failed to checkout existing PR branch")
+	}
+
+	log.Logger().Infof("checked out branch %s from PullRequest %s", o.BaseBranchName, pr.Link)
+	return nil
 }
 
 func (o *EnvironmentPullRequestOptions) FindExistingPullRequest(scmClient *scm.Client, repoFullName string) (*scm.PullRequest, error) {
