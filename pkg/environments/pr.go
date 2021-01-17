@@ -29,7 +29,7 @@ func (o *EnvironmentPullRequestOptions) Git() gitclient.Interface {
 }
 
 // CreatePullRequest crates a pull request if there are git changes
-func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client, gitURL string, repoFullName, dir string, doneCommit bool) (*scm.PullRequest, error) {
+func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client, gitURL string, repoFullName, dir string, doneCommit bool, existingPR *scm.PullRequest) (*scm.PullRequest, error) {
 	gitter := o.Git()
 	changes, err := gitclient.HasChanges(gitter, dir)
 	if err != nil {
@@ -78,7 +78,11 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 			return nil, errors.Wrapf(err, "failed to find branch in dir %s", dir)
 		}
 	}
-	log.Logger().Debugf("creating Pull Request from %s branch", baseBranch)
+	if existingPR != nil {
+		log.Logger().Debugf("adding to Pull Request %s on branch %s", existingPR.Link, baseBranch)
+	} else {
+		log.Logger().Debugf("creating Pull Request from %s branch", baseBranch)
+	}
 
 	if o.BranchName == "" {
 		o.BranchName, err = gitclient.CreateBranch(gitter, dir)
@@ -89,12 +93,13 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 
 	commitTitle := strings.TrimSpace(o.CommitTitle)
 	commitBody := o.CommitMessage
-
-	commitMessageStart := o.CommitMessage
-	if commitMessageStart == "" {
-		commitMessageStart = commitTitle
+	if commitBody == "" {
+		commitBody = o.CommitMessageSuffix
+	} else {
+		commitBody += "\n" + o.CommitMessageSuffix
 	}
-	commitMessage := fmt.Sprintf("%s\n\n%s", commitTitle, o.CommitMessageSuffix)
+
+	commitMessage := fmt.Sprintf("%s\n\n%s", commitTitle, commitBody)
 	_, err = gitclient.AddAndCommitFiles(gitter, dir, strings.TrimSpace(commitMessage))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to commit changes in dir %s", dir)
@@ -120,6 +125,9 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 
 	head := headPrefix + o.BranchName
 
+	if existingPR != nil {
+		return o.addLabelsToPullRequest(ctx, scmClient, repoFullName, existingPR)
+	}
 	pri := &scm.PullRequestInput{
 		Title: commitTitle,
 		Head:  head,
