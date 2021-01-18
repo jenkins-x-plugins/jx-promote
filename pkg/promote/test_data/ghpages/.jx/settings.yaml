@@ -1,0 +1,7 @@
+apiVersion: core.jenkins-x.io/v4beta1
+kind: Settings
+spec:
+  # lets override the destination configuration
+  destination:
+    chartRepository: https://github.com/jenkins-x-bdd/mycharts.git
+    chartKind: pages

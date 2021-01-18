@@ -4,6 +4,7 @@ package promote_test
 
 import (
 	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
+	"github.com/stretchr/testify/require"
 	"sort"
 	"testing"
 
@@ -146,4 +147,16 @@ func TestGetEnvChartValues(t *testing.T) {
 		sort.Strings(test.valueStrings)
 		assert.Equal(t, valueStrings, test.valueStrings)
 	}
+}
+
+func TestConvertToGitHubPagesURL(t *testing.T) {
+	source := "https://github.com/cdfoundation/tekton-helm-chart"
+	actual, err := promote.ConvertToGitHubPagesURL(source)
+	require.NoError(t, err, "failed to parse source %s", source)
+	assert.Equal(t, "https://cdfoundation.github.io/tekton-helm-chart/", actual, "for source %s", source)
+
+	source = "https://something.com/cheese/wine"
+	actual, err = promote.ConvertToGitHubPagesURL(source)
+	require.Error(t, err, "should fail to convert to github pages URL %s", source)
+	t.Logf("got expected failure %s for %s\n", err.Error(), source)
 }
