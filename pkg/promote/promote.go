@@ -724,8 +724,20 @@ func (o *Options) Promote(envs []*jxcore.EnvironmentConfig, warnIfAuto, noPoll b
 // ResolveChartRepositoryURL resolves the current Chart Museum URL so we can pass it into a remote Environment's
 // git repository
 func (o *Options) ResolveChartRepositoryURL() (string, error) {
+	chartRepo := o.DevEnvContext.Requirements.Cluster.ChartRepository
+	if chartRepo != "" {
+		if o.DevEnvContext.Requirements.Cluster.ChartKind == jxcore.ChartRepositoryTypePages {
+			var err error
+			chartRepo, err = ConvertToGitHubPagesURL(chartRepo)
+			if err != nil {
+				return "", errors.Wrapf(err, "failed to convert %s to github pages URL", chartRepo)
+			}
+		}
+		return chartRepo, nil
+	}
+	log.Logger().Warnf("no cluster.chartRepository in your jx-requirements.yml in your cluster so trying to discover from kubernetes services")
+
 	kubeClient := o.KubeClient
-	jxClient := o.JXClient
 	ns := o.Namespace
 	answer, err := services.FindServiceURL(kubeClient, ns, kube.ServiceChartMuseum)
 	if err != nil && apierrors.IsNotFound(err) {
@@ -740,26 +752,6 @@ func (o *Options) ResolveChartRepositoryURL() (string, error) {
 		}
 		if err2 == nil && answer != "" {
 			return answer, nil
-		}
-	}
-	if answer == "" {
-		env, err := jxenv.GetDevEnvironment(jxClient, ns)
-		if err != nil && apierrors.IsNotFound(err) {
-			err = nil
-		}
-		if env != nil {
-			if o.GitClient == nil {
-				o.GitClient = cli.NewCLIClient("", o.CommandRunner)
-			}
-			requirements, err := requirements.GetClusterRequirementsConfig(o.GitClient, jxClient)
-			if err != nil {
-				return answer, errors.Wrapf(err, "getting requirements from dev Environment")
-			}
-			if requirements != nil {
-				if requirements.Cluster.ChartRepository != "" {
-					return requirements.Cluster.ChartRepository, nil
-				}
-			}
 		}
 	}
 	return answer, err
@@ -1429,4 +1421,16 @@ func (o *Options) GetEnvChartValues(targetNS string, env *jxcore.EnvironmentConf
 		fmt.Sprintf("global.jxEnv=%s", env.Key),
 	}
 	return values, valueString
+}
+
+func ConvertToGitHubPagesURL(repo string) (string, error) {
+	gitInfo, err := giturl.ParseGitURL(repo)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to parse git repository URL %s", repo)
+	}
+
+	if !gitInfo.IsGitHub() {
+		return "", errors.Errorf("could not create github pages URL for URL which is not github based %s", repo)
+	}
+	return fmt.Sprintf("https://%s.github.io/%s/", gitInfo.Organisation, gitInfo.Name), nil
 }
