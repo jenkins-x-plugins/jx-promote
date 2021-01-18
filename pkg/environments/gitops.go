@@ -177,7 +177,7 @@ func (o *EnvironmentPullRequestOptions) FindExistingPullRequest(scmClient *scm.C
 	// lets find the latest PR which is not closed
 	for i := range prs {
 		pr := prs[i]
-		if pr.Closed || pr.Merged {
+		if pr.Closed || pr.Merged || pr.Source != repoFullName {
 			continue
 		}
 		found := false
