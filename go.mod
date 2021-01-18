@@ -1,19 +1,24 @@
 module github.com/jenkins-x/jx-promote
 
 require (
+	github.com/Azure/go-autorest/autorest/azure/auth v0.4.2 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/cpuguy83/go-md2man v1.0.10
+	github.com/hashicorp/go-retryablehttp v0.6.6 // indirect
 	github.com/hashicorp/vault/api v1.0.5-0.20190909201928-35325e2c3262 // indirect
 	github.com/jenkins-x/go-scm v1.5.211
-	github.com/jenkins-x/jx-api/v4 v4.0.22
-	github.com/jenkins-x/jx-gitops v0.0.528
-	github.com/jenkins-x/jx-helpers/v3 v3.0.63
+	github.com/jenkins-x/jx-api/v4 v4.0.23
+	github.com/jenkins-x/jx-gitops v0.0.530
+	github.com/jenkins-x/jx-helpers/v3 v3.0.64
 	github.com/jenkins-x/jx-logging/v3 v3.0.3
+	github.com/mitchellh/mapstructure v1.3.1 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/roboll/helmfile v0.135.1-0.20201213020320-54eb73b4239a
+	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.6.1
+	gopkg.in/ini.v1 v1.56.0 // indirect
 	helm.sh/helm/v3 v3.5.0
 	k8s.io/api v0.20.2
 	k8s.io/apimachinery v0.20.2
@@ -22,8 +27,6 @@ require (
 )
 
 replace (
-	github.com/jenkins-x/lighthouse => github.com/jstrachan/lighthouse v0.0.0-20210117125431-b895e82778b3
-
 	k8s.io/api => k8s.io/api v0.20.2
 	k8s.io/apimachinery => k8s.io/apimachinery v0.20.2
 	k8s.io/client-go => k8s.io/client-go v0.20.2
