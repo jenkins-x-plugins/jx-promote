@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/yaml2s"
@@ -145,7 +144,7 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 			}
 			newReleaseName := details.LocalName
 			if keepOldReleases {
-				newReleaseName = fmt.Sprintf("%s-%s", details.LocalName, strings.Replace(version, ".", "-", -1))
+				newReleaseName = fmt.Sprintf("%s-%s", details.LocalName, version)
 			}
 			helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
 				Name:      newReleaseName,
@@ -171,7 +170,7 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 	if !found {
 		newReleaseName := details.LocalName
 		if keepOldReleases {
-			newReleaseName = fmt.Sprintf("%s-%s", details.LocalName, strings.Replace(version, ".", "-", -1))
+			newReleaseName = fmt.Sprintf("%s-%s", details.LocalName, version)
 		}
 		helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
 			Name:      newReleaseName,

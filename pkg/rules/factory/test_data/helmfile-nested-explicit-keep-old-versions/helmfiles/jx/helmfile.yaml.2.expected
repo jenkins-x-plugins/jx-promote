@@ -6,9 +6,9 @@ repositories:
 releases:
 - chart: dev/myapp
   version: 1.2.3
-  name: myapp-1-2-3
+  name: myapp-1.2.3
 - chart: dev/myapp
   version: 1.2.4
-  name: myapp-1-2-4
+  name: myapp-1.2.4
 templates: {}
 renderedvalues: {}
