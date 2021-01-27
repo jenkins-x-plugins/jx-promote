@@ -1,0 +1,35 @@
+{{- if .Capabilities.APIVersions.Has "jenkins.io/v1/Release" }}
+apiVersion: jenkins.io/v1
+kind: Release
+metadata:
+  creationTimestamp: "2021-01-27T15:20:55Z"
+  deletionTimestamp: null
+  name: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+spec:
+  commits:
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: noreply@github.com
+      name: GitHub
+    message: Update release.yaml
+    sha: 4630daad9894b772f09274a2c8a89430eab23acf
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: noreply@github.com
+      name: GitHub
+    message: Update release.yaml
+    sha: 3add007e59df0819f2233624771636d5af2024c2
+  gitHttpUrl: https://github.com/jenkins-x/jx-promote
+  gitOwner: jenkins-x
+  gitRepository: jx-promote
+  name: '{{ .Chart.Name }}'
+  version: 0.0.194
+status: {}
+ 
+{{- end }}
