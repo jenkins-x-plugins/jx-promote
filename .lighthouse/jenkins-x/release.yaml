@@ -40,6 +40,17 @@ spec:
         - name: changelog
           resources: {}
         - name: upload-binaries
+          image: goreleaser/goreleaser:v0.155.0
+          env:
+          - name: GITHUB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: tekton-git
+                key: password
+          script: |
+            #!/bin/bash
+            source .jx/variables.sh
+            make goreleaser        
           resources: {}
         - name: multi-arch-images
           resources: {}
