@@ -122,11 +122,17 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 	keepOldReleases := r.Config.Spec.HelmfileRule.KeepOldReleases || contains(r.Config.Spec.HelmfileRule.KeepOldVersions, details.Name)
 
 	if nestedHelmfile {
-		// for nested helmfiles we assume we don't need to specify a namespace on each chart
-		// as all the charts will use the same namespace
-		if promoteNs != "" && helmfile.OverrideNamespace == "" {
-			helmfile.OverrideNamespace = promoteNs
+
+		if len(helmfile.Releases) == 0 {
+			// for nested helmfiles when adding the first release, set it up as the override
+			// then when future releases are added they can omit the namespace if their namespace matches this override
+			// if different namespaces are required for releases, manual edits should be done to
+			// set the namespace of EVERY release and make OverrideNamespace blank
+			if promoteNs != "" && helmfile.OverrideNamespace == "" {
+				helmfile.OverrideNamespace = promoteNs
+			}
 		}
+
 		found := false
 		if !keepOldReleases {
 			for i := range helmfile.Releases {
