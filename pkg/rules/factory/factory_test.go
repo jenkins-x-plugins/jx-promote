@@ -35,6 +35,9 @@ func TestRuleFactory(t *testing.T) {
 			if name == "jenkins-x-versions" {
 				continue
 			}
+			if name != "helmfile-per-env-keep-old-version" {
+				continue
+			}
 
 			dir := filepath.Join(tmpDir, name)
 

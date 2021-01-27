@@ -48,6 +48,7 @@ func Discover(dir, promoteNamespace string) (*v1alpha1.Promote, string, error) {
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to find helmfile")
 	}
+
 	config = &v1alpha1.Promote{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "generated",
@@ -59,6 +60,7 @@ func Discover(dir, promoteNamespace string) (*v1alpha1.Promote, string, error) {
 			},
 		},
 	}
+
 	return config, "", nil
 }
 

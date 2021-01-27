@@ -1,6 +1,0 @@
-filepath: ""
-helmfiles:
-- path: helmfiles/nginx/helmfile.yaml
-- path: helmfiles/jx/helmfile.yaml
-templates: {}
-renderedvalues: {}
