@@ -50,11 +50,10 @@ spec:
           script: |
             #!/bin/bash
             source .jx/variables.sh
-            #git stash
-            rm -rf templates
-            #git status
+            #rm -rf templates
             echo "now running goreleaser"
             export REV=$(git rev-parse HEAD)
+            export BRANCH=$(git rev-parse --abbrev-ref HEAD)
             export GOVERSION="1.15"
             export ROOTPACKAGE="github.com/$REPO_OWNER/$REPO_NAME"
             goreleaser release
