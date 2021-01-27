@@ -50,7 +50,7 @@ spec:
           script: |
             #!/bin/bash
             source .jx/variables.sh
-            /goreleaser --organisation=$REPO_OWNER --branch=$BRANCH --go-version=1.15 --root-package=github.com/$REPO_OWNER/$REPO_NAME --version=$VERSION
+            goreleaser release --organisation=$REPO_OWNER --branch=$BRANCH --go-version=1.15 --root-package=github.com/$REPO_OWNER/$REPO_NAME --version=$VERSION
           resources: {}
         - name: multi-arch-images
           resources: {}
