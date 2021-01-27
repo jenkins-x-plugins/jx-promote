@@ -50,7 +50,7 @@ spec:
           script: |
             #!/bin/bash
             source .jx/variables.sh
-            #rm -rf templates
+            rm -rf templates
             echo "now running goreleaser"
             export REV=$(git rev-parse HEAD)
             export BRANCH=$(git rev-parse --abbrev-ref HEAD)
