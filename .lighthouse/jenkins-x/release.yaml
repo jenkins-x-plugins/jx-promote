@@ -29,14 +29,8 @@ spec:
           resources: {}
         - name: chart-docs
           resources: {}
-        - image: gcr.io/jenkinsxio/jx-boot:3.0.768
-          name: release-chart
+        - name: release-chart
           resources: {}
-          script: |
-            #!/usr/bin/env sh
-            if [ -d "/workspace/source/charts/$REPO_NAME" ]; then source .jx/variables.sh
-            cd /workspace/source/charts/$REPO_NAME
-            make release; else echo no charts; fi
         - image: gcr.io/jenkinsxio/jx-changelog:0.0.27
           name: changelog
           resources: {}
