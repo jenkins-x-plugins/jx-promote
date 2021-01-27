@@ -90,7 +90,7 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 					if err != nil {
 						return errors.Wrapf(err, "failed to find git config dir")
 					}
-					o.AppGitURL, err = gitconfig.DiscoverUpstreamGitURL(gitConf)
+					o.AppGitURL, err = gitconfig.DiscoverUpstreamGitURL(gitConf, true)
 					if err != nil {
 						return errors.Wrapf(err, "failed to discover application git URL")
 					}
