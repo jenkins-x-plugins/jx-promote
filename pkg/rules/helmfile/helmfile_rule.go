@@ -2,9 +2,9 @@ package helmfile
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/yaml2s"
@@ -13,9 +13,11 @@ import (
 	"github.com/jenkins-x/jx-promote/pkg/rules"
 	"github.com/pkg/errors"
 	"github.com/roboll/helmfile/pkg/state"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kyaml "sigs.k8s.io/yaml"
 )
 
-// HelmfileRule uses a jx-apps.yml file
+// Rule uses a helmfile.yaml file
 func Rule(r *rules.PromoteRule) error {
 	config := r.Config
 	if config.Spec.HelmfileRule == nil {
@@ -26,7 +28,21 @@ func Rule(r *rules.PromoteRule) error {
 		rule.Path = "helmfile.yaml"
 	}
 
-	err := modifyHelmfile(r, rule, filepath.Join(r.Dir, rule.Path), rule.Namespace)
+	envHelmfileRulePath := filepath.Join(r.Dir, "helmfiles", rule.Namespace, "promote.yaml")
+	exists, err := files.FileExists(envHelmfileRulePath)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check if file exists %s", envHelmfileRulePath)
+	}
+	if exists {
+		// environment specific HelmfileRule
+		envHemlfileRule, err := LoadHelmfilePromote(envHelmfileRulePath)
+		if err != nil {
+			return errors.Wrapf(err, "failed load %s", envHelmfileRulePath)
+		}
+		config.Spec.HelmfileRule.KeepOldVersions = envHemlfileRule.Spec.KeepOldVersions
+	}
+
+	err = modifyHelmfile(r, rule, filepath.Join(r.Dir, rule.Path), rule.Namespace)
 	if err != nil {
 		return errors.Wrapf(err, "failed to modify chart files in dir %s", r.Dir)
 	}
@@ -119,7 +135,7 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 
 	isRemoteEnv := r.DevEnvContext.DevEnv.Spec.RemoteCluster
 
-	keepOldReleases := r.Config.Spec.HelmfileRule.KeepOldReleases || contains(r.Config.Spec.HelmfileRule.KeepOldVersions, details.Name)
+	keepOldVersions := contains(r.Config.Spec.HelmfileRule.KeepOldVersions, details.Name)
 
 	if nestedHelmfile {
 		// for nested helmfiles we assume we don't need to specify a namespace on each chart
@@ -127,8 +143,9 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 		if promoteNs != "" && helmfile.OverrideNamespace == "" {
 			helmfile.OverrideNamespace = promoteNs
 		}
+
 		found := false
-		if !keepOldReleases {
+		if !keepOldVersions {
 			for i := range helmfile.Releases {
 				release := &helmfile.Releases[i]
 				if release.Name == app || release.Name == details.Name {
@@ -144,8 +161,8 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 				ns = promoteNs
 			}
 			newReleaseName := details.LocalName
-			if keepOldReleases {
-				newReleaseName = fmt.Sprintf("%s-%s", details.LocalName, strings.Replace(version, ".", "-", -1))
+			if keepOldVersions {
+				newReleaseName = fmt.Sprintf("%s-%s", details.LocalName, version)
 			}
 			helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
 				Name:      newReleaseName,
@@ -157,7 +174,7 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 		return nil
 	}
 	found := false
-	if !keepOldReleases {
+	if !keepOldVersions {
 		for i := range helmfile.Releases {
 			release := &helmfile.Releases[i]
 			if (release.Name == app || release.Name == details.Name) && (release.Namespace == promoteNs || isRemoteEnv) {
@@ -170,8 +187,8 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 
 	if !found {
 		newReleaseName := details.LocalName
-		if keepOldReleases {
-			newReleaseName = fmt.Sprintf("%s-%s", details.LocalName, strings.Replace(version, ".", "-", -1))
+		if keepOldVersions {
+			newReleaseName = fmt.Sprintf("%s-%s", details.LocalName, version)
 		}
 		helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
 			Name:      newReleaseName,
@@ -237,4 +254,31 @@ func contains(arr []string, str string) bool {
 		}
 	}
 	return false
+}
+
+// HelmfilePromote is for configuring promotion for an environment
+type HelmfilePromote struct {
+	metav1.TypeMeta `json:",inline"`
+
+	Spec HelmfilePromoteSpec `json:"spec"`
+}
+
+// HelmfilePromoteSpec defines the configuration for an environment
+type HelmfilePromoteSpec struct {
+	// keepOldVersions if specified is a list of release names and if the release name is in this list then the old versions are kept
+	KeepOldVersions []string `json:"keepOldVersions,omitempty"`
+}
+
+// LoadHelmfilePromote loads a HelmfilePromote from a specific YAML file
+func LoadHelmfilePromote(fileName string) (*HelmfilePromote, error) {
+	data, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read file %s", fileName)
+	}
+	config := &HelmfilePromote{}
+	err = kyaml.Unmarshal(data, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal YAML file %s due to %s", fileName, err)
+	}
+	return config, nil
 }

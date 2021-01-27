@@ -1,0 +1,5 @@
+apiVersion: promote.jenkins-x.io/v1alpha1
+kind: HelmfilePromote
+spec:
+  keepOldVersions:
+  - dev/myapp

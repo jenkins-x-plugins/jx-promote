@@ -286,13 +286,13 @@ same cluster using the same git repository URL as the dev environment</p>
 </tr>
 <tr>
 <td>
-<code>keepOldReleases</code></br>
+<code>KeepOldVersions</code></br>
 <em>
-bool
+[]string
 </em>
 </td>
 <td>
-<p>KeepOldReleases if specified will cause the old releases to be retailed in the helfile</p>
+<p>KeepOldVersions if specified will cause the named repo/release releases to be retailed in the helmfile</p>
 </td>
 </tr>
 </tbody>
