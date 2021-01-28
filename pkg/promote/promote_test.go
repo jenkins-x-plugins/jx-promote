@@ -158,5 +158,5 @@ func TestConvertToGitHubPagesURL(t *testing.T) {
 	source = "https://something.com/cheese/wine"
 	actual, err = promote.ConvertToGitHubPagesURL(source)
 	require.Error(t, err, "should fail to convert to github pages URL %s", source)
-	t.Logf("got expected failure %s for %s\n", err.Error(), source)
+	t.Logf("got an expected failure %s for %s\n", err.Error(), source)
 }
