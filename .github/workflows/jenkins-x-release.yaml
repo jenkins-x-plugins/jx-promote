@@ -27,7 +27,8 @@ jobs:
       with:
         args: -c "source .jx/variables.sh; make release"
         entrypoint: bash
-    - name: set-version
+    - id: set_version
+      name: set_version
       uses: docker://golang:1.15
       with:
         args: -c "source .jx/variables.sh; echo '::set-output name=version::$VERSION'"
