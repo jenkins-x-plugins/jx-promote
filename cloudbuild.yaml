@@ -20,5 +20,5 @@ options:
   diskSizeGb: 500
   machineType: 'N1_HIGHCPU_8'
 substitutions:
-  _DOCKER_BUILDX_PLATFORMS: 'linux/amd64,linux/arm64'
+  _DOCKER_BUILDX_PLATFORMS: 'linux/arm64,linux/amd64'
 timeout: 3600s
