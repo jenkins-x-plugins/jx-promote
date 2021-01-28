@@ -79,7 +79,7 @@ jobs:
           VERSION=${{ steps.prep.outputs.version}}
         tags: |
           ghcr.io/${{ github.repository }}:latest
-          ghcr.io/{{ github.repository }}:${{ steps.prep.outputs.version }}
+          ghcr.io/${{ github.repository }}:${{ steps.prep.outputs.version }}
     - env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       name: promote-release
