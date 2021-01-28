@@ -45,7 +45,7 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithFilterFlag(t *t
 	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "mySearchedApp", promoteOptions.Application)
+	assert.Equal(t, "FAILmySearchedApp", promoteOptions.Application)
 }
 
 func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithBatchFlag(t *testing.T) {
