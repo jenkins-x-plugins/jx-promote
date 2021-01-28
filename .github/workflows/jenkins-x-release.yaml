@@ -29,10 +29,10 @@ jobs:
         entrypoint: bash
     - id: prep
       name: Set the values
-      uses: docker://golang:1.15
-      with:
-        args: -c "source .jx/variables.sh; echo '::set-output name=version::$VERSION'"
-        entrypoint: bash
+      run: |
+        source .jx/variables.sh
+        echo "::set-output name=version::${VERSION}"
+
     - env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       name: chart-docs
@@ -79,8 +79,8 @@ jobs:
         build-args: |
           VERSION=${{ steps.prep.outputs.version}}
         tags: |
-          ghcr.io/jenkins-x/jx-promote:latest
-          ghcr.io/jenkins-x/jx-promote:${{ steps.prep.outputs.version }}
+          ghcr.io/${{ github.repositor }}:latest
+          ghcr.io/{{ github.repositor }}:${{ steps.prep.outputs.version }}
     - env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       name: promote-release

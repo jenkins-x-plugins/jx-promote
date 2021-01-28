@@ -36,7 +36,6 @@ jobs:
         file: ./Dockerfile
         push: false
 "on":
-  pull_request: {}
   push:
     branches-ignore:
     - main
