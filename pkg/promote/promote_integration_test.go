@@ -39,7 +39,7 @@ type PromoteTestCase struct {
 
 func TestPromoteIntegrationHelmfile(t *testing.T) {
 	AssertPromoteIntegration(t, PromoteTestCase{
-		gitURL: "https://github.com/jx3-gitops-repositories/jx3-gke-terraform-vault",
+		gitURL: "https://github.com/jx3-gitops-repositories/jx3-gke-vault",
 	})
 }
 
@@ -277,10 +277,10 @@ func TestPromoteHelmfileAllAutomaticsInOneOrMorePRs(t *testing.T) {
 		{
 			name:               "separate-prs-for-urls",
 			noGroupPullRequest: false,
-			envSourceURL:       "https://github.com/jx3-gitops-repositories/jx3-gke-terraform-vault",
+			envSourceURL:       "https://github.com/jx3-gitops-repositories/jx3-gke-vault",
 			expectedPullRequestCount: map[string]int{
-				targetFullName: 1,
-				"jx3-gitops-repositories/jx3-gke-terraform-vault": 1,
+				targetFullName:                          1,
+				"jx3-gitops-repositories/jx3-gke-vault": 1,
 			},
 		},
 		{
