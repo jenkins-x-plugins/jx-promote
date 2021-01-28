@@ -29,9 +29,9 @@ spec:
           resources: {}
         - name: changelog
           resources: {}
-        - name: release-chart
-          resources: {}
         - name: upload-binaries
+          resources: {}
+        - name: release-chart
           resources: {}
         - name: multi-arch-images
           resources: {}
