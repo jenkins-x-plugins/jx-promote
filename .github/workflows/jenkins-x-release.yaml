@@ -1,0 +1,93 @@
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: "0"
+    - env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      name: next-version
+      uses: docker://gcr.io/jenkinsxio/jx-release-version:1.0.46
+      with:
+        args: -c "jx-release-version > VERSION"
+        entrypoint: bash
+    - env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      name: jx-variables
+      uses: docker://gcr.io/jenkinsxio/jx-boot:3.1.170
+      with:
+        args: gitops variables
+        entrypoint: jx
+    - env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      name: release-binary
+      uses: docker://golang:1.15
+      with:
+        args: -c "source .jx/variables.sh; make release"
+        entrypoint: bash
+    - name: set-version
+      uses: docker://golang:1.15
+      with:
+        args: -c "source .jx/variables.sh; echo '::set-output name=version::$VERSION'"
+        entrypoint: bash
+    - env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      name: chart-docs
+      uses: docker://jnorwood/helm-docs:v1.4.0
+      with:
+        args: -c "if [ -d \"charts/$REPO_NAME\" ]; then cd charts/$REPO_NAME; helm-docs;
+          else echo no charts; fi"
+        entrypoint: /bin/ash
+    - env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      name: changelog
+      uses: docker://gcr.io/jenkinsxio/jx-changelog:0.0.30
+      with:
+        entrypoint: .github/workflows/jenkins-x/changelog.sh
+    - env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      name: release-chart
+      uses: docker://gcr.io/jenkinsxio/jx-cli:3.1.170
+      with:
+        entrypoint: .github/workflows/jenkins-x/release-chart.sh
+    - env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      name: upload-binaries
+      uses: docker://goreleaser/goreleaser:v0.155.0
+      with:
+        entrypoint: .github/workflows/jenkins-x/upload-binaries.sh
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GHCR_TOKEN }}
+    - name: Build and push
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        file: ./Dockerfile
+        platforms: linux/amd64,linux/arm64
+        push: true
+        build-args: |
+          VERSION=${{ steps.set_version.outputs.version }}
+        tags: |
+          ghcr.io/jenkins-x/jx-promote:latest
+          ghcr.io/jenkins-x/jx-promote:${{ steps.set_version.outputs.version }}
+    - env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      name: promote-release
+      uses: docker://gcr.io/jenkinsxio/jx-updatebot:0.0.46
+      with:
+        entrypoint: jx-updatebot pr
+"on":
+  push:
+    branches:
+    - main
+    - master
