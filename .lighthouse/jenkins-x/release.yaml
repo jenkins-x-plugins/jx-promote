@@ -27,9 +27,9 @@ spec:
           resources: {}
         - name: chart-docs
           resources: {}
-        - name: release-chart
-          resources: {}
         - name: changelog
+          resources: {}
+        - name: release-chart
           resources: {}
         - name: upload-binaries
           resources: {}
@@ -38,5 +38,5 @@ spec:
         - name: promote-release
           resources: {}
   serviceAccountName: tekton-bot
-  timeout: 240h0m0s
+  timeout: 2h0m0s
 status: {}
