@@ -85,7 +85,8 @@ jobs:
       name: promote-release
       uses: docker://gcr.io/jenkinsxio/jx-updatebot:0.0.46
       with:
-        entrypoint: jx-updatebot pr
+        entrypoint: jx-updatebot
+        args: pr
 "on":
   push:
     branches:
