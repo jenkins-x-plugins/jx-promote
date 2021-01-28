@@ -27,8 +27,8 @@ jobs:
       with:
         args: -c "source .jx/variables.sh; make release"
         entrypoint: bash
-    - id: set_version
-      name: set_version
+    - id: prep
+      name: Set the values
       uses: docker://golang:1.15
       with:
         args: -c "source .jx/variables.sh; echo '::set-output name=version::$VERSION'"
@@ -77,10 +77,10 @@ jobs:
         platforms: linux/amd64,linux/arm64
         push: true
         build-args: |
-          VERSION=${{ steps.set_version.outputs.version }}
+          VERSION=${{ steps.prep.outputs.version}}
         tags: |
           ghcr.io/jenkins-x/jx-promote:latest
-          ghcr.io/jenkins-x/jx-promote:${{ steps.set_version.outputs.version }}
+          ghcr.io/jenkins-x/jx-promote:${{ steps.prep.outputs.version }}
     - env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       name: promote-release
