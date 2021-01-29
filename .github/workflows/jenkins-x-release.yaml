@@ -73,8 +73,10 @@ jobs:
           ghcr.io/${{ github.repository }}:latest
           ghcr.io/${{ github.repository }}:${{ steps.prep.outputs.version }}
     - env:
+        GIT_USERNAME: jenkins-x-bot-test
         GITHUB_TOKEN: ${{ secrets.GIT_BOT_TOKEN }}
         VERSION: ${{ steps.prep.outputs.version}}
+        XDG_CONFIG_HOME: /github/home/.config
       name: promote-release
       uses: docker://gcr.io/jenkinsxio/jx-updatebot:0.0.47
       with:
