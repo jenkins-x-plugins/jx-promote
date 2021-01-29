@@ -74,6 +74,7 @@ jobs:
           ghcr.io/${{ github.repository }}:${{ steps.prep.outputs.version }}
     - env:
         GITHUB_TOKEN: ${{ secrets.GIT_BOT_TOKEN }}
+        VERSION: ${{ steps.prep.outputs.version}}
       name: promote-release
       uses: docker://gcr.io/jenkinsxio/jx-updatebot:0.0.47
       with:
