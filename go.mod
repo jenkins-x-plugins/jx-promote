@@ -19,7 +19,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	gopkg.in/ini.v1 v1.56.0 // indirect
-	helm.sh/helm/v3 v3.5.0
+	helm.sh/helm/v3 v3.5.1
 	k8s.io/api v0.20.2
 	k8s.io/apimachinery v0.20.2
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
