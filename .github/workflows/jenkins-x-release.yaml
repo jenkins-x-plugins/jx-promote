@@ -93,7 +93,7 @@ jobs:
       uses: docker://gcr.io/jenkinsxio/jx-updatebot:0.0.47
       with:
         entrypoint: jx-updatebot
-        args: pr
+        args: pr --git-credentials
 "on":
   push:
     branches:
