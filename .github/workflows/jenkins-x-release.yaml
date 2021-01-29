@@ -11,9 +11,6 @@ jobs:
     - uses: fusion-engineering/setup-git-credentials@v2
       with:
         credentials: ${{ format('https://x-access-token:{0}@github.com/', secrets.GIT_BOT_TOKEN) }}
-    - run: |
-        git config --global user.name "jenkins-x-bot-test"
-        git config --global user.email "jenkins-x@googlegroups.com"
     - id: prep
       name: Set the release version
       uses: docker://gcr.io/jenkinsxio/jx-release-version:1.0.46
@@ -39,8 +36,8 @@ jobs:
         entrypoint: /bin/ash
     - env:
         GITHUB_TOKEN: ${{ secrets.GIT_BOT_TOKEN }}
+        REPO_NAME: ${{ github.event.repository.name }}
         VERSION: ${{ steps.prep.outputs.version}}
-        REPO_NAME: ${{ github.repository.name }}
       name: changelog
       uses: docker://gcr.io/jenkinsxio/jx-changelog:0.0.30
       with:
