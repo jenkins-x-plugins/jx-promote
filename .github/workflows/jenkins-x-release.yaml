@@ -1,3 +1,4 @@
+name: Release
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -13,6 +14,9 @@ jobs:
         email: 'jenkins-x@googlegroups.com'
         actor: 'jenkins-x-bot-test'
         token: '${{ secrets.GITHUB_TOKEN }}'
+    - uses: fusion-engineering/setup-git-credentials@v2
+      with:
+        credentials: ${{ format('https://x-access-token:{0}@github.com/', secrets.GITHUB_TOKEN) }}
     - env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       name: next-version
@@ -87,13 +91,11 @@ jobs:
         tags: |
           ghcr.io/${{ github.repository }}:latest
           ghcr.io/${{ github.repository }}:${{ steps.prep.outputs.version }}
-    - env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      name: promote-release
+    - name: promote-release
       uses: docker://gcr.io/jenkinsxio/jx-updatebot:0.0.47
       with:
         entrypoint: jx-updatebot
-        args: pr --git-credentials
+        args: pr
 "on":
   push:
     branches:

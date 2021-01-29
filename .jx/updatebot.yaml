@@ -6,7 +6,7 @@ spec:
         - https://github.com/jenkins-x/jx3-pipeline-catalog
       changes:
         - regex:
-            pattern: "jenkinsxio/jx-promote:(.*)"
+            pattern: "ghcr.io/jenkins-x/jx-promote:(.*)"
             files:
               - "**/*.yaml"
     - urls:
