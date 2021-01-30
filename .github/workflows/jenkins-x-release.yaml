@@ -78,7 +78,7 @@ jobs:
         VERSION: ${{ steps.prep.outputs.version}}
         XDG_CONFIG_HOME: /github/home/.config
       name: promote-release
-      uses: docker://gcr.io/jenkinsxio/jx-updatebot:0.0.47
+      uses: docker://gcr.io/jenkinsxio/jx-updatebot:0.0.49
       with:
         entrypoint: jx-updatebot
         args: pr --git-credentials
