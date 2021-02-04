@@ -1099,6 +1099,7 @@ github.com/roboll/helmfile v0.135.1-0.20201213020320-54eb73b4239a h1:9btMpOXX9u6
 github.com/roboll/helmfile v0.135.1-0.20201213020320-54eb73b4239a/go.mod h1:FN/KWtPfyp2tVBylTrBcEu1255rZzBcUVb2lci2I6S8=
 github.com/roboll/helmfile v0.138.2 h1:+kI6GSyBR5+bAnSwhrkw2ue1Ur7dsmshntVLfxBe1JQ=
 github.com/roboll/helmfile v0.138.2/go.mod h1:ojJk9SozHd5abTH0AiIKpI6OiRl03RtO2+U3ldy43SI=
+github.com/roboll/helmfile v0.138.3/go.mod h1:gi0BzSw6HH0c7t0v/zaxIlU3cOJuREF6K1XEpy7hZX0=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.1.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
@@ -1248,6 +1249,7 @@ github.com/variantdev/vals v0.11.0 h1:818ztGk5yPTiixbUeE3LkkBGGATEAKtWq09n8q8PFq
 github.com/variantdev/vals v0.11.0/go.mod h1:pZ0ZJZnOwB5aCJmXZgwrgMMMKMfIYMrhpsHllInRQ8c=
 github.com/variantdev/vals v0.12.0 h1:1fk2nlSzGkoY5/Ij7dyIB6r0eemFGWQMa5TD2ZhDSB8=
 github.com/variantdev/vals v0.12.0/go.mod h1:KHSazZ2M3pFiwu6mw4O56YdjNatCZpJZkk4s23rexW8=
+github.com/variantdev/vals v0.13.0/go.mod h1:pBwm+vPLQALN6otkNqiT1fUKdWHfjAm4070UkrNLsVA=
 github.com/vdemeester/k8s-pkg-credentialprovider v1.18.1-0.20201019120933-f1d16962a4db/go.mod h1:grWy0bkr1XO6hqbaaCKaPXqkBVlMGHYG6PGykktwbJc=
 github.com/vektah/gqlparser v1.1.2/go.mod h1:1ycwN7Ij5njmMkPPAOaRFY4rET2Enx7IkVv3vaXspKw=
 github.com/vektra/mockery v1.1.2/go.mod h1:VcfZjKaFOPO+MpN4ZvwPjs4c48lkq1o3Ym8yHZJu0jU=
