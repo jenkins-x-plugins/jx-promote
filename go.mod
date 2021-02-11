@@ -15,7 +15,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/roboll/helmfile v0.138.4
 	github.com/smartystreets/assertions v1.0.0 // indirect
-	github.com/spf13/cobra v1.1.1
+	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	gopkg.in/ini.v1 v1.56.0 // indirect
