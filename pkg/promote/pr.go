@@ -116,7 +116,19 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 	if releaseInfo.PullRequestInfo != nil {
 		o.PullRequestNumber = releaseInfo.PullRequestInfo.Number
 	}
-	gitURL := requirements.EnvironmentGitURL(o.DevEnvContext.Requirements, envs[0].Key)
+	env := envs[0]
+	gitURL := requirements.EnvironmentGitURL(o.DevEnvContext.Requirements, env.Key)
+	if gitURL == "" {
+		if env.RemoteCluster {
+			return errors.Errorf("no git URL for remote cluster %s", env.Key)
+		}
+
+		// lets default to the git repository for the dev environment for local clusters
+		gitURL = requirements.EnvironmentGitURL(o.DevEnvContext.Requirements, "dev")
+		if gitURL == "" {
+			return errors.Errorf("no git URL for dev environment")
+		}
+	}
 	autoMerge := o.AutoMerge
 	if draftPR {
 		autoMerge = false
