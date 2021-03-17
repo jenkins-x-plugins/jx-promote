@@ -407,6 +407,106 @@ func TestPromoteHelmfileAllAutomaticsInOneOrMorePRs(t *testing.T) {
 	}
 }
 
+func TestPromoteHelmfileToNamedLocalEnvironment(t *testing.T) {
+	version := "1.2.3"
+	appName := "myapp"
+	ns := "jx"
+
+	runner := NewFakeRunnerWithGitClone()
+
+	_, po := promote.NewCmdPromote()
+	name := "promote-local"
+	po.DisableGitConfig = true
+	po.Application = appName
+	po.Version = version
+	po.Environment = "staging"
+
+	po.NoPoll = true
+	po.BatchMode = true
+	po.GitKind = "fake"
+	po.CommandRunner = runner.Run
+	po.AppGitURL = "https://github.com/myorg/myapp.git"
+
+	targetFullName := "jenkins-x/default-environment-helmfile"
+
+	devEnv := jxtesthelpers.CreateTestDevEnvironment(ns)
+	devGitURL := "https://github.com/jenkins-x-labs-bdd-tests/jx3-kubernetes-jenkins"
+	devEnv.Spec.Source.URL = devGitURL
+
+	kubeObjects := []runtime.Object{
+		&corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: ns,
+				Labels: map[string]string{
+					"tag":  "",
+					"team": "jx",
+					"env":  "dev",
+				},
+			},
+		},
+	}
+	jxObjects := []runtime.Object{
+		devEnv,
+	}
+
+	po.KubeClient = fake.NewSimpleClientset(kubeObjects...)
+	po.JXClient = v1fake.NewSimpleClientset(jxObjects...)
+	po.Namespace = ns
+	po.Build = "1"
+	po.Pipeline = "myorg/myapp/master"
+	po.DevEnvContext.VersionResolver = jxtesthelpers.CreateTestVersionResolver(t)
+	po.DevEnvContext.Requirements = &jxcore.RequirementsConfig{
+		Environments: []jxcore.EnvironmentConfig{
+			{
+				Key:               "dev",
+				Namespace:         "jx",
+				PromotionStrategy: v1.PromotionStrategyTypeNever,
+				GitURL:            devGitURL,
+			},
+			{
+				Key:               "staging",
+				Namespace:         "jx-staging",
+				PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
+			},
+			{
+				Key:               "production",
+				Namespace:         "jx-production",
+				PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
+				Repository:        "jx-production",
+				RemoteCluster:     true,
+			},
+		},
+	}
+
+	err := po.Run()
+	require.NoError(t, err, "failed test %s s", name)
+
+	scmClient := po.ScmClient
+	require.NotNil(t, scmClient, "no ScmClient created")
+	ctx := context.Background()
+
+	prNumber := 1
+	pr, _, err := scmClient.PullRequests.Find(ctx, targetFullName, prNumber)
+	require.NoError(t, err, "failed to find repository %s number %d", targetFullName, prNumber)
+	assert.NotNil(t, pr, "nil pr %s for %s", targetFullName, prNumber)
+
+	t.Logf("created PullRequest %s #%d", pr.Link, prNumber)
+	t.Logf("PR title: %s", pr.Title)
+	t.Logf("PR body: %s", pr.Body)
+
+	// lets assert we have a PipelineActivity...
+	paList, err := po.JXClient.JenkinsV1().PipelineActivities(ns).List(context.TODO(), metav1.ListOptions{})
+	require.NoError(t, err, "failed to load PipelineActivity resources in namespace %s", ns)
+	require.Len(t, paList.Items, 1, "should have a PipelineActivity in namespace %s", ns)
+	pa := paList.Items[0]
+
+	data, err := yaml.Marshal(pa)
+	require.NoError(t, err, "failed to marshal PipelineActivity")
+
+	t.Logf("got PipelineActivity %s\n", string(data))
+	assert.Equal(t, v1.ActivityStatusTypeSucceeded, pa.Spec.Status, "pipelineActivity.Spec.Status")
+}
+
 // AssertPromoteIntegration asserts the test cases work
 func AssertPromoteIntegration(t *testing.T, testCases ...PromoteTestCase) {
 	version := "1.2.3"
