@@ -21,7 +21,7 @@ require (
 	gopkg.in/ini.v1 v1.56.0 // indirect
 	helm.sh/helm/v3 v3.5.0
 	k8s.io/api v0.20.4
-	k8s.io/apimachinery v0.20.4
+	k8s.io/apimachinery v0.20.5
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	sigs.k8s.io/yaml v1.2.0
 )
