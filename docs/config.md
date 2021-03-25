@@ -292,7 +292,19 @@ bool
 </em>
 </td>
 <td>
-<p>KeepOldReleases if specified will cause the old releases to be retailed in the helfile</p>
+<p>KeepOldReleases if specified will cause the old releases to be retailed in the helfile
+Deprecated : use KeepOldVersions</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>keepOldVersions</code></br>
+<em>
+[]string
+</em>
+</td>
+<td>
+<p>KeepOldVersions if specified is a list of release names and if the release name is in this list then the old versions are kept</p>
 </td>
 </tr>
 </tbody>
@@ -457,5 +469,5 @@ KptRule
 <hr/>
 <p><em>
 Generated with <code>gen-crd-api-reference-docs</code>
-on git commit <code>8404900</code>.
+on git commit <code>79f97ab</code>.
 </em></p>
