@@ -739,14 +739,14 @@ func (o *Options) ResolveChartRepositoryURL() (string, error) {
 
 	kubeClient := o.KubeClient
 	ns := o.Namespace
-	answer, err := services.FindServiceURL(kubeClient, ns, kube.ServiceChartMuseum)
+	answer, err := services.FindIngressURL(kubeClient, ns, "chartmuseum")
 	if err != nil && apierrors.IsNotFound(err) {
 		err = nil
 	}
 	if err != nil || answer == "" {
-		// lets try find a `chartmusem` ingress
+		// lets try find a `chartmusem` service instead
 		var err2 error
-		answer, err2 = services.FindIngressURL(kubeClient, ns, "chartmuseum")
+		answer, err2 = services.FindServiceURL(kubeClient, ns, kube.ServiceChartMuseum)
 		if err2 != nil && apierrors.IsNotFound(err2) {
 			err2 = nil
 		}
