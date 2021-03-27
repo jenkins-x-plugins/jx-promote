@@ -732,29 +732,73 @@ func (o *Options) ResolveChartRepositoryURL() (string, error) {
 			if err != nil {
 				return "", errors.Wrapf(err, "failed to convert %s to github pages URL", chartRepo)
 			}
+			return chartRepo, nil
 		}
-		return chartRepo, nil
+		if o.DevEnvContext.Requirements.Cluster.ChartKind == jxcore.ChartRepositoryTypeOCI {
+			return chartRepo, nil
+		}
+
+		if !IsLocalChartRepository(chartRepo) {
+			return chartRepo, nil
+		}
 	}
-	log.Logger().Warnf("no cluster.chartRepository in your jx-requirements.yml in your cluster so trying to discover from kubernetes services")
+	if chartRepo == "" {
+		log.Logger().Warnf("no cluster.chartRepository in your jx-requirements.yml in your cluster so trying to discover from kubernetes ingress and service resources")
+
+	} else {
+		log.Logger().Warnf("the cluster.chartRepository in your jx-requirements.yml looks like its an internal service URL so trying to discover from kubernetes ingress resources")
+	}
 
 	kubeClient := o.KubeClient
 	ns := o.Namespace
-	answer, err := services.FindIngressURL(kubeClient, ns, "chartmuseum")
-	if err != nil && apierrors.IsNotFound(err) {
-		err = nil
-	}
-	if err != nil || answer == "" {
-		// lets try find a `chartmusem` service instead
-		var err2 error
-		answer, err2 = services.FindServiceURL(kubeClient, ns, kube.ServiceChartMuseum)
-		if err2 != nil && apierrors.IsNotFound(err2) {
-			err2 = nil
+	answer := ""
+	var err error
+	for _, n := range []string{"chartmuseum", "bucketrepo"} {
+		answer, err = services.FindIngressURL(kubeClient, ns, n)
+		if err != nil && apierrors.IsNotFound(err) {
+			err = nil
 		}
-		if err2 == nil && answer != "" {
+		if err == nil && answer != "" {
 			return answer, nil
 		}
 	}
+	for _, n := range []string{kube.ServiceChartMuseum, "bucketrepo"} {
+		answer, err = services.FindServiceURL(kubeClient, ns, n)
+		if err != nil && apierrors.IsNotFound(err) {
+			err = nil
+		}
+		if err == nil && answer != "" {
+			return answer, nil
+		}
+	}
+	// lets go with whatever is configured
+	if chartRepo != "" {
+		return chartRepo, nil
+	}
 	return answer, err
+}
+
+// IsLocalChartRepository return true if the chart repository is blank or a local url
+func IsLocalChartRepository(repo string) bool {
+	repo = strings.TrimPrefix(repo, "https://")
+	repo = strings.TrimPrefix(repo, "http://")
+	repo = strings.TrimPrefix(repo, "https:")
+	repo = strings.TrimPrefix(repo, "http:")
+
+	repo = strings.TrimSuffix(repo, "/")
+	repo = strings.TrimSuffix(repo, ".jx")
+
+	// lets trim any port
+	i := strings.LastIndex(repo, ":")
+	if i > 0 {
+		repo = repo[0:i]
+	}
+	if strings.HasSuffix(repo, ".cluster.local") {
+		return true
+	}
+
+	// if we don't include a dot lets assume a local service name like  "jenkins-x-chartmuseum", "chartmuseum", "bucketrepo"
+	return !strings.Contains(repo, ".")
 }
 
 func (o *Options) GetTargetNamespace(ns string, env string) (string, *jxcore.EnvironmentConfig, error) {

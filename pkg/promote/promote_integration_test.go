@@ -410,7 +410,7 @@ func TestPromoteHelmfileAllAutomaticsInOneOrMorePRs(t *testing.T) {
 	}
 }
 
-func TestPromoteHelmfileRemoveCluster(t *testing.T) {
+func TestPromoteHelmfileRemoteCluster(t *testing.T) {
 	version := "1.2.3"
 	appName := "myapp"
 	ns := "jx"
@@ -503,6 +503,11 @@ func TestPromoteHelmfileRemoveCluster(t *testing.T) {
 	po.Pipeline = "myorg/myapp/master"
 	po.DevEnvContext.VersionResolver = jxtesthelpers.CreateTestVersionResolver(t)
 	po.DevEnvContext.Requirements = &jxcore.RequirementsConfig{
+		Cluster: jxcore.ClusterConfig{
+			DestinationConfig: jxcore.DestinationConfig{
+				ChartRepository: "http://jenkins-x-chartmuseum.jx.svc.cluster.local:8080",
+			},
+		},
 		Environments: []jxcore.EnvironmentConfig{
 			{
 				Key:               "dev",
