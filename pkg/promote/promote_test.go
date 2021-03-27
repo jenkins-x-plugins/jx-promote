@@ -160,3 +160,17 @@ func TestConvertToGitHubPagesURL(t *testing.T) {
 	require.Error(t, err, "should fail to convert to github pages URL %s", source)
 	t.Logf("got expected failure %s for %s\n", err.Error(), source)
 }
+
+func TestIsLocalChartRepository(t *testing.T) {
+	localRepos := []string{"http://jenkins-x-chartmuseum:8080", "http://jenkins-x-chartmuseum", "https://chartmuseum", "http://jenkins-x-chartmuseum.jx.svc.cluster.local:8080", "http://bucketrepo.jx"}
+	for _, repo := range localRepos {
+		actual := promote.IsLocalChartRepository(repo)
+		assert.True(t, actual, "should be local repo %s", repo)
+	}
+
+	remoteRepos := []string{"http://foo.bar", "https://chartrepo.mydomain.com"}
+	for _, repo := range remoteRepos {
+		actual := promote.IsLocalChartRepository(repo)
+		assert.False(t, actual, "not local repo %s", repo)
+	}
+}
