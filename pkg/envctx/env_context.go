@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	v1 "github.com/jenkins-x/jx-api/v4/pkg/apis/jenkins.io/v1"
 	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
+	v1 "github.com/jenkins-x/jx-api/v4/pkg/apis/jenkins.io/v1"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/kube"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/versionstream"
 )
@@ -29,6 +29,12 @@ type EnvironmentContext struct {
 
 	// GitToken the git token used to clone the development git repository
 	GitToken string
+
+	// GitOwner the current owner of the current git repository we are in
+	GitOwner string
+
+	// GitRepository the current name  of the current git repository we are in
+	GitRepository string
 }
 
 // TeamSettings returns the team settings for the current environment
