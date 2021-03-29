@@ -32,7 +32,7 @@ func (e *EnvironmentContext) LazyLoad(gclient gitclient.Interface, jxClient vers
 		return errors.Errorf("no dev environemnt in namespace %s", ns)
 	}
 	if e.Requirements == nil {
-		e.Requirements, err = variablefinders.FindRequirements(gclient, jxClient, ns, dir)
+		e.Requirements, err = variablefinders.FindRequirements(gclient, jxClient, ns, dir, e.GitOwner, e.GitRepository)
 		if err != nil {
 			return errors.Wrapf(err, "failed to load requirements from dev environment")
 		}
