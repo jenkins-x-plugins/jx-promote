@@ -2,6 +2,7 @@ package promote
 
 import (
 	"fmt"
+
 	"github.com/jenkins-x/jx-helpers/v3/pkg/requirements"
 
 	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"

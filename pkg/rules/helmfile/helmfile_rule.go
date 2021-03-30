@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
+
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/yaml2s"
 	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
@@ -108,7 +110,7 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 	if err != nil {
 		return errors.Wrapf(err, "failed to get chart details for %s repo %s", app, r.HelmRepositoryURL)
 	}
-	defaultPrefix(helmfile, details, "dev")
+	defaultPrefix(helmfile, r.DevEnvContext, details, "dev")
 
 	if promoteNs == "" {
 		promoteNs = r.Namespace
@@ -192,16 +194,21 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 
 // defaultPrefix lets find a chart prefix / repository name for the URL that does not clash with
 // any other existing repositories in the helmfile
-func defaultPrefix(appsConfig *state.HelmState, d *envctx.ChartDetails, defaultPrefix string) {
+func defaultPrefix(appsConfig *state.HelmState, envctx *envctx.EnvironmentContext, d *envctx.ChartDetails, defaultPrefix string) {
 	if d.Prefix != "" {
 		return
 	}
 	found := false
+	oci := false
+	if envctx.Requirements != nil {
+		oci = envctx.Requirements.Cluster.ChartKind == jxcore.ChartRepositoryTypeOCI
+	}
 	prefixes := map[string]string{}
 	urls := map[string]string{}
 	for _, r := range appsConfig.Repositories {
 		if r.URL == d.Repository {
 			found = true
+			r.OCI = oci
 		}
 		if r.Name != "" {
 			urls[r.URL] = r.Name
@@ -230,6 +237,7 @@ func defaultPrefix(appsConfig *state.HelmState, d *envctx.ChartDetails, defaultP
 		appsConfig.Repositories = append(appsConfig.Repositories, state.RepositorySpec{
 			Name: prefix,
 			URL:  d.Repository,
+			OCI:  oci,
 		})
 
 	}
