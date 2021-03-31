@@ -7,8 +7,8 @@ import (
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/helmer"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/scmhelpers"
-	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
-	"github.com/jenkins-x/jx-promote/pkg/envctx"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/apis/promote/v1alpha1"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/envctx"
 	"helm.sh/helm/v3/pkg/chart"
 )
 

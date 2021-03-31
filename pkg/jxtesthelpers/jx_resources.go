@@ -8,7 +8,7 @@ import (
 	v1 "github.com/jenkins-x/jx-api/v4/pkg/apis/jenkins.io/v1"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/kube/jxenv"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/versionstream"
-	"github.com/jenkins-x/jx-promote/pkg/envctx"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/envctx"
 	"github.com/stretchr/testify/assert"
 )
 

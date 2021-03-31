@@ -2,14 +2,14 @@
 rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 
 SHELL := /bin/bash
-NAME := jx-project
+NAME := jx-promote
 BINARY_NAME := jx-promote
 BUILD_TARGET = build
 MAIN_SRC_FILE=cmd/main.go
 GO := GO111MODULE=on go
 GO_NOMOD :=GO111MODULE=off go
 REV := $(shell git rev-parse --short HEAD 2> /dev/null || echo 'unknown')
-ORG := jenkins-x
+ORG := jenkins-x-plugins
 ORG_REPO := $(ORG)/$(NAME)
 RELEASE_ORG_REPO := $(ORG_REPO)
 ROOT_PACKAGE := github.com/$(ORG_REPO)

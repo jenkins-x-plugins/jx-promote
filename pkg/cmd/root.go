@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/jenkins-x/jx-promote/pkg/promote"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/promote"
 	"github.com/spf13/cobra"
 )
 

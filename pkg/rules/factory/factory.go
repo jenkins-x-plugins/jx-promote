@@ -1,11 +1,11 @@
 package factory
 
 import (
-	"github.com/jenkins-x/jx-promote/pkg/rules"
-	"github.com/jenkins-x/jx-promote/pkg/rules/file"
-	"github.com/jenkins-x/jx-promote/pkg/rules/helm"
-	"github.com/jenkins-x/jx-promote/pkg/rules/helmfile"
-	"github.com/jenkins-x/jx-promote/pkg/rules/kpt"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/rules"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/rules/file"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/rules/helm"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/rules/helmfile"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/rules/kpt"
 )
 
 // NewFunction creates a function based on the kind of rule

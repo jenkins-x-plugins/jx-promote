@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/jenkins-x/jx-promote/cmd/app"
+	"github.com/jenkins-x-plugins/jx-promote/cmd/app"
 )
 
 // Entrypoint for the command

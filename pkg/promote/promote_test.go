@@ -12,7 +12,7 @@ import (
 	v1 "github.com/jenkins-x/jx-api/v4/pkg/apis/jenkins.io/v1"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/input/fake"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/testhelpers"
-	"github.com/jenkins-x/jx-promote/pkg/promote"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/promote"
 	"github.com/stretchr/testify/assert"
 )
 

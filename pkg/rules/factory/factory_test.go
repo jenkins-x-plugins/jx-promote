@@ -8,11 +8,11 @@ import (
 
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/testhelpers"
-	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
-	"github.com/jenkins-x/jx-promote/pkg/jxtesthelpers"
-	"github.com/jenkins-x/jx-promote/pkg/promoteconfig"
-	"github.com/jenkins-x/jx-promote/pkg/rules"
-	"github.com/jenkins-x/jx-promote/pkg/rules/factory"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/apis/promote/v1alpha1"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/jxtesthelpers"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/promoteconfig"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/rules"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/rules/factory"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
