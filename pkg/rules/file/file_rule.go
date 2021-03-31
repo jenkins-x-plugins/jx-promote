@@ -10,8 +10,8 @@ import (
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/termcolor"
 	"github.com/jenkins-x/jx-logging/v3/pkg/log"
-	"github.com/jenkins-x/jx-promote/pkg/apis/promote/v1alpha1"
-	"github.com/jenkins-x/jx-promote/pkg/rules"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/apis/promote/v1alpha1"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/rules"
 	"github.com/pkg/errors"
 )
 

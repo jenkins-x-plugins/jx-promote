@@ -5,7 +5,7 @@ import (
 
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/helmer"
-	"github.com/jenkins-x/jx-promote/pkg/rules"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/rules"
 	"github.com/pkg/errors"
 )
 

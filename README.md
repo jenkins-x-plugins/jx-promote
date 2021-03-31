@@ -1,22 +1,22 @@
 # jx-promote
 
-[![Documentation](https://godoc.org/github.com/jenkins-x/jx-promote?status.svg)](https://pkg.go.dev/mod/github.com/jenkins-x/jx-promote)
-[![Go Report Card](https://goreportcard.com/badge/github.com/jenkins-x/jx-promote)](https://goreportcard.com/report/github.com/jenkins-x/jx-promote)
-[![Releases](https://img.shields.io/github/release-pre/jenkins-x/helmboot.svg)](https://github.com/jenkins-x/jx-promote/releases)
-[![LICENSE](https://img.shields.io/github/license/jenkins-x/helmboot.svg)](https://github.com/jenkins-x/jx-promote/blob/master/LICENSE)
+[![Documentation](https://godoc.org/github.com/jenkins-x-plugins/jx-promote?status.svg)](https://pkg.go.dev/mod/github.com/jenkins-x-plugins/jx-promote)
+[![Go Report Card](https://goreportcard.com/badge/github.com/jenkins-x-plugins/jx-promote)](https://goreportcard.com/report/github.com/jenkins-x-plugins/jx-promote)
+[![Releases](https://img.shields.io/github/release-pre/jenkins-x/helmboot.svg)](https://github.com/jenkins-x-plugins/jx-promote/releases)
+[![LICENSE](https://img.shields.io/github/license/jenkins-x/helmboot.svg)](https://github.com/jenkins-x-plugins/jx-promote/blob/master/LICENSE)
 [![Slack Status](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://slack.k8s.io/)
 
 `jx promote` is an experimental binary plugin to promote applications to a [Jenkins](https://jenkins.io/) environment
 
 ## Getting Started
 
-Download the [jx-promote binary](https://github.com/jenkins-x/jx-promote/releases) for your operating system and add it to your `$PATH`.
+Download the [jx-promote binary](https://github.com/jenkins-x-plugins/jx-promote/releases) for your operating system and add it to your `$PATH`.
 
 There will be an `app` you can install soon too...
 
 ## Commands
 
-See the [jx-promote command reference](https://github.com/jenkins-x/jx-promote/blob/master/docs/cmd/jx-promote.md#jx-promote)
+See the [jx-promote command reference](https://github.com/jenkins-x-plugins/jx-promote/blob/master/docs/cmd/jx-promote.md#jx-promote)
 
 ## Promoting via the command line
 
@@ -33,7 +33,7 @@ The helm rule uses a helm chart's `requirements.yaml` file to manage dependent a
 
 `jx promote` will detect the `env/requirements.yaml` file automatically without any explict configuration.
 
-You can [explicitly configure](#rule-configuration) the helm rule by specifying the [helmRule](https://github.com/jenkins-x/jx-promote/blob/master/docs/config.md#promote.jenkins-x.io/v1alpha1.HelmRule) property on the [spec](https://github.com/jenkins-x/jx-promote/blob/master/docs/config.md#promote.jenkins-x.io/v1alpha1.PromoteSpec) of the [.jx/promote.yaml](https://github.com/jenkins-x/jx-promote/blob/master/docs/config.md#promote) configuration file like [this one](pkg/rules/factory/test_data/helm-explicit/.jx/promote.yaml#L4-L5):
+You can [explicitly configure](#rule-configuration) the helm rule by specifying the [helmRule](https://github.com/jenkins-x-plugins/jx-promote/blob/master/docs/config.md#promote.jenkins-x.io/v1alpha1.HelmRule) property on the [spec](https://github.com/jenkins-x-plugins/jx-promote/blob/master/docs/config.md#promote.jenkins-x.io/v1alpha1.PromoteSpec) of the [.jx/promote.yaml](https://github.com/jenkins-x-plugins/jx-promote/blob/master/docs/config.md#promote) configuration file like [this one](pkg/rules/factory/test_data/helm-explicit/.jx/promote.yaml#L4-L5):
 
 ```yaml 
 apiVersion: promote.jenkins-x.io/v1alpha1
@@ -51,7 +51,7 @@ The apps rule uses a `jx-apps.yml` file to describe the charts to deploy in your
 `jx promote` will detect the `jx-apps.yml` file in the root directory automatically without any explicit configuration.
 
 
-You can [explicitly configure](#rule-configuration) the apps rule by creating a [.jx/promote.yaml](https://github.com/jenkins-x/jx-promote/blob/master/docs/config.md#promote) configuration file and specifying the [appsRule](https://github.com/jenkins-x/jx-promote/blob/master/docs/config.md#appsrule) like in [this one](pkg/rules/factory/test_data/jx-apps-explicit/.jx/promote.yaml#L4-L5)
+You can [explicitly configure](#rule-configuration) the apps rule by creating a [.jx/promote.yaml](https://github.com/jenkins-x-plugins/jx-promote/blob/master/docs/config.md#promote) configuration file and specifying the [appsRule](https://github.com/jenkins-x-plugins/jx-promote/blob/master/docs/config.md#appsrule) like in [this one](pkg/rules/factory/test_data/jx-apps-explicit/.jx/promote.yaml#L4-L5)
 
 ```yaml 
 apiVersion: promote.jenkins-x.io/v1alpha1
@@ -68,7 +68,7 @@ The helmfile rule uses a `helmfile.yaml` file from [helmfile](https://github.com
             
 `jx promote` will detect the `helmfile.yaml` file in the root directory automatically without any explicit configuration.
 
-You can [explicitly configure](#rule-configuration) the helmfile rule by creating a [.jx/promote.yaml](https://github.com/jenkins-x/jx-promote/blob/master/docs/config.md#promote) configuration file and specifying the [helmfile rule](https://github.com/jenkins-x/jx-promote/blob/master/docs/config.md#helmfilerule) like [this one](pkg/rules/factory/test_data/helmfile-explicit/.jx/promote.yaml#L4-L5):
+You can [explicitly configure](#rule-configuration) the helmfile rule by creating a [.jx/promote.yaml](https://github.com/jenkins-x-plugins/jx-promote/blob/master/docs/config.md#promote) configuration file and specifying the [helmfile rule](https://github.com/jenkins-x-plugins/jx-promote/blob/master/docs/config.md#helmfilerule) like [this one](pkg/rules/factory/test_data/helmfile-explicit/.jx/promote.yaml#L4-L5):
 
 ```yaml 
 apiVersion: promote.jenkins-x.io/v1alpha1
@@ -82,7 +82,7 @@ spec:
 
 The file rule can modify arbitrary files such as `Makefile` or shell scripts to include a promotion command using tools like [helm](https://helm.sh/) or [kpt](https://googlecontainertools.github.io/kpt/)
 
-To enable the file mode you need to create a [.jx/promote.yaml](https://github.com/jenkins-x/jx-promote/blob/master/docs/config.md#promote) configuration file and specifying the [file rule](https://github.com/jenkins-x/jx-promote/blob/master/docs/config.md#filerule).
+To enable the file mode you need to create a [.jx/promote.yaml](https://github.com/jenkins-x-plugins/jx-promote/blob/master/docs/config.md#promote) configuration file and specifying the [file rule](https://github.com/jenkins-x-plugins/jx-promote/blob/master/docs/config.md#filerule).
 
 For example to promote into a `Makefile` using `helm template` you could create a file like [this one](pkg/rules/factory/test_data/make-helm/.jx/promote.yaml#L4-L12):
                                            
@@ -136,7 +136,7 @@ spec:
 
 ## Rule Configuration
 
-`jx promote` can automatically detect common configurations as described above or you can explicilty configure the promotion rule in your environment git repository by creating a [.jx/promote.yaml](https://github.com/jenkins-x/jx-promote/blob/master/docs/config.md#promote) configuration file. 
+`jx promote` can automatically detect common configurations as described above or you can explicilty configure the promotion rule in your environment git repository by creating a [.jx/promote.yaml](https://github.com/jenkins-x-plugins/jx-promote/blob/master/docs/config.md#promote) configuration file. 
 
 For example if you wish to configure the [helm rule](#helm) you may want to use a `.jx/promote.yaml` file like [this one](pkg/rules/factory/test_data/helm-explicit/.jx/promote.yaml#L4-L5):
 

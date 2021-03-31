@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jenkins-x/jx-gitops/pkg/variablefinders"
+	"github.com/jenkins-x-plugins/jx-gitops/pkg/variablefinders"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/requirements"
 
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
