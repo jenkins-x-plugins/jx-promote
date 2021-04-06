@@ -7,12 +7,12 @@ import (
 
 	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
 
-	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
-	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient/gitconfig"
 	"github.com/jenkins-x-plugins/jx-promote/pkg/promoteconfig"
 	"github.com/jenkins-x-plugins/jx-promote/pkg/rules"
 	"github.com/jenkins-x-plugins/jx-promote/pkg/rules/factory"
+	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient/gitconfig"
 	"github.com/pkg/errors"
 )
 

@@ -1,14 +1,14 @@
 package environments
 
 import (
+	"github.com/jenkins-x-plugins/jx-promote/pkg/apis/promote/v1alpha1"
+	"github.com/jenkins-x-plugins/jx-promote/pkg/envctx"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-api/v4/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/cmdrunner"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/helmer"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/scmhelpers"
-	"github.com/jenkins-x-plugins/jx-promote/pkg/apis/promote/v1alpha1"
-	"github.com/jenkins-x-plugins/jx-promote/pkg/envctx"
 	"helm.sh/helm/v3/pkg/chart"
 )
 

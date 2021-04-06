@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
+
+	"github.com/cenkalti/backoff"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/cmdrunner"
@@ -186,10 +189,25 @@ func (o *EnvironmentPullRequestOptions) addLabelsToPullRequest(ctx context.Conte
 		return pr, nil
 	}
 	var err error
-	pr, _, err = scmClient.PullRequests.Find(ctx, repoFullName, prNumber)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to lookup PullRequest #%d on repo %s", prNumber, repoFullName)
+
+	// lets use a retry loop to push in case the repository is not yet setup quite yet
+	f := func() error {
+		pr, _, err = scmClient.PullRequests.Find(ctx, repoFullName, prNumber)
+		if err != nil {
+			return errors.Wrapf(err, "failed to lookup PullRequest #%d on repo %s", prNumber, repoFullName)
+		}
+		return nil
 	}
+
+	bo := backoff.NewExponentialBackOff()
+	bo.InitialInterval = 3 * time.Second
+	bo.MaxElapsedTime = time.Minute
+	bo.Reset()
+	err = backoff.Retry(f, bo)
+	if err != nil {
+		return pr, err
+	}
+
 	return pr, nil
 }
 
