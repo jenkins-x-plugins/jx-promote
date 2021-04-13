@@ -6,13 +6,11 @@
 [![LICENSE](https://img.shields.io/github/license/jenkins-x/helmboot.svg)](https://github.com/jenkins-x-plugins/jx-promote/blob/master/LICENSE)
 [![Slack Status](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://slack.k8s.io/)
 
-`jx promote` is an experimental binary plugin to promote applications to a [Jenkins](https://jenkins.io/) environment
+`jx promote` is a binary plugin to promote applications to one or more [Jenkins X](https://jenkins-x.io/) environments
 
 ## Getting Started
 
 Download the [jx-promote binary](https://github.com/jenkins-x-plugins/jx-promote/releases) for your operating system and add it to your `$PATH`.
-
-There will be an `app` you can install soon too...
 
 ## Commands
 
@@ -20,7 +18,7 @@ See the [jx-promote command reference](https://github.com/jenkins-x-plugins/jx-p
 
 ## Promoting via the command line
 
-Just run the `jx alpha promote` command line and follow the instructions as if it were `jx promote`.
+Just run the `jx promote` command line and follow the instructions as if it were `jx promote`.
 
 ## Rules
 
