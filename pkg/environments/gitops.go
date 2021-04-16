@@ -53,8 +53,15 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 	}
 
 	cloneGitURL := gitURL
+	if o.Fork {
+		cloneGitURL, err = o.EnsureForked(scmClient, repoFullName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to ensure repository is forked %s", gitURL)
+		}
+	}
+	cloneGitURLSafe := cloneGitURL
 	if o.ScmClientFactory.GitToken != "" && o.ScmClientFactory.GitUsername != "" {
-		cloneGitURL, err = o.ScmClientFactory.CreateAuthenticatedURL(gitURL)
+		cloneGitURL, err = o.ScmClientFactory.CreateAuthenticatedURL(cloneGitURL)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create authenticated git URL to clone with for private repositories")
 		}
@@ -62,11 +69,18 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 
 	dir, err := gitclient.CloneToDir(o.Gitter, cloneGitURL, "")
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to clone git URL %s", gitURL)
+		return nil, errors.Wrapf(err, "failed to clone git URL %s", cloneGitURLSafe)
+	}
+
+	if o.Fork {
+		err = o.rebaseForkFromUpstream(dir, gitURL)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to rebase forked repository")
+		}
 	}
 
 	o.OutDir = dir
-	log.Logger().Debugf("cloned %s to %s", termcolor.ColorInfo(gitURL), termcolor.ColorInfo(dir))
+	log.Logger().Debugf("cloned %s to %s", termcolor.ColorInfo(cloneGitURLSafe), termcolor.ColorInfo(dir))
 
 	if existingPr != nil {
 		log.Logger().Infof("rebasing existing Pull Request %s", termcolor.ColorInfo(existingPr.Link))
@@ -77,7 +91,6 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 		}
 	}
 
-	// TODO fork if needed?
 	currentSha, err := gitclient.GetLatestCommitSha(o.Gitter, dir)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get current commit sha")
