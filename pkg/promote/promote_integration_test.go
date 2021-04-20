@@ -754,9 +754,8 @@ func TestPromoteHelmfileToNamedLocalEnvironment(t *testing.T) {
 				GitURL:            devGitURL,
 			},
 			{
-				Key:               "staging",
-				Namespace:         "jx-staging",
-				PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
+				Key:       "staging",
+				Namespace: "jx-staging",
 			},
 			{
 				Key:               "production",
@@ -783,6 +782,13 @@ func TestPromoteHelmfileToNamedLocalEnvironment(t *testing.T) {
 	t.Logf("created PullRequest %s #%d", pr.Link, prNumber)
 	t.Logf("PR title: %s", pr.Title)
 	t.Logf("PR body: %s", pr.Body)
+	var labels []string
+	for _, l := range pr.Labels {
+		t.Logf("PR label: %s", l.Name)
+		labels = append(labels, l.Name)
+	}
+	assert.Contains(t, labels, "env/staging", "should have label")
+	assert.NotContains(t, labels, "do-not-merge/hold", "should not have label")
 
 	// lets assert we have a PipelineActivity...
 	paList, err := po.JXClient.JenkinsV1().PipelineActivities(ns).List(context.TODO(), metav1.ListOptions{})
