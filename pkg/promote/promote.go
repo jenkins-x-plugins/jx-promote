@@ -656,13 +656,18 @@ func (o *Options) Promote(envs []*jxcore.EnvironmentConfig, warnIfAuto, noPoll b
 	}
 
 	for _, env := range envs {
-		draftPR := env.PromotionStrategy != v1.PromotionStrategyTypeAutomatic
+		strategy := env.PromotionStrategy
+		if string(strategy) == "" && env.Key == "staging" {
+			// lets default the strategy based if its missing from the Environment
+			strategy = v1.PromotionStrategyTypeAutomatic
+		}
+		draftPR := strategy != v1.PromotionStrategyTypeAutomatic
 		targetNS := EnvironmentNamespace(env)
 		if targetNS == "" {
 			return nil, fmt.Errorf("No namespace for environment %s", env.Key)
 		}
 
-		if warnIfAuto && env != nil && env.PromotionStrategy == v1.PromotionStrategyTypeAutomatic && !o.BatchMode {
+		if warnIfAuto && env != nil && strategy == v1.PromotionStrategyTypeAutomatic && !o.BatchMode {
 			log.Logger().Infof("%s", termcolor.ColorWarning(fmt.Sprintf("WARNING: The Environment %s is setup to promote automatically as part of the CI/CD Pipelines.\n", env.Key)))
 			flag, err := o.Input.Confirm("Do you wish to promote anyway? :", false, "usually we do not manually promote to Auto promotion environments")
 			if err != nil {
