@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jenkins-x/jx-helpers/v3/pkg/yaml2s"
+
 	"github.com/jenkins-x-plugins/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x-plugins/jx-promote/pkg/jxtesthelpers"
 	"github.com/jenkins-x-plugins/jx-promote/pkg/promoteconfig"
@@ -16,6 +18,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type TestOptions struct {
+	// ReleaseName overrides the TemplateContext.ReleaseName for the test
+	ReleaseName string `yaml:"release"`
+}
 
 func TestRuleFactory(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "")
@@ -46,6 +53,9 @@ func TestRuleFactory(t *testing.T) {
 			require.NoError(t, err, "failed to load cfg dir %s", dir)
 			require.NotNil(t, cfg, "no project cfg found in dir %s", dir)
 
+			err, options := loadOptions(dir)
+			require.NoError(t, err)
+
 			r := &rules.PromoteRule{
 				TemplateContext: rules.TemplateContext{
 					GitURL:            "https://github.com/myorg/myapp.git",
@@ -53,6 +63,7 @@ func TestRuleFactory(t *testing.T) {
 					AppName:           "myapp",
 					Namespace:         ns,
 					HelmRepositoryURL: "http://chartmuseum-jx.34.78.195.22.nip.io",
+					ReleaseName:       options.ReleaseName,
 				},
 				Dir:           dir,
 				Config:        *cfg,
@@ -98,4 +109,11 @@ func ruleFileName(cfg *v1alpha1.Promote) string {
 		return cfg.Spec.HelmfileRule.Path
 	}
 	return cfg.Spec.FileRule.Path
+}
+
+func loadOptions(dir string) (error, *TestOptions) {
+	filePath := filepath.Join(dir, "options.yaml")
+	options := &TestOptions{}
+	err := yaml2s.LoadFile(filePath, options)
+	return err, options
 }

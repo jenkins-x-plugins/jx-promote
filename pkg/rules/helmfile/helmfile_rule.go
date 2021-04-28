@@ -139,7 +139,7 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 		if !keepOldReleases {
 			for i := range helmfile.Releases {
 				release := &helmfile.Releases[i]
-				if release.Name == app || release.Name == details.Name {
+				if release.Name == app || release.Name == details.Name || (r.ReleaseName != "" && release.Name == r.ReleaseName) {
 					release.Version = version
 					found = true
 					return nil
@@ -152,8 +152,11 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 				ns = promoteNs
 			}
 			newReleaseName := details.LocalName
+			if r.ReleaseName != "" {
+				newReleaseName = r.ReleaseName
+			}
 			if keepOldReleases {
-				newReleaseName = fmt.Sprintf("%s-%s", details.LocalName, strings.Replace(version, ".", "-", -1))
+				newReleaseName = fmt.Sprintf("%s-%s", newReleaseName, strings.Replace(version, ".", "-", -1))
 			}
 			helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
 				Name:      newReleaseName,
@@ -168,7 +171,7 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 	if !keepOldReleases {
 		for i := range helmfile.Releases {
 			release := &helmfile.Releases[i]
-			if (release.Name == app || release.Name == details.Name) && (release.Namespace == promoteNs || isRemoteEnv) {
+			if (release.Name == app || release.Name == details.Name || (r.ReleaseName != "" && release.Name == r.ReleaseName)) && (release.Namespace == promoteNs || isRemoteEnv) {
 				release.Version = version
 				found = true
 				return nil
@@ -178,8 +181,11 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 
 	if !found {
 		newReleaseName := details.LocalName
+		if r.ReleaseName != "" {
+			newReleaseName = r.ReleaseName
+		}
 		if keepOldReleases {
-			newReleaseName = fmt.Sprintf("%s-%s", details.LocalName, strings.Replace(version, ".", "-", -1))
+			newReleaseName = fmt.Sprintf("%s-%s", newReleaseName, strings.Replace(version, ".", "-", -1))
 		}
 		helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
 			Name:      newReleaseName,

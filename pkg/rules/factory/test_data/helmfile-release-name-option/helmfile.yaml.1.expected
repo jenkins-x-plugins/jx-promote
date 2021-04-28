@@ -1,0 +1,17 @@
+filepath: ""
+repositories:
+- name: yourorg
+  url: https://yourorg.example.com/charts
+- name: dev
+  url: http://chartmuseum-jx.34.78.195.22.nip.io
+releases:
+- chart: ./dbmigrator
+  name: dbmigrator
+  labels:
+    job: dbmigrator
+- chart: dev/myapp
+  version: 1.2.3
+  name: myapp-foo
+  namespace: jx
+templates: {}
+renderedvalues: {}
