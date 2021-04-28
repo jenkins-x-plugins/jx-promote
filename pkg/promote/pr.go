@@ -78,6 +78,7 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 					ChartAlias:        o.Alias,
 					Namespace:         o.Namespace,
 					HelmRepositoryURL: o.HelmRepositoryURL,
+					ReleaseName:       o.ReleaseName,
 				},
 				Dir:           dir,
 				Config:        *promoteConfig,

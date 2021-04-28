@@ -23,6 +23,7 @@ type TemplateContext struct {
 	ChartAlias        string
 	Namespace         string
 	HelmRepositoryURL string
+	ReleaseName       string
 }
 
 // RuleFunction a rule function for evaluating the rule
