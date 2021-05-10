@@ -1424,7 +1424,12 @@ func (o *Options) InitGitConfigAndUser() error {
 	so.KubeClient = o.KubeClient
 	so.Namespace = o.Namespace
 	so.CommandRunner = o.CommandRunner
-	// TODO configure more values?
+
+	if o.DevEnvContext.Requirements != nil {
+		req := &jxcore.Requirements{}
+		req.Spec = *o.DevEnvContext.Requirements
+		so.Requirements = req
+	}
 	err := so.Run()
 	if err != nil {
 		return errors.Wrapf(err, "failed to setup git config")
