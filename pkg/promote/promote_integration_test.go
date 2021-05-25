@@ -336,6 +336,22 @@ func TestPromoteHelmfileCustomNamespace(t *testing.T) {
 	err := po.Run()
 	require.NoError(t, err, "failed test %s s", name)
 
+	// lets verify the promoted helmfile
+	outDir := po.EnvironmentPullRequestOptions.OutDir
+	require.DirExists(t, outDir, "no outDir found")
+	path := filepath.Join(outDir, "helmfiles", "my-staging-ns", "helmfile.yaml")
+	require.FileExists(t, path, "should have created the helmfile")
+	st := &state.HelmState{}
+	err = yaml2s.LoadFile(path, st)
+	require.NoError(t, err, "failed to load helmfile %s", path)
+
+	// lets verify we find the app
+	require.Len(t, st.Releases, 1, "should have one release for %s", path)
+	rel := st.Releases[0]
+	assert.Equal(t, "my-staging-ns", st.OverrideNamespace, "namespace in file %s", path)
+	assert.Equal(t, "dev/myapp", rel.Chart, "chart in file %s", path)
+	assert.Equal(t, "myapp", rel.Name, "name in file %s", path)
+
 	scmClient := po.ScmClient
 	require.NotNil(t, scmClient, "no ScmClient created")
 	ctx := context.Background()
@@ -360,6 +376,7 @@ func TestPromoteHelmfileCustomNamespace(t *testing.T) {
 
 	t.Logf("got PipelineActivity %s\n", string(data))
 	assert.Equal(t, v1.ActivityStatusTypeSucceeded, pa.Spec.Status, "pipelineActivity.Spec.Status")
+
 }
 
 func TestPromoteHelmfileAllAutomaticsInOneOrMorePRs(t *testing.T) {
