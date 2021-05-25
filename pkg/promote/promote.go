@@ -416,10 +416,8 @@ func (o *Options) Run() error {
 
 	o.Activities = jxClient.JenkinsV1().PipelineActivities(ns)
 
-	releaseName := o.ReleaseName
-	if releaseName == "" {
-		releaseName = targetNS + "-" + o.Application
-		o.ReleaseName = releaseName
+	if o.ReleaseName == "" {
+		o.ReleaseName = o.Application
 	}
 
 	if len(o.PromoteEnvironments) > 0 {
@@ -642,15 +640,11 @@ func (o *Options) Promote(envs []*jxcore.EnvironmentConfig, warnIfAuto, noPoll b
 	if o.LocalHelmRepoName != "" {
 		fullAppName = o.LocalHelmRepoName + "/" + app
 	}
-	releaseName := o.ReleaseName
-	if releaseName == "" {
-		// TODO don't think we need the ns in the release name any more?
-		//releaseName = targetNS + "-" + app
-		releaseName = app
-		o.ReleaseName = releaseName
+	if o.ReleaseName == "" {
+		o.ReleaseName = app
 	}
 	releaseInfo := &ReleaseInfo{
-		ReleaseName: releaseName,
+		ReleaseName: o.ReleaseName,
 		FullAppName: fullAppName,
 		Version:     version,
 	}
