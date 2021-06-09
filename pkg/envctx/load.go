@@ -26,11 +26,11 @@ func (e *EnvironmentContext) LazyLoad(gclient gitclient.Interface, jxClient vers
 	if e.DevEnv == nil {
 		e.DevEnv, err = jxenv.GetDevEnvironment(jxClient, ns)
 		if err != nil {
-			return errors.Wrapf(err, "failed to find dev environemnt in namespace %s", ns)
+			return errors.Wrapf(err, "failed to find dev environment in namespace %s", ns)
 		}
 	}
 	if e.DevEnv == nil {
-		return errors.Errorf("no dev environemnt in namespace %s", ns)
+		return errors.Errorf("no dev environment in namespace %s", ns)
 	}
 	if e.Requirements == nil {
 		e.Requirements, err = variablefinders.FindRequirements(gclient, jxClient, ns, dir, e.GitOwner, e.GitRepository)
