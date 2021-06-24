@@ -757,6 +757,8 @@ func (o *Options) ResolveChartRepositoryURL() (string, error) {
 		if err != nil && apierrors.IsNotFound(err) {
 			err = nil
 		}
+		// lets strip any trailing *
+		answer = strings.TrimSuffix(answer, "*")
 		if err == nil && answer != "" {
 			return answer, nil
 		}

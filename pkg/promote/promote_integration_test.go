@@ -12,7 +12,7 @@ import (
 	"github.com/jenkins-x/jx-helpers/v3/pkg/kube"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/yaml2s"
 	"github.com/roboll/helmfile/pkg/state"
-	"k8s.io/api/extensions/v1beta1"
+	nv1 "k8s.io/api/networking/v1"
 
 	"github.com/jenkins-x-plugins/jx-promote/pkg/jxtesthelpers"
 	"github.com/jenkins-x-plugins/jx-promote/pkg/promote"
@@ -26,7 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/yaml"
 
@@ -559,24 +558,26 @@ func TestPromoteHelmfileRemoteCluster(t *testing.T) {
 				},
 			},
 		},
-		&v1beta1.Ingress{
+		&nv1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "chartmuseum",
 				Namespace: ns,
 			},
-			Spec: v1beta1.IngressSpec{
-				Rules: []v1beta1.IngressRule{
+			Spec: nv1.IngressSpec{
+				Rules: []nv1.IngressRule{
 					{
 						Host: chartMuseumHost,
-						IngressRuleValue: v1beta1.IngressRuleValue{
-							HTTP: &v1beta1.HTTPIngressRuleValue{
-								Paths: []v1beta1.HTTPIngressPath{
+						IngressRuleValue: nv1.IngressRuleValue{
+							HTTP: &nv1.HTTPIngressRuleValue{
+								Paths: []nv1.HTTPIngressPath{
 									{
 										Path: "",
-										Backend: v1beta1.IngressBackend{
-											ServiceName: kube.ServiceChartMuseum,
-											ServicePort: intstr.IntOrString{
-												IntVal: 80,
+										Backend: nv1.IngressBackend{
+											Service: &nv1.IngressServiceBackend{
+												Name: kube.ServiceChartMuseum,
+												Port: nv1.ServiceBackendPort{
+													Number: 80,
+												},
 											},
 										},
 									},
