@@ -7,8 +7,8 @@ require (
 	github.com/cpuguy83/go-md2man v1.0.10
 	github.com/hashicorp/go-retryablehttp v0.6.6 // indirect
 	github.com/hashicorp/vault/api v1.0.5-0.20190909201928-35325e2c3262 // indirect
-	github.com/jenkins-x-plugins/jx-gitops v0.2.104
-	github.com/jenkins-x/go-scm v1.9.3
+	github.com/jenkins-x-plugins/jx-gitops v0.2.107
+	github.com/jenkins-x/go-scm v1.10.1
 	github.com/jenkins-x/jx-api/v4 v4.0.33
 	github.com/jenkins-x/jx-helpers/v3 v3.0.119
 	github.com/jenkins-x/jx-logging/v3 v3.0.6
