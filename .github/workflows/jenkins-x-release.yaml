@@ -28,15 +28,6 @@ jobs:
         entrypoint: bash
     - env:
         GITHUB_TOKEN: ${{ secrets.GIT_BOT_TOKEN }}
-        VERSION: ${{ steps.prep.outputs.version }}
-      name: chart-docs
-      uses: docker://jnorwood/helm-docs:v1.4.0
-      with:
-        args: -c "if [ -d \"charts/$REPO_NAME\" ]; then cd charts/$REPO_NAME; helm-docs;
-          else echo no charts; fi"
-        entrypoint: /bin/ash
-    - env:
-        GITHUB_TOKEN: ${{ secrets.GIT_BOT_TOKEN }}
         REPO_NAME: ${{ github.event.repository.name }}
         VERSION: ${{ steps.prep.outputs.version }}
       name: changelog
@@ -73,14 +64,6 @@ jobs:
         tags: |
           ghcr.io/${{ github.repository }}:latest
           ghcr.io/${{ github.repository }}:${{ steps.prep.outputs.version }}
-    - env:
-        GITHUB_TOKEN: ${{ secrets.GIT_BOT_TOKEN }}
-        JX_REPOSITORY_USERNAME: jenkins-x-bot-test
-        VERSION: ${{ steps.prep.outputs.version }}
-      name: release-chart
-      uses: docker://ghcr.io/jenkins-x/jx-boot:3.1.284
-      with:
-        entrypoint: .github/workflows/jenkins-x/release-chart.sh
     - env:
         GIT_USERNAME: jenkins-x-bot-test
         GITHUB_TOKEN: ${{ secrets.GIT_BOT_TOKEN }}
