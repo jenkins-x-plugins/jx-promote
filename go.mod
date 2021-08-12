@@ -7,7 +7,7 @@ require (
 	github.com/cpuguy83/go-md2man v1.0.10
 	github.com/hashicorp/go-retryablehttp v0.6.6 // indirect
 	github.com/hashicorp/vault/api v1.0.5-0.20190909201928-35325e2c3262 // indirect
-	github.com/jenkins-x-plugins/jx-gitops v0.3.8
+	github.com/jenkins-x-plugins/jx-gitops v0.3.12
 	github.com/jenkins-x/go-scm v1.10.10
 	github.com/jenkins-x/jx-api/v4 v4.1.3
 	github.com/jenkins-x/jx-helpers/v3 v3.0.126
@@ -18,7 +18,7 @@ require (
 	github.com/spf13/cobra v1.2.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
-	helm.sh/helm/v3 v3.6.2
+	helm.sh/helm/v3 v3.6.3
 	k8s.io/api v0.21.0
 	k8s.io/apimachinery v0.21.0
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
