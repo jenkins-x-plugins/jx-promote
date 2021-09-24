@@ -24,6 +24,10 @@ func fakeDiscoverAppName() (string, error) {
 	return "myDiscoveredApp", nil
 }
 
+func fakeChooseChart() (string, error) {
+	return "myChosenApp", nil
+}
+
 func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithArgs(t *testing.T) {
 	promoteOptions := &promote.Options{
 		Environment: "production", // --env production
@@ -31,7 +35,7 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithArgs(t *testing
 
 	promoteOptions.Args = []string{"myArgumentApp"}
 
-	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName)
+	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName, fakeChooseChart)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "myArgumentApp", promoteOptions.Application)
@@ -43,7 +47,7 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithFilterFlag(t *t
 		Filter:      "something",
 	}
 
-	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName)
+	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName, fakeChooseChart)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "mySearchedApp", promoteOptions.Application)
@@ -56,10 +60,22 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithBatchFlag(t *te
 
 	promoteOptions.BatchMode = true // --batch-mode
 
-	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName)
+	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName, fakeChooseChart)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "myDiscoveredApp", promoteOptions.Application)
+}
+
+func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithInteractiveFlag(t *testing.T) {
+	promoteOptions := &promote.Options{
+		Environment: "production", // --env production
+		Interactive: true,
+	}
+
+	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName, fakeChooseChart)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "myChosenApp", promoteOptions.Application)
 }
 
 func TestEnsureApplicationNameIsDefinedWithoutApplicationFlag(t *testing.T) {
@@ -73,7 +89,7 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlag(t *testing.T) {
 		Values: map[string]string{"Are you sure you want to promote the application named: myDiscoveredApp?": "Y"},
 	}
 
-	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName)
+	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName, fakeChooseChart)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "myDiscoveredApp", promoteOptions.Application)
@@ -89,7 +105,7 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagUserSaysNo(t *testi
 		},
 	}
 
-	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName)
+	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName, fakeChooseChart)
 	assert.Error(t, err)
 	assert.Equal(t, "", promoteOptions.Application)
 }
