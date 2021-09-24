@@ -58,6 +58,7 @@ const (
 	optionApplication         = "app"
 	optionTimeout             = "timeout"
 	optionPullRequestPollTime = "pull-request-poll-time"
+	optionInteractive         = "interactive"
 
 	// DefaultChartRepo default URL for charts repository
 	DefaultChartRepo = "http://jenkins-x-chartmuseum:8080"
@@ -96,6 +97,7 @@ type Options struct {
 	NoGroupPullRequest  bool
 	IgnoreLocalFiles    bool
 	DisableGitConfig    bool //  to disable git init in unit tests
+	Interactive         bool
 	Timeout             string
 	PullRequestPollTime string
 	Filter              string
@@ -175,8 +177,8 @@ func NewCmdPromote() (*cobra.Command, *Options) {
 	cmd.Flags().StringArrayP("promotion-environments", "", options.PromoteEnvironments, "The environments considered for promotion")
 	cmd.Flags().BoolVarP(&options.AllAutomatic, "all-auto", "", false, "Promote to all automatic environments in order")
 	cmd.Flags().BoolVarP(&options.All, "all", "", false, "Promote to all automatic and manual environments in order using a draft PR for manual promotion environments")
-
 	cmd.Flags().BoolVarP(&options.BatchMode, "batch-mode", "b", false, "Enables batch mode which avoids prompting for user input")
+	cmd.Flags().BoolVarP(&options.Interactive, optionInteractive, "", false, "Enables interactive mode")
 
 	options.AddOptions(cmd)
 	return cmd, options
@@ -197,7 +199,6 @@ func (o *Options) AddOptions(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.ReleaseName, "release", "", "", "The name of the helm release")
 	cmd.Flags().StringVarP(&o.Timeout, optionTimeout, "t", "1h", "The timeout to wait for the promotion to succeed in the underlying Environment. The command fails if the timeout is exceeded or the promotion does not complete")
 	cmd.Flags().StringVarP(&o.PullRequestPollTime, optionPullRequestPollTime, "", "20s", "Poll time when waiting for a Pull Request to merge")
-
 	cmd.Flags().StringVarP(&o.DevEnvContext.GitUsername, "git-user", "", "", "Git username used to clone the development environment. If not specified its loaded from the git credentials file")
 	cmd.Flags().StringVarP(&o.DevEnvContext.GitToken, "git-token", "", "", "Git token used to clone the development environment. If not specified its loaded from the git credentials file")
 
@@ -268,9 +269,22 @@ func (o *Options) setApplicationNameFromDiscoveredAppName(discoverAppName discov
 	return nil
 }
 
+type interactiveFn func() (string, error)
+
+func (o *Options) setApplicationNameFromInteractive(interactive interactiveFn) error {
+	app, err := interactive()
+	if err != nil {
+		return errors.Wrap(err, "choosing app name from interactive window failed")
+	}
+
+	o.Application = app
+
+	return nil
+}
+
 // EnsureApplicationNameIsDefined validates if an application name flag was provided by the user. If missing it will
 // try to set it up or return an error
-func (o *Options) EnsureApplicationNameIsDefined(sf searchForChartFn, df discoverAppNameFn) error {
+func (o *Options) EnsureApplicationNameIsDefined(sf searchForChartFn, df discoverAppNameFn, ifn interactiveFn) error {
 	if !o.hasApplicationFlag() && o.hasArgs() {
 		o.setApplicationNameFromArgs()
 	}
@@ -280,7 +294,9 @@ func (o *Options) EnsureApplicationNameIsDefined(sf searchForChartFn, df discove
 			return err
 		}
 	}
-
+	if !o.hasApplicationFlag() && o.Interactive {
+		return o.setApplicationNameFromInteractive(ifn)
+	}
 	if !o.hasApplicationFlag() {
 		return o.setApplicationNameFromDiscoveredAppName(df)
 	}
@@ -315,7 +331,7 @@ func (o *Options) Run() error {
 	}
 
 	// TODO move to validate
-	err = o.EnsureApplicationNameIsDefined(o.SearchForChart, o.DiscoverAppName)
+	err = o.EnsureApplicationNameIsDefined(o.SearchForChart, o.DiscoverAppName, o.ChooseChart)
 	if err != nil {
 		return err
 	}
@@ -343,10 +359,19 @@ func (o *Options) Run() error {
 		}
 	}
 	if o.Version == "" && o.Application != "" {
-		o.Version, err = o.findLatestVersion(o.Application)
-		if err != nil {
-			return errors.Wrapf(err, "failed to find latest version of app %s", o.Application)
+		if o.Interactive {
+			versions, err := o.getAllVersions(o.Application)
+			o.Version, err = o.Input.PickNameWithDefault(versions, "Pick version:", "", "please select a version")
+			if err != nil {
+				return errors.Wrapf(err, "failed to pick a version")
+			}
+		} else {
+			o.Version, err = o.findLatestVersion(o.Application)
+			if err != nil {
+				return errors.Wrapf(err, "failed to find latest version of app %s", o.Application)
+			}
 		}
+
 	}
 
 	ns := o.Namespace
@@ -1082,6 +1107,28 @@ func (o *Options) findLatestVersion(app string) (string, error) {
 	return maxString, nil
 }
 
+func (o *Options) getAllVersions(app string) ([]string, error) {
+	charts, err := o.Helm().SearchCharts(app, true)
+	if err != nil {
+		return nil, err
+	}
+
+	versions := []string{}
+	for _, chart := range charts {
+		sv, err := semver.Parse(chart.ChartVersion)
+		if err != nil {
+			log.Logger().Warnf("Invalid semantic version: %s %s", chart.ChartVersion, err)
+		} else {
+			versions = append(versions, sv.String())
+		}
+	}
+	if len(versions) > 0 {
+		return versions, nil
+	}
+	return nil, fmt.Errorf("Could not find a version of app %s in the helm repositories", app)
+
+}
+
 // Helm lazily create a helmer
 func (o *Options) Helm() helm.Helmer {
 	if o.Helmer == nil {
@@ -1410,6 +1457,53 @@ func (o *Options) SearchForChart(filter string) (string, error) {
 
 	}
 	o.Version = chart.ChartVersion
+	o.HelmRepositoryURL = repoUrl
+	return appName, nil
+}
+
+func (o *Options) ChooseChart() (string, error) {
+	answer := ""
+	charts, err := o.Helm().SearchCharts("", false)
+	if err != nil {
+		return answer, err
+	}
+	if len(charts) == 0 {
+		return answer, fmt.Errorf("No charts available")
+	}
+	m := map[string]*helm.ChartSummary{}
+	names := []string{}
+	for i, chart := range charts {
+		text := chart.Name
+		if chart.Description != "" {
+			text = fmt.Sprintf("%-36s: %s", chart.Name, chart.Description)
+		}
+		names = append(names, text)
+		m[text] = &charts[i]
+	}
+	name, err := o.Input.PickNameWithDefault(names, "Pick chart to promote: ", "", "which chart name do you wish to promote")
+	if err != nil {
+		return answer, err
+	}
+	chart := m[name]
+	chartName := chart.Name
+	// TODO now we split the chart into name and repo
+	parts := strings.Split(chartName, "/")
+	if len(parts) != 2 {
+		return answer, fmt.Errorf("Invalid chart name '%s' was expecting single / character separating repo name and chart name", chartName)
+	}
+	repoName := parts[0]
+	appName := parts[1]
+
+	repos, err := o.Helm().ListRepos()
+	if err != nil {
+		return answer, err
+	}
+
+	repoUrl := repos[repoName]
+	if repoUrl == "" {
+		return answer, fmt.Errorf("Failed to find helm chart repo URL for '%s' when possible values are %s", repoName, stringhelpers.SortedMapKeys(repos))
+
+	}
 	o.HelmRepositoryURL = repoUrl
 	return appName, nil
 }
