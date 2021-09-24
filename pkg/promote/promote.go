@@ -1462,49 +1462,11 @@ func (o *Options) SearchForChart(filter string) (string, error) {
 }
 
 func (o *Options) ChooseChart() (string, error) {
-	answer := ""
-	charts, err := o.Helm().SearchCharts("", false)
+	appName, err := o.SearchForChart("")
 	if err != nil {
-		return answer, err
+		return appName, fmt.Errorf("No charts available")
 	}
-	if len(charts) == 0 {
-		return answer, fmt.Errorf("No charts available")
-	}
-	m := map[string]*helm.ChartSummary{}
-	names := []string{}
-	for i, chart := range charts {
-		text := chart.Name
-		if chart.Description != "" {
-			text = fmt.Sprintf("%-36s: %s", chart.Name, chart.Description)
-		}
-		names = append(names, text)
-		m[text] = &charts[i]
-	}
-	name, err := o.Input.PickNameWithDefault(names, "Pick chart to promote: ", "", "which chart name do you wish to promote")
-	if err != nil {
-		return answer, err
-	}
-	chart := m[name]
-	chartName := chart.Name
-	// TODO now we split the chart into name and repo
-	parts := strings.Split(chartName, "/")
-	if len(parts) != 2 {
-		return answer, fmt.Errorf("Invalid chart name '%s' was expecting single / character separating repo name and chart name", chartName)
-	}
-	repoName := parts[0]
-	appName := parts[1]
-
-	repos, err := o.Helm().ListRepos()
-	if err != nil {
-		return answer, err
-	}
-
-	repoUrl := repos[repoName]
-	if repoUrl == "" {
-		return answer, fmt.Errorf("Failed to find helm chart repo URL for '%s' when possible values are %s", repoName, stringhelpers.SortedMapKeys(repos))
-
-	}
-	o.HelmRepositoryURL = repoUrl
+	o.Version = "" // remove version to choose it later
 	return appName, nil
 }
 
