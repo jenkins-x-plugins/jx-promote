@@ -145,7 +145,7 @@ func createMatcher(rule *v1alpha1.FileRule, lineMatcher v1alpha1.LineMatcher) (f
 	return nil, errors.Errorf("not supported lime matcher %#v", lineMatcher)
 }
 
-func evaluateTemplate(r *rules.PromoteRule, templateText string, linePrefix string) (string, error) {
+func evaluateTemplate(r *rules.PromoteRule, templateText, linePrefix string) (string, error) {
 	if templateText == "" {
 		return "", nil
 	}

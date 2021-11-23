@@ -12,7 +12,7 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 )
 
-//ValuesFiles is a wrapper for a slice of values files to allow them to be passed around as a pointer
+// ValuesFiles is a wrapper for a slice of values files to allow them to be passed around as a pointer
 type ValuesFiles struct {
 	Items []string
 }

@@ -32,7 +32,7 @@ func (o *EnvironmentPullRequestOptions) Git() gitclient.Interface {
 }
 
 // CreatePullRequest crates a pull request if there are git changes
-func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client, gitURL string, repoFullName, dir string, doneCommit bool, existingPR *scm.PullRequest) (*scm.PullRequest, error) {
+func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client, gitURL, repoFullName, dir string, doneCommit bool, existingPR *scm.PullRequest) (*scm.PullRequest, error) {
 	gitter := o.Git()
 	changes, err := gitclient.HasChanges(gitter, dir)
 	if err != nil {
@@ -150,7 +150,7 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 	return o.addLabelsToPullRequest(ctx, scmClient, repoFullName, pr)
 }
 
-func (o *EnvironmentPullRequestOptions) GetScmClient(gitURL string, kind string) (*scm.Client, string, error) {
+func (o *EnvironmentPullRequestOptions) GetScmClient(gitURL, kind string) (*scm.Client, string, error) {
 	if gitURL == "" {
 		log.Logger().Infof("no git URL specified so cannot create a Pull Request")
 		return nil, "", nil
