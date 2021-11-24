@@ -56,7 +56,7 @@ type ChartDetails struct {
 // ChartDetails resolves the chart details from a full or local name and an optional repository URL.
 // this function can handle an empty repository but the chart name "foo/bar" and resolve the prefix "foo" to a repository
 // URL - or taking chart name "bar" and a repository URL and defaulting the prefix to "foo/bar"
-func (c *EnvironmentContext) ChartDetails(chartName string, repo string) (*ChartDetails, error) {
+func (c *EnvironmentContext) ChartDetails(chartName, repo string) (*ChartDetails, error) {
 	prefix := ""
 	localName := chartName
 	name := chartName

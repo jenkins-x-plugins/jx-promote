@@ -36,7 +36,7 @@ func Rule(r *rules.PromoteRule) error {
 }
 
 // ModifyAppsFile modifies the 'jx-apps.yml' file to add/update/remove apps
-func modifyHelmfile(r *rules.PromoteRule, rule *v1alpha1.HelmfileRule, file string, promoteNs string) error {
+func modifyHelmfile(r *rules.PromoteRule, rule *v1alpha1.HelmfileRule, file, promoteNs string) error {
 	exists, err := files.FileExists(file)
 	if err != nil {
 		return errors.Wrapf(err, "failed to detect if file exists %s", file)
@@ -141,7 +141,6 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 				release := &helmfile.Releases[i]
 				if release.Name == app || release.Name == details.Name || (r.ReleaseName != "" && release.Name == r.ReleaseName) {
 					release.Version = version
-					found = true
 					return nil
 				}
 			}
@@ -173,7 +172,6 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 			release := &helmfile.Releases[i]
 			if (release.Name == app || release.Name == details.Name || (r.ReleaseName != "" && release.Name == r.ReleaseName)) && (release.Namespace == promoteNs || isRemoteEnv) {
 				release.Version = version
-				found = true
 				return nil
 			}
 		}
@@ -211,7 +209,8 @@ func defaultPrefix(appsConfig *state.HelmState, envctx *envctx.EnvironmentContex
 	}
 	prefixes := map[string]string{}
 	urls := map[string]string{}
-	for _, r := range appsConfig.Repositories {
+	for k := range appsConfig.Repositories {
+		r := appsConfig.Repositories[k]
 		if r.URL == d.Repository {
 			found = true
 			r.OCI = oci

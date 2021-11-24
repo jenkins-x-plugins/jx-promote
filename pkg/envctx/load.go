@@ -107,7 +107,6 @@ func (e *EnvironmentContext) LazyLoad(gclient gitclient.Interface, jxClient vers
 			if err != nil {
 				return errors.Wrapf(err, "failed to create version stream dir %s", versionsDir)
 			}
-			//return errors.Errorf("dev environment git repository %s does not have a versionStream dir", url)
 		}
 
 		e.VersionResolver = &versionstream.VersionResolver{

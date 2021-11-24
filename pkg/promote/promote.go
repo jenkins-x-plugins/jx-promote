@@ -64,9 +64,7 @@ const (
 	DefaultChartRepo = "http://jenkins-x-chartmuseum:8080"
 )
 
-var (
-	waitAfterPullRequestCreated = time.Second * 3
-)
+var waitAfterPullRequestCreated = time.Second * 3
 
 // Options containers the CLI options
 type Options struct {
@@ -361,6 +359,9 @@ func (o *Options) Run() error {
 	if o.Version == "" && o.Application != "" {
 		if o.Interactive {
 			versions, err := o.getAllVersions(o.Application)
+			if err != nil {
+				return errors.Wrap(err, "failed to get app versions")
+			}
 			o.Version, err = o.Input.PickNameWithDefault(versions, "Pick version:", "", "please select a version")
 			if err != nil {
 				return errors.Wrapf(err, "failed to pick a version")
@@ -371,7 +372,6 @@ func (o *Options) Run() error {
 				return errors.Wrapf(err, "failed to find latest version of app %s", o.Application)
 			}
 		}
-
 	}
 
 	ns := o.Namespace
@@ -422,14 +422,14 @@ func (o *Options) Run() error {
 	if o.PullRequestPollTime != "" {
 		duration, err := time.ParseDuration(o.PullRequestPollTime)
 		if err != nil {
-			return fmt.Errorf("Invalid duration format %s for option --%s: %s", o.PullRequestPollTime, optionPullRequestPollTime, err)
+			return fmt.Errorf("invalid duration format %s for option --%s: %s", o.PullRequestPollTime, optionPullRequestPollTime, err)
 		}
 		o.PullRequestPollDuration = &duration
 	}
 	if o.Timeout != "" {
 		duration, err := time.ParseDuration(o.Timeout)
 		if err != nil {
-			return fmt.Errorf("Invalid duration format %s for option --%s: %s", o.Timeout, optionTimeout, err)
+			return fmt.Errorf("invalid duration format %s for option --%s: %s", o.Timeout, optionTimeout, err)
 		}
 		o.TimeoutDuration = &duration
 	}
@@ -470,7 +470,7 @@ func (o *Options) Run() error {
 			return err
 		}
 		if env == nil {
-			return fmt.Errorf("Could not find an Environment called %s", o.Environment)
+			return fmt.Errorf("could not find an Environment called %s", o.Environment)
 		}
 	}
 	releaseInfo, err := o.Promote([]*jxcore.EnvironmentConfig{env}, true, o.NoPoll)
@@ -683,7 +683,7 @@ func (o *Options) Promote(envs []*jxcore.EnvironmentConfig, warnIfAuto, noPoll b
 		draftPR := strategy != v1.PromotionStrategyTypeAutomatic
 		targetNS := EnvironmentNamespace(env)
 		if targetNS == "" {
-			return nil, fmt.Errorf("No namespace for environment %s", env.Key)
+			return nil, fmt.Errorf("no namespace for environment %s", env.Key)
 		}
 
 		if warnIfAuto && env != nil && strategy == v1.PromotionStrategyTypeAutomatic && !o.BatchMode {
@@ -714,7 +714,10 @@ func (o *Options) Promote(envs []*jxcore.EnvironmentConfig, warnIfAuto, noPoll b
 				err := o.PromoteViaPullRequest(envs, releaseInfo, draftPR)
 				if err == nil {
 					startPromotePR := func(a *v1.PipelineActivity, s *v1.PipelineActivityStep, ps *v1.PromoteActivityStep, p *v1.PromotePullRequestStep) error {
-						activities.StartPromotionPullRequest(a, s, ps, p)
+						err = activities.StartPromotionPullRequest(a, s, ps, p)
+						if err != nil {
+							return err
+						}
 						pr := releaseInfo.PullRequestInfo
 						if pr != nil && pr.Link != "" {
 							p.PullRequestURL = pr.Link
@@ -768,7 +771,6 @@ func (o *Options) ResolveChartRepositoryURL() (string, error) {
 	}
 	if chartRepo == "" {
 		log.Logger().Warnf("no cluster.chartRepository in your jx-requirements.yml in your cluster so trying to discover from kubernetes ingress and service resources")
-
 	} else {
 		log.Logger().Warnf("the cluster.chartRepository in your jx-requirements.yml looks like its an internal service URL so trying to discover from kubernetes ingress resources")
 	}
@@ -827,10 +829,10 @@ func IsLocalChartRepository(repo string) bool {
 	return !strings.Contains(repo, ".")
 }
 
-func (o *Options) GetTargetNamespace(ns string, env string) (string, *jxcore.EnvironmentConfig, error) {
+func (o *Options) GetTargetNamespace(ns, env string) (string, *jxcore.EnvironmentConfig, error) {
 	environments := o.DevEnvContext.Requirements.Environments
 	if len(environments) == 0 {
-		return "", nil, fmt.Errorf("No Environments have been defined in the requirements and settings files")
+		return "", nil, fmt.Errorf("no Environments have been defined in the requirements and settings files")
 	}
 
 	var envResource *jxcore.EnvironmentConfig
@@ -840,14 +842,14 @@ func (o *Options) GetTargetNamespace(ns string, env string) (string, *jxcore.Env
 		envResource, err = o.DevEnvContext.Requirements.Environment(env)
 		if envResource == nil || err != nil {
 			var envNames []string
-			for _, e := range environments {
-				envNames = append(envNames, e.Key)
+			for k := range environments {
+				envNames = append(envNames, environments[k].Key)
 			}
 			return "", nil, options.InvalidOption(optionEnvironment, env, envNames)
 		}
 		targetNS = EnvironmentNamespace(envResource)
 		if targetNS == "" {
-			return "", nil, fmt.Errorf("environment %s does not have a namespace associated with it!", env)
+			return "", nil, fmt.Errorf("environment %s does not have a namespace associated with it", env)
 		}
 	} else if ns != "" {
 		targetNS = ns
@@ -885,7 +887,10 @@ func (o *Options) WaitForPromotion(ns string, env *jxcore.EnvironmentConfig, rel
 		err := o.waitForGitOpsPullRequest(ns, env, releaseInfo, end, duration, promoteKey)
 		if err != nil {
 			// TODO based on if the PR completed or not fail the PR or the Promote?
-			promoteKey.OnPromotePullRequest(kubeClient, jxClient, o.Namespace, activities.FailedPromotionPullRequest)
+			err2 := promoteKey.OnPromotePullRequest(kubeClient, jxClient, o.Namespace, activities.FailedPromotionPullRequest)
+			if err2 != nil {
+				return err2
+			}
 			return err
 		}
 	}
@@ -935,15 +940,20 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *jxcore.EnvironmentCon
 					} else {
 						mergeSha := pr.MergeSha
 						if !logHasMergeSha {
-							logHasMergeSha = true
 							log.Logger().Infof("Pull Request %s is merged at sha %s", termcolor.ColorInfo(pr.Link), termcolor.ColorInfo(mergeSha))
 
 							mergedPR := func(a *v1.PipelineActivity, s *v1.PipelineActivityStep, ps *v1.PromoteActivityStep, p *v1.PromotePullRequestStep) error {
-								activities.CompletePromotionPullRequest(a, s, ps, p)
+								err = activities.CompletePromotionPullRequest(a, s, ps, p)
+								if err != nil {
+									return err
+								}
 								p.MergeCommitSHA = mergeSha
 								return nil
 							}
-							promoteKey.OnPromotePullRequest(kubeClient, jxClient, o.Namespace, mergedPR)
+							err = promoteKey.OnPromotePullRequest(kubeClient, jxClient, o.Namespace, mergedPR)
+							if err != nil {
+								return err
+							}
 
 							if o.NoWaitAfterMerge {
 								log.Logger().Infof("Pull requests are merged, No wait on promotion to complete")
@@ -951,7 +961,10 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *jxcore.EnvironmentCon
 							}
 						}
 
-						promoteKey.OnPromoteUpdate(kubeClient, jxClient, o.Namespace, activities.StartPromotionUpdate)
+						err = promoteKey.OnPromoteUpdate(kubeClient, jxClient, o.Namespace, activities.StartPromotionUpdate)
+						if err != nil {
+							return err
+						}
 
 						err = o.CommentOnIssues(ns, env, promoteKey)
 						if err == nil {
@@ -962,7 +975,7 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *jxcore.EnvironmentCon
 				} else {
 					if pr.Closed {
 						log.Logger().Warnf("Pull Request %s is closed", termcolor.ColorInfo(pr.Link))
-						return fmt.Errorf("Promotion failed as Pull Request %s is closed without merging", pr.Link)
+						return fmt.Errorf("promotion failed as Pull Request %s is closed without merging", pr.Link)
 					}
 
 					prLastCommitSha := o.pullRequestLastCommitSha(pr)
@@ -970,8 +983,8 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *jxcore.EnvironmentCon
 					status, err := o.PullRequestLastCommitStatus(pr)
 					if err != nil || status == nil {
 						log.Logger().Warnf("Failed to query the Pull Request last commit status for %s ref %s %s", pr.Link, prLastCommitSha, err)
-						//return fmt.Errorf("Failed to query the Pull Request last commit status for %s ref %s %s", pr.Link, prLastCommitSha, err)
-						//} else if status.State == "in-progress" {
+						// return fmt.Errorf("Failed to query the Pull Request last commit status for %s ref %s %s", pr.Link, prLastCommitSha, err)
+						// } else if status.State == "in-progress" {
 					} else if StateIsPending(status) {
 						log.Logger().Info("The build for the Pull Request last commit is currently in progress.")
 					} else {
@@ -996,7 +1009,7 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *jxcore.EnvironmentCon
 									}
 									_, err = scmClient.PullRequests.Merge(ctx, fullName, prNumber, prMergeOptions)
 									// TODO
-									//err = gitProvider.MergePullRequest(pr, "jx promote automatically merged promotion PR")
+									// err = gitProvider.MergePullRequest(pr, "jx promote automatically merged promotion PR")
 									if err != nil {
 										if !logMergeFailure {
 											logMergeFailure = true
@@ -1006,7 +1019,7 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *jxcore.EnvironmentCon
 								}
 							}
 						} else if StateIsErrorOrFailure(status) {
-							return fmt.Errorf("Pull request %s last commit has status %s for ref %s", pr.Link, status.State.String(), prLastCommitSha)
+							return fmt.Errorf("pull request %s last commit has status %s for ref %s", pr.Link, status.State.String(), prLastCommitSha)
 						} else {
 							log.Logger().Infof("got git provider status %s from PR %s", status.State.String(), pr.Link)
 						}
@@ -1016,13 +1029,13 @@ func (o *Options) waitForGitOpsPullRequest(ns string, env *jxcore.EnvironmentCon
 					log.Logger().Info("Rebasing PullRequest due to conflict")
 
 					err = o.PromoteViaPullRequest([]*jxcore.EnvironmentConfig{env}, releaseInfo, false)
-					if releaseInfo.PullRequestInfo != nil {
-						pullRequestInfo = releaseInfo.PullRequestInfo
+					if err != nil {
+						return err
 					}
 				}
 			}
 			if time.Now().After(end) {
-				return fmt.Errorf("Timed out waiting for pull request %s to merge. Waited %s", pr.Link, duration.String())
+				return fmt.Errorf("timed out waiting for pull request %s to merge. Waited %s", pr.Link, duration.String())
 			}
 			time.Sleep(*o.PullRequestPollDuration)
 		}
@@ -1091,10 +1104,8 @@ func (o *Options) findLatestVersion(app string) (string, error) {
 			if maxString == "" || strings.Compare(chart.ChartVersion, maxString) > 0 {
 				maxString = chart.ChartVersion
 			}
-		} else {
-			if maxSemVer == nil || maxSemVer.Compare(sv) > 0 {
-				maxSemVer = &sv
-			}
+		} else if maxSemVer == nil || maxSemVer.Compare(sv) > 0 {
+			maxSemVer = &sv
 		}
 	}
 
@@ -1102,7 +1113,7 @@ func (o *Options) findLatestVersion(app string) (string, error) {
 		return maxSemVer.String(), nil
 	}
 	if maxString == "" {
-		return "", fmt.Errorf("Could not find a version of app %s in the helm repositories", app)
+		return "", fmt.Errorf("could not find a version of app %s in the helm repositories", app)
 	}
 	return maxString, nil
 }
@@ -1125,8 +1136,7 @@ func (o *Options) getAllVersions(app string) ([]string, error) {
 	if len(versions) > 0 {
 		return versions, nil
 	}
-	return nil, fmt.Errorf("Could not find a version of app %s in the helm repositories", app)
-
+	return nil, fmt.Errorf("could not find a version of app %s in the helm repositories", app)
 }
 
 // Helm lazily create a helmer
@@ -1213,7 +1223,8 @@ func (o *Options) GetLatestPipelineBuildByCRD(pipeline string) (string, error) {
 	}
 
 	buildNumber := 0
-	for _, p := range pipelines.Items {
+	for k := range pipelines.Items {
+		p := pipelines.Items[k]
 		if p.Spec.Pipeline == pipeline {
 			b := p.Spec.Build
 			if b != "" {
@@ -1233,7 +1244,7 @@ func (o *Options) GetLatestPipelineBuildByCRD(pipeline string) (string, error) {
 }
 
 // GetPipelineName return the pipeline name
-func (o *Options) GetPipelineName(gitInfo *giturl.GitRepository, pipeline string, build string, appName string) (string, string) {
+func (o *Options) GetPipelineName(gitInfo *giturl.GitRepository, pipeline, build, appName string) (string, string) {
 	if build == "" {
 		build = builds.GetBuildNumber()
 	}
@@ -1263,8 +1274,8 @@ func (o *Options) GetPipelineName(gitInfo *giturl.GitRepository, pipeline string
 		ns := o.Namespace
 		pipelineList, err := jxClient.JenkinsV1().PipelineActivities(ns).List(context.TODO(), metav1.ListOptions{})
 		if err == nil {
-			for _, pipelineResource := range pipelineList.Items {
-				pipelineName := pipelineResource.Spec.Pipeline
+			for k := range pipelineList.Items {
+				pipelineName := pipelineList.Items[k].Spec.Pipeline
 				if strings.HasSuffix(pipelineName, suffix) {
 					pipeline = pipelineName
 					break
@@ -1340,6 +1351,9 @@ func (o *Options) CommentOnIssues(targetNS string, environment *jxcore.Environme
 	url := ""
 	for _, n := range appNames {
 		url, err = services.FindServiceURL(kubeClient, ens, naming.ToValidName(n))
+		if err != nil {
+			return err
+		}
 		if url != "" {
 			break
 		}
@@ -1356,6 +1370,9 @@ func (o *Options) CommentOnIssues(targetNS string, environment *jxcore.Environme
 		ing, err := kubeClient.ExtensionsV1beta1().Ingresses(ens).Get(context.TODO(), app, metav1.GetOptions{})
 		if err != nil || ing == nil && o.ReleaseName != "" && o.ReleaseName != app {
 			ing, err = kubeClient.ExtensionsV1beta1().Ingresses(ens).Get(context.TODO(), o.ReleaseName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
 		}
 		if ing != nil {
 			if len(ing.Spec.Rules) > 0 {
@@ -1383,7 +1400,8 @@ func (o *Options) CommentOnIssues(targetNS string, environment *jxcore.Environme
 		if release.Spec.ReleaseNotesURL != "" {
 			versionMessage = "[" + version + "](" + release.Spec.ReleaseNotesURL + ")"
 		}
-		for _, issue := range issues {
+		for k := range issues {
+			issue := issues[k]
 			if issue.IsClosed() {
 				log.Logger().Infof("Commenting that issue %s is now in %s", termcolor.ColorInfo(issue.URL), termcolor.ColorInfo(envName))
 
@@ -1393,17 +1411,15 @@ func (o *Options) CommentOnIssues(targetNS string, environment *jxcore.Environme
 					number, err := strconv.Atoi(id)
 					if err != nil {
 						log.Logger().Warnf("Could not parse issue id %s for URL %s", id, issue.URL)
-					} else {
-						if number > 0 {
-							ctx := context.Background()
-							fullName := scm.Join(gitInfo.Organisation, gitInfo.Name)
-							input := &scm.CommentInput{
-								Body: comment,
-							}
-							_, _, err = o.ScmClient.Issues.CreateComment(ctx, fullName, number, input)
-							if err != nil {
-								log.Logger().Warnf("Failed to add comment to issue %s: %s", issue.URL, err)
-							}
+					} else if number > 0 {
+						ctx := context.Background()
+						fullName := scm.Join(gitInfo.Organisation, gitInfo.Name)
+						input := &scm.CommentInput{
+							Body: comment,
+						}
+						_, _, err = o.ScmClient.Issues.CreateComment(ctx, fullName, number, input)
+						if err != nil {
+							log.Logger().Warnf("Failed to add comment to issue %s: %s", issue.URL, err)
 						}
 					}
 				}
@@ -1420,7 +1436,7 @@ func (o *Options) SearchForChart(filter string) (string, error) {
 		return answer, err
 	}
 	if len(charts) == 0 {
-		return answer, fmt.Errorf("No charts available for search filter: %s", filter)
+		return answer, fmt.Errorf("no charts available for search filter: %s", filter)
 	}
 	m := map[string]*helm.ChartSummary{}
 	names := []string{}
@@ -1441,7 +1457,7 @@ func (o *Options) SearchForChart(filter string) (string, error) {
 	// TODO now we split the chart into name and repo
 	parts := strings.Split(chartName, "/")
 	if len(parts) != 2 {
-		return answer, fmt.Errorf("Invalid chart name '%s' was expecting single / character separating repo name and chart name", chartName)
+		return answer, fmt.Errorf("invalid chart name '%s' was expecting single / character separating repo name and chart name", chartName)
 	}
 	repoName := parts[0]
 	appName := parts[1]
@@ -1451,20 +1467,19 @@ func (o *Options) SearchForChart(filter string) (string, error) {
 		return answer, err
 	}
 
-	repoUrl := repos[repoName]
-	if repoUrl == "" {
-		return answer, fmt.Errorf("Failed to find helm chart repo URL for '%s' when possible values are %s", repoName, stringhelpers.SortedMapKeys(repos))
-
+	repoURL := repos[repoName]
+	if repoURL == "" {
+		return answer, fmt.Errorf("failed to find helm chart repo URL for '%s' when possible values are %s", repoName, stringhelpers.SortedMapKeys(repos))
 	}
 	o.Version = chart.ChartVersion
-	o.HelmRepositoryURL = repoUrl
+	o.HelmRepositoryURL = repoURL
 	return appName, nil
 }
 
 func (o *Options) ChooseChart() (string, error) {
 	appName, err := o.SearchForChart("")
 	if err != nil {
-		return appName, fmt.Errorf("No charts available")
+		return appName, fmt.Errorf("no charts available")
 	}
 	o.Version = "" // remove version to choose it later
 	return appName, nil

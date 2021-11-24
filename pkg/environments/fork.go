@@ -2,6 +2,7 @@ package environments
 
 import (
 	"context"
+
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/scmhelpers"
@@ -40,7 +41,7 @@ func (o *EnvironmentPullRequestOptions) EnsureForked(client *scm.Client, repoNam
 	return repo.Clone, nil
 }
 
-func (o *EnvironmentPullRequestOptions) rebaseForkFromUpstream(dir string, gitURL string) error {
+func (o *EnvironmentPullRequestOptions) rebaseForkFromUpstream(dir, gitURL string) error {
 	g := o.Git()
 	branch, err := gitclient.Branch(g, dir)
 	if err != nil {

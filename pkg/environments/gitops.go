@@ -48,7 +48,6 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 		if err != nil {
 			return nil, err
 		}
-		prDir = tempDir
 		defer os.RemoveAll(tempDir)
 	}
 
