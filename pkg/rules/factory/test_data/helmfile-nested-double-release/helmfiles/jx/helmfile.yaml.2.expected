@@ -1,0 +1,14 @@
+filepath: ""
+namespace: jx
+repositories:
+- name: dev
+  url: http://chartmuseum-jx.34.78.195.22.nip.io
+releases:
+- chart: dev/myapp
+  version: 1.2.4
+  name: myapp
+- chart: dev/myapp
+  version: 1.2.3
+  name: myapp-beta
+templates: {}
+renderedvalues: {}
