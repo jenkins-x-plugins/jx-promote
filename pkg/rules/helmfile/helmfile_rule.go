@@ -36,7 +36,7 @@ func Rule(r *rules.PromoteRule) error {
 }
 
 // ModifyAppsFile modifies the 'jx-apps.yml' file to add/update/remove apps
-func modifyHelmfile(r *rules.PromoteRule, rule *v1alpha1.HelmfileRule, file, promoteNs string) error {
+func modifyHelmfile(r *rules.PromoteRule, rule *v1alpha1.HelmfileRule, file string, promoteNs string) error {
 	exists, err := files.FileExists(file)
 	if err != nil {
 		return errors.Wrapf(err, "failed to detect if file exists %s", file)
@@ -124,60 +124,38 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 	keepOldReleases := r.Config.Spec.HelmfileRule.KeepOldReleases || contains(r.Config.Spec.HelmfileRule.KeepOldVersions, details.Name)
 
 	if nestedHelmfile {
-
-		if len(helmfile.Releases) == 0 {
-			// for nested helmfiles when adding the first release, set it up as the override
-			// then when future releases are added they can omit the namespace if their namespace matches this override
-			// if different namespaces are required for releases, manual edits should be done to
-			// set the namespace of EVERY release and make OverrideNamespace blank
-			if promoteNs != "" && helmfile.OverrideNamespace == "" {
-				helmfile.OverrideNamespace = promoteNs
-			}
-		}
-
-		found := false
-		if !keepOldReleases {
-			for i := range helmfile.Releases {
-				release := &helmfile.Releases[i]
-				if release.Name == app || release.Name == details.Name || (r.ReleaseName != "" && release.Name == r.ReleaseName) {
-					release.Version = version
-					return nil
-				}
-			}
-		}
-		if !found {
-			ns := ""
-			if promoteNs != helmfile.OverrideNamespace {
-				ns = promoteNs
-			}
-			newReleaseName := details.LocalName
-			if r.ReleaseName != "" {
-				newReleaseName = r.ReleaseName
-			}
-			if keepOldReleases {
-				newReleaseName = fmt.Sprintf("%s-%s", newReleaseName, strings.Replace(version, ".", "-", -1))
-			}
-			helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
-				Name:      newReleaseName,
-				Chart:     details.Name,
-				Namespace: ns,
-				Version:   version,
-			})
-		}
+		// This is edge case so moved to a separate function
+		promoteNestedHelmfileReleases(r, details, promoteNs, helmfile, keepOldReleases)
 		return nil
 	}
-	found := false
+
+	// Time to use scoring instead of just a simple found.
+	highestScorer := new(state.ReleaseSpec)
+	highestScore := 0
 	if !keepOldReleases {
 		for i := range helmfile.Releases {
+			score := 0
 			release := &helmfile.Releases[i]
-			if (release.Name == app || release.Name == details.Name || (r.ReleaseName != "" && release.Name == r.ReleaseName)) && (release.Namespace == promoteNs || isRemoteEnv) {
-				release.Version = version
-				return nil
+
+			if release.Name == r.AppName && (release.Namespace == promoteNs || isRemoteEnv) {
+				score++
+			}
+
+			if (r.ReleaseName != "" && release.Name == r.ReleaseName) && (release.Namespace == promoteNs || isRemoteEnv) {
+				// This scores higher as it's a direct match
+				score = score + 2
+			}
+
+			if score > highestScore {
+				highestScorer = release
+				highestScore = score
 			}
 		}
 	}
 
-	if !found {
+	if highestScore > 0 {
+		highestScorer.Version = r.Version
+	} else {
 		newReleaseName := details.LocalName
 		if r.ReleaseName != "" {
 			newReleaseName = r.ReleaseName
@@ -196,6 +174,63 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 	return nil
 }
 
+func promoteNestedHelmfileReleases(r *rules.PromoteRule, details *envctx.ChartDetails, promoteNs string, helmfile *state.HelmState, keepOldReleases bool) {
+	if len(helmfile.Releases) == 0 {
+		// for nested helmfiles when adding the first release, set it up as the override
+		// then when future releases are added they can omit the namespace if their namespace matches this override
+		// if different namespaces are required for releases, manual edits should be done to
+		// set the namespace of EVERY release and make OverrideNamespace blank
+		if promoteNs != "" && helmfile.OverrideNamespace == "" {
+			helmfile.OverrideNamespace = promoteNs
+		}
+	}
+
+	// Time to use scoring instead of just a simple found.
+	highestScorer := new(state.ReleaseSpec)
+	highestScore := 0
+	if !keepOldReleases {
+		for i := range helmfile.Releases {
+			score := 0
+			release := &helmfile.Releases[i]
+
+			if release.Name == r.AppName {
+				score++
+			}
+
+			if r.ReleaseName != "" && release.Name == r.ReleaseName {
+				score = score + 2
+			}
+
+			if score > highestScore {
+				highestScorer = release
+				highestScore = score
+			}
+		}
+	}
+
+	if highestScore > 0 {
+		highestScorer.Version = r.Version
+	} else {
+		ns := ""
+		if promoteNs != helmfile.OverrideNamespace {
+			ns = promoteNs
+		}
+		newReleaseName := details.LocalName
+		if r.ReleaseName != "" {
+			newReleaseName = r.ReleaseName
+		}
+		if keepOldReleases {
+			newReleaseName = fmt.Sprintf("%s-%s", newReleaseName, strings.Replace(r.Version, ".", "-", -1))
+		}
+		helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
+			Name:      newReleaseName,
+			Chart:     details.Name,
+			Namespace: ns,
+			Version:   r.Version,
+		})
+	}
+}
+
 // defaultPrefix lets find a chart prefix / repository name for the URL that does not clash with
 // any other existing repositories in the helmfile
 func defaultPrefix(appsConfig *state.HelmState, envctx *envctx.EnvironmentContext, d *envctx.ChartDetails, defaultPrefix string) {
@@ -209,8 +244,7 @@ func defaultPrefix(appsConfig *state.HelmState, envctx *envctx.EnvironmentContex
 	}
 	prefixes := map[string]string{}
 	urls := map[string]string{}
-	for k := range appsConfig.Repositories {
-		r := appsConfig.Repositories[k]
+	for _, r := range appsConfig.Repositories {
 		if r.URL == d.Repository {
 			found = true
 			r.OCI = oci
