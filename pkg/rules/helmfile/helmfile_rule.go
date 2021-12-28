@@ -143,7 +143,7 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 
 			if (r.ReleaseName != "" && release.Name == r.ReleaseName) && (release.Namespace == promoteNs || isRemoteEnv) {
 				// This scores higher as it's a direct match
-				score = score + 2
+				score += 2
 			}
 
 			if score > highestScore {
@@ -198,7 +198,7 @@ func promoteNestedHelmfileReleases(r *rules.PromoteRule, details *envctx.ChartDe
 			}
 
 			if r.ReleaseName != "" && release.Name == r.ReleaseName {
-				score = score + 2
+				score += 2
 			}
 
 			if score > highestScore {

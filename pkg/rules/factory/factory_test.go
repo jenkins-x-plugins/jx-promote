@@ -30,7 +30,7 @@ func TestRuleFactory(t *testing.T) {
 
 	t.Logf("creating tests at %s", tmpDir)
 
-	sourceData := filepath.Join("test_data")
+	sourceData := "test_data"
 	fileSlice, err := ioutil.ReadDir(sourceData)
 	assert.NoError(t, err)
 

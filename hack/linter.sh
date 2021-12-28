@@ -10,8 +10,8 @@ fi
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if ! [ -x "$(command -v golangci-lint)" ]; then
-	echo "Installing GolangCI-Lint"
-	${DIR}/install_golint.sh -b $GOPATH/bin v1.42.1
+        echo "Looks like golangci-lint isn't installed, to run \'make lint\' please install it."
+        exit 127
 fi
 
 export GO111MODULE=on
