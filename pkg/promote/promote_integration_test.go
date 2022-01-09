@@ -61,7 +61,7 @@ func TestPromoteToGitHubPagesChartRepository(t *testing.T) {
 
 	_, po := promote.NewCmdPromote()
 	name := "promote-github-pages"
-	po.Dir = filepath.Join("test_data", "ghpages")
+	po.Dir = filepath.Join("testdata", "ghpages")
 	po.DisableGitConfig = true
 	po.Application = appName
 	po.Version = version

@@ -12,7 +12,7 @@ import (
 const testPromoteNS = ""
 
 func TestDiscoverPromoteConfigKpt(t *testing.T) {
-	dir := filepath.Join("test_data", "custom", "cfg-root", "namespaces")
+	dir := filepath.Join("testdata", "custom", "cfg-root", "namespaces")
 	cfg, fileName, err := promoteconfig.Discover(dir, testPromoteNS)
 	require.NoError(t, err)
 	require.NotEmpty(t, fileName, "no fileName returned")
@@ -28,7 +28,7 @@ func TestDiscoverPromoteConfigKpt(t *testing.T) {
 }
 
 func TestDiscoverPromoteConfigHelm(t *testing.T) {
-	dir := filepath.Join("test_data", "helm")
+	dir := filepath.Join("testdata", "helm")
 	cfg, fileName, err := promoteconfig.Discover(dir, testPromoteNS)
 	require.NoError(t, err, "for dir %s", dir)
 	require.NotNil(t, cfg, "config not returned for %s", dir)
@@ -41,7 +41,7 @@ func TestDiscoverPromoteConfigHelm(t *testing.T) {
 }
 
 func TestDiscoverPromoteConfigHelmfile(t *testing.T) {
-	dir := filepath.Join("test_data", "helmfile")
+	dir := filepath.Join("testdata", "helmfile")
 	cfg, fileName, err := promoteconfig.Discover(dir, testPromoteNS)
 	require.NoError(t, err, "for dir %s", dir)
 	require.NotNil(t, cfg, "config not returned for %s", dir)

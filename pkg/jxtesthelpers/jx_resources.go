@@ -27,7 +27,7 @@ func CreateTestRequirements() *jxcore.RequirementsConfig {
 }
 
 func CreateTestVersionResolver(t *testing.T) *versionstream.VersionResolver {
-	versionsDir := path.Join("test_data", "jenkins-x-versions")
+	versionsDir := path.Join("testdata", "jenkins-x-versions")
 	assert.DirExists(t, versionsDir)
 
 	return &versionstream.VersionResolver{

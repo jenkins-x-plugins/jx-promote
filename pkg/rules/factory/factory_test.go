@@ -30,7 +30,7 @@ func TestRuleFactory(t *testing.T) {
 
 	t.Logf("creating tests at %s", tmpDir)
 
-	sourceData := "test_data"
+	sourceData := "testdata"
 	fileSlice, err := ioutil.ReadDir(sourceData)
 	assert.NoError(t, err)
 
@@ -47,7 +47,7 @@ func TestRuleFactory(t *testing.T) {
 
 		dir := filepath.Join(tmpDir, name)
 
-		src := filepath.Join("test_data", name)
+		src := filepath.Join("testdata", name)
 		err = files.CopyDirOverwrite(src, dir)
 		require.NoError(t, err, "could not copy source data in %s to %s", src, dir)
 
