@@ -1,0 +1,2 @@
+# test for when running `jx promote --release myapp-beta`
+release: myapp-beta
