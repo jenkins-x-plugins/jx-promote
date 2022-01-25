@@ -397,14 +397,14 @@ func (o *Options) Run() error {
 			return errors.Wrapf(err, "failed to resolve helm repository URL")
 		}
 	}
-	if len(o.Environments) == 0 && !o.BatchMode {
+	if o.Interactive || !(len(o.Environments) != 0 || o.All || o.AllAutomatic || o.BatchMode) {
 		names := []string{}
 		for _, env := range o.DevEnvContext.Requirements.Environments {
 			if envIsPermanent(&env) {
 				names = append(names, env.Key)
 			}
 		}
-		o.Environments, err = o.Input.SelectNames(names, "Pick environment(s):", false, "please select one or many environments")
+		o.Environments, err = o.Input.SelectNames(names, "Pick environment(s):", o.All, "please select one or many environments")
 		if err != nil {
 			return errors.Wrapf(err, "failed to pick an Environment name")
 		}
