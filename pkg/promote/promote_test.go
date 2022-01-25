@@ -31,7 +31,7 @@ func fakeChooseChart() (string, error) {
 
 func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithArgs(t *testing.T) {
 	promoteOptions := &promote.Options{
-		Environment: "production", // --env production
+		Environments: []string{"production"}, // --env production
 	}
 
 	promoteOptions.Args = []string{"myArgumentApp"}
@@ -44,8 +44,8 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithArgs(t *testing
 
 func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithFilterFlag(t *testing.T) {
 	promoteOptions := &promote.Options{
-		Environment: "production", // --env production
-		Filter:      "something",
+		Environments: []string{"production"}, // --env production
+		Filter:       "something",
 	}
 
 	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName, fakeChooseChart)
@@ -56,7 +56,7 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithFilterFlag(t *t
 
 func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithBatchFlag(t *testing.T) {
 	promoteOptions := &promote.Options{
-		Environment: "production", // --env production
+		Environments: []string{"production"}, // --env production
 	}
 
 	promoteOptions.BatchMode = true // --batch-mode
@@ -69,8 +69,8 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithBatchFlag(t *te
 
 func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagWithInteractiveFlag(t *testing.T) {
 	promoteOptions := &promote.Options{
-		Environment: "production", // --env production
-		Interactive: true,
+		Environments: []string{"production"}, // --env production
+		Interactive:  true,
 	}
 
 	err := promoteOptions.EnsureApplicationNameIsDefined(fakeSearchForChart, fakeDiscoverAppName, fakeChooseChart)
@@ -83,7 +83,7 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlag(t *testing.T) {
 	testhelpers.SkipForWindows(t, "go-expect does not work on windows")
 
 	promoteOptions := &promote.Options{
-		Environment: "production", // --env production
+		Environments: []string{"production"}, // --env production
 	}
 
 	promoteOptions.Input = &fake.FakeInput{
@@ -100,7 +100,7 @@ func TestEnsureApplicationNameIsDefinedWithoutApplicationFlagUserSaysNo(t *testi
 	testhelpers.SkipForWindows(t, "go-expect does not work on windows")
 
 	promoteOptions := &promote.Options{
-		Environment: "production", // --env production
+		Environments: []string{"production"}, // --env production
 		Input: &fake.FakeInput{
 			Values: map[string]string{"Are you sure you want to promote the application named: myDiscoveredApp?": "N"},
 		},
