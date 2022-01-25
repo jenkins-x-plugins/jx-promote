@@ -180,13 +180,15 @@ func TestConvertToGitHubPagesURL(t *testing.T) {
 }
 
 func TestIsLocalChartRepository(t *testing.T) {
-	localRepos := []string{"http://jenkins-x-chartmuseum:8080", "http://jenkins-x-chartmuseum", "https://chartmuseum", "http://jenkins-x-chartmuseum.jx.svc.cluster.local:8080", "http://bucketrepo.jx"}
+	localRepos := []string{"http://jenkins-x-chartmuseum:8080", "http://jenkins-x-chartmuseum", "https://chartmuseum",
+		"http://jenkins-x-chartmuseum.jx.svc.cluster.local:8080", "http://bucketrepo.jx", "oci://an-oci-repo/", ""}
 	for _, repo := range localRepos {
 		actual := promote.IsLocalChartRepository(repo)
 		assert.True(t, actual, "should be local repo %s", repo)
 	}
 
-	remoteRepos := []string{"http://foo.bar", "https://chartrepo.mydomain.com"}
+	remoteRepos := []string{"http://foo.bar", "https://chartrepo.mydomain.com", "s3://a.bucket.mydomain.com/jx2",
+		"gcs://another-bucket", "oci://an-oci-repo.mydomain.com/my-repo/"}
 	for _, repo := range remoteRepos {
 		actual := promote.IsLocalChartRepository(repo)
 		assert.False(t, actual, "not local repo %s", repo)
