@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -761,10 +762,8 @@ func (o *Options) ResolveChartRepositoryURL() (string, error) {
 			}
 			return chartRepo, nil
 		}
-		if o.DevEnvContext.Requirements.Cluster.ChartKind == jxcore.ChartRepositoryTypeOCI {
-			return chartRepo, nil
-		}
 
+		// A repo URL that is local to this cluster would not work when deploying to a remote cluster.
 		if !IsLocalChartRepository(chartRepo) {
 			return chartRepo, nil
 		}
@@ -808,22 +807,30 @@ func (o *Options) ResolveChartRepositoryURL() (string, error) {
 
 // IsLocalChartRepository return true if the chart repository is blank or a local url
 func IsLocalChartRepository(repo string) bool {
-	repo = strings.TrimPrefix(repo, "https://")
-	repo = strings.TrimPrefix(repo, "http://")
-	repo = strings.TrimPrefix(repo, "https:")
-	repo = strings.TrimPrefix(repo, "http:")
-
-	repo = strings.TrimSuffix(repo, "/")
-	repo = strings.TrimSuffix(repo, ".jx")
+	if repo == "" {
+		return true
+	}
+	repoURL, err := url.ParseRequestURI(repo)
+	if err != nil || repoURL.Scheme == "" {
+		log.Logger().Warnf("The given repo doesn't look like an URI: %s", repo)
+		return true
+	}
+	// s3 and gcs can never be local to a cluster, but the bucket name can be without any dot
+	if Contains([]string{"s3", "gcs"}, strings.ToLower(repoURL.Scheme)) {
+		return false
+	}
+	repo = repoURL.Host
 
 	// lets trim any port
 	i := strings.LastIndex(repo, ":")
 	if i > 0 {
 		repo = repo[0:i]
 	}
+
 	if strings.HasSuffix(repo, ".cluster.local") {
 		return true
 	}
+	repo = strings.TrimSuffix(repo, ".jx")
 
 	// if we don't include a dot lets assume a local service name like  "jenkins-x-chartmuseum", "chartmuseum", "bucketrepo"
 	return !strings.Contains(repo, ".")
