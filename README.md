@@ -145,8 +145,3 @@ spec:
   helmRule:
     path: env
 ```
-
-
- 
- 
-
