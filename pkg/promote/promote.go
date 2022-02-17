@@ -398,9 +398,11 @@ func (o *Options) Run() error {
 		}
 	}
 	if o.Interactive || !(len(o.Environments) != 0 || o.All || o.AllAutomatic || o.BatchMode) {
-		names := []string{}
-		for _, env := range o.DevEnvContext.Requirements.Environments {
-			if envIsPermanent(&env) {
+		var names []string
+		envs := o.DevEnvContext.Requirements.Environments
+		for i := range envs {
+			env := &envs[i]
+			if envIsPermanent(env) {
 				names = append(names, env.Key)
 			}
 		}
