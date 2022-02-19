@@ -821,7 +821,7 @@ func TestPromoteHelmfileToNamedLocalEnvironment(t *testing.T) {
 	po.DisableGitConfig = true
 	po.Application = appName
 	po.Version = version
-	po.Environment = "staging"
+	po.Environments = []string{"staging"}
 
 	po.NoPoll = true
 	po.BatchMode = true
@@ -933,7 +933,7 @@ func AssertPromoteIntegration(t *testing.T, testCases ...PromoteTestCase) {
 		po.DisableGitConfig = true
 		po.Application = appName
 		po.Version = version
-		po.Environment = envName
+		po.Environments = []string{envName}
 
 		po.NoPoll = true
 		po.BatchMode = true
