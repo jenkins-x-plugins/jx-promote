@@ -489,7 +489,7 @@ func TestPromoteHelmfileAllAutomaticsInOneOrMorePRs(t *testing.T) {
 		ctx := context.Background()
 
 		for repoFullName, expectedCount := range tc.expectedPullRequestCount {
-			prs, _, err := scmClient.PullRequests.List(ctx, repoFullName, scm.PullRequestListOptions{
+			prs, _, err := scmClient.PullRequests.List(ctx, repoFullName, &scm.PullRequestListOptions{
 				Size: 100,
 				Open: true,
 			})
