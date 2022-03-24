@@ -8,7 +8,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.6.6 // indirect
 	github.com/hashicorp/vault/api v1.0.5-0.20190909201928-35325e2c3262 // indirect
 	github.com/jenkins-x-plugins/jx-gitops v0.3.13
-	github.com/jenkins-x/go-scm v1.10.10
+	github.com/jenkins-x/go-scm v1.11.4
 	github.com/jenkins-x/jx-api/v4 v4.1.5
 	github.com/jenkins-x/jx-helpers/v3 v3.0.127
 	github.com/jenkins-x/jx-logging/v3 v3.0.6

@@ -729,8 +729,9 @@ github.com/jenkins-x-plugins/jx-gitops v0.3.13 h1:cgVjWK5xROCCa/6iMfjhGmywGtaWRW
 github.com/jenkins-x-plugins/jx-gitops v0.3.13/go.mod h1:ItVSTOif+r5n9K2hCPg42O67NHwVj1jRZ2NsVpIMNiY=
 github.com/jenkins-x/gen-crd-api-reference-docs v0.1.6/go.mod h1:a4dzSf/nNLMMMqultm6IlV/04xq26uICEYPkSTOahWQ=
 github.com/jenkins-x/go-scm v1.5.117/go.mod h1:PCT338UhP/pQ0IeEeMEf/hoLTYKcH7qjGEKd7jPkeYg=
-github.com/jenkins-x/go-scm v1.10.10 h1:Fuxje/9mHONI7+AQ32N/S9CXWt/0hVStbj8dBVraQz4=
 github.com/jenkins-x/go-scm v1.10.10/go.mod h1:z7xTO9/VzqW3xEbEMH2z5cpOGrZ8+nOHOWfU1ngFGxs=
+github.com/jenkins-x/go-scm v1.11.4 h1:uYEFE4Ty9nmlo8paG4ysSxmO5ii6uj7nCQIsSh+ppXU=
+github.com/jenkins-x/go-scm v1.11.4/go.mod h1:8zDNVAps5UCZ7nDVBCzkIrPaSGN4vHq+1bDrHLk6JJc=
 github.com/jenkins-x/jx-api/v4 v4.1.5 h1:EIEuEMs7qCVvU4c9YfViStH3CIMTcpdXy0jZS436ESk=
 github.com/jenkins-x/jx-api/v4 v4.1.5/go.mod h1:l11kHlFy40UGu9pdhCRxDiJcEgRubSVzybWB2jXjLcs=
 github.com/jenkins-x/jx-helpers/v3 v3.0.127 h1:9jfbCOMGaYOFLHMb9I6nvFi3WIeTiR2nW4gpHVB+fVY=
