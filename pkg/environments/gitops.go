@@ -170,7 +170,7 @@ func (o *EnvironmentPullRequestOptions) FindExistingPullRequest(scmClient *scm.C
 	}
 	ctx := context.Background()
 	labels := o.PullRequestFilter.Labels
-	prs, _, err := scmClient.PullRequests.List(ctx, repoFullName, scm.PullRequestListOptions{
+	prs, _, err := scmClient.PullRequests.List(ctx, repoFullName, &scm.PullRequestListOptions{
 		Size:   100,
 		Open:   true,
 		Labels: labels,

@@ -67,10 +67,6 @@ type KptRule struct {
 	// For example if the 'config-root'' directory contains a Config Sync git layout we may want applications to be deployed into the
 	// `config-root/namespaces/myapps` folder. If so set the path to `config-root/namespaces/myapps`
 	Path string `json:"path,omitempty"`
-
-	// Namespace specifies the namespace to deploy applications if using kpt. If specified this value will be used instead
-	// of the Environment.Spec.Namespace in the Environment CRD
-	Namespace string `json:"namespace,omitempty"`
 }
 
 // FileRule specifies how to modify a 'Makefile` or shell script to add a new helm/kpt style command
