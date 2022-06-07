@@ -3,6 +3,7 @@ approvers:
 - jstrachan
 - rajdavies
 - tomhobson
+- msvticket
 - ankitm123
 - babadofar
 reviewers:
@@ -10,5 +11,6 @@ reviewers:
 - jstrachan
 - rajdavies
 - tomhobson
+- msvticket
 - ankitm123
 - babadofar
