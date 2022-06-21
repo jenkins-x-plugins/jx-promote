@@ -35,6 +35,10 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 			Description: envName,
 		})
 	}
+	labels = append(labels, &scm.Label{
+		Name:        "dependency/" + releaseInfo.FullAppName,
+		Description: releaseInfo.FullAppName,
+	})
 
 	comment := fmt.Sprintf("chore: promote %s to version %s", app, versionName) + "\n\nthis commit will trigger a pipeline to [generate the actual kubernetes resources to perform the promotion](https://jenkins-x.io/docs/v3/about/how-it-works/#promotion) which will create a second commit on this Pull Request before it can merge"
 	details := scm.PullRequest{
