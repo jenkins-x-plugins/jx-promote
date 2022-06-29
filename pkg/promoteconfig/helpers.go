@@ -2,7 +2,7 @@ package promoteconfig
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/jenkins-x-plugins/jx-promote/pkg/apis/promote/v1alpha1"
@@ -109,7 +109,7 @@ func LoadPromote(dir string, failIfMissing bool) (*v1alpha1.Promote, string, err
 func LoadPromoteFile(fileName string) (*v1alpha1.Promote, error) {
 	config := &v1alpha1.Promote{}
 
-	data, err := ioutil.ReadFile(fileName)
+	data, err := os.ReadFile(fileName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load file %s due to %s", fileName, err)
 	}

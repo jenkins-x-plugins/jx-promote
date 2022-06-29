@@ -3,7 +3,6 @@ package promote
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -337,7 +336,7 @@ func (o *Options) Run() error {
 			return errors.Wrapf(err, "failed to check for file %s", o.VersionFile)
 		}
 		if exists {
-			data, err := ioutil.ReadFile(o.VersionFile)
+			data, err := os.ReadFile(o.VersionFile)
 			if err != nil {
 				return errors.Wrapf(err, "failed to read version file %s", o.VersionFile)
 			}
@@ -968,8 +967,7 @@ func (o *Options) waitForGitOpsPullRequest(env *jxcore.EnvironmentConfig, releas
 										CommitTitle: "jx promote automatically merged promotion PR",
 									}
 									_, err = scmClient.PullRequests.Merge(ctx, fullName, prNumber, prMergeOptions)
-									// TODO
-									// err = gitProvider.MergePullRequest(pr, "jx promote automatically merged promotion PR")
+									// TODO: err = gitProvider.MergePullRequest(pr, "jx promote automatically merged promotion PR")
 									if err != nil {
 										if !logMergeFailure {
 											logMergeFailure = true
@@ -1061,7 +1059,7 @@ func (o *Options) findLatestVersion(app string) (string, error) {
 		sv, err := semver.Parse(chart.ChartVersion)
 		if err != nil {
 			log.Logger().Warnf("Invalid semantic version: %s %s", chart.ChartVersion, err)
-			if maxString == "" || strings.Compare(chart.ChartVersion, maxString) > 0 {
+			if maxString == "" || chart.ChartVersion > maxString {
 				maxString = chart.ChartVersion
 			}
 		} else if maxSemVer == nil || maxSemVer.Compare(sv) > 0 {
@@ -1308,22 +1306,22 @@ func (o *Options) CommentOnIssues(environment *jxcore.EnvironmentConfig, promote
 	kubeClient := o.KubeClient
 
 	appNames := []string{app, o.ReleaseName, ens + "-" + app}
-	url := ""
+	svcURL := ""
 	for _, n := range appNames {
-		url, err = services.FindServiceURL(kubeClient, ens, naming.ToValidName(n))
+		svcURL, err = services.FindServiceURL(kubeClient, ens, naming.ToValidName(n))
 		if err != nil {
 			return err
 		}
-		if url != "" {
+		if svcURL != "" {
 			break
 		}
 	}
-	if url == "" {
+	if svcURL == "" {
 		log.Logger().Warnf("Could not find the service URL in namespace %s for names %s", ens, strings.Join(appNames, ", "))
 	}
 	available := ""
-	if url != "" {
-		available = fmt.Sprintf(" and available [here](%s)", url)
+	if svcURL != "" {
+		available = fmt.Sprintf(" and available [here](%s)", svcURL)
 	}
 
 	if available == "" {
@@ -1339,16 +1337,16 @@ func (o *Options) CommentOnIssues(environment *jxcore.EnvironmentConfig, promote
 				hostname := ing.Spec.Rules[0].Host
 				if hostname != "" {
 					available = fmt.Sprintf(" and available at %s", hostname)
-					url = hostname
+					svcURL = hostname
 				}
 			}
 		}
 	}
 
 	// lets try update the PipelineActivity
-	if url != "" && promoteKey.ApplicationURL == "" {
-		promoteKey.ApplicationURL = url
-		log.Logger().Debugf("Application is available at: %s", termcolor.ColorInfo(url))
+	if svcURL != "" && promoteKey.ApplicationURL == "" {
+		promoteKey.ApplicationURL = svcURL
+		log.Logger().Debugf("Application is available at: %s", termcolor.ColorInfo(svcURL))
 	}
 
 	release, err := jxClient.JenkinsV1().Releases(ens).Get(context.TODO(), releaseName, metav1.GetOptions{})

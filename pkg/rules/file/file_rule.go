@@ -1,7 +1,7 @@
 package file
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -35,7 +35,7 @@ func Rule(r *rules.PromoteRule) error {
 		return errors.Errorf("file does not exist: %s", path)
 	}
 
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read file %s", path)
 	}
@@ -99,7 +99,7 @@ func Rule(r *rules.PromoteRule) error {
 	}
 
 	data = []byte(strings.Join(lines, "\n"))
-	err = ioutil.WriteFile(path, data, files.DefaultFileWritePermissions)
+	err = os.WriteFile(path, data, files.DefaultFileWritePermissions)
 	if err != nil {
 		return errors.Wrapf(err, "failed to write file %s", path)
 	}
