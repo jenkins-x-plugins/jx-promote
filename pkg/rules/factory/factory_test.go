@@ -2,6 +2,7 @@ package factory_test
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -31,7 +32,7 @@ func TestRuleFactory(t *testing.T) {
 	t.Logf("creating tests at %s", tmpDir)
 
 	sourceData := "test_data"
-	fileSlice, err := ioutil.ReadDir(sourceData)
+	fileSlice, err := os.ReadDir(sourceData)
 	assert.NoError(t, err)
 
 	ns := "jx"

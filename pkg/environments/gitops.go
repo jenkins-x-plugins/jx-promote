@@ -66,7 +66,12 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 		}
 	}
 
-	dir, err := gitclient.CloneToDir(o.Gitter, cloneGitURL, "")
+	var dir string
+	if len(o.SparseCheckoutPatterns) > 0 {
+		dir, err = gitclient.SparseCloneToDir(o.Gitter, cloneGitURL, "", true, o.SparseCheckoutPatterns...)
+	} else {
+		dir, err = gitclient.CloneToDir(o.Gitter, cloneGitURL, "")
+	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to clone git URL %s", cloneGitURLSafe)
 	}
