@@ -67,3 +67,14 @@ plugin.gz
 
 # store for vscode local history plugin : https://marketplace.visualstudio.com/items?itemName=xyz.local-history
 .history
+
+
+# syft
+bin/syft
+
+# docker credential binaries
+docker-credential-*
+
+# sbom json created by syft
+sbom.json
+
