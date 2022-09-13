@@ -546,6 +546,8 @@ func (o *Options) PromoteAll(pred func(*jxcore.EnvironmentConfig) bool) error {
 			if sourceURL == "" && !env.RemoteCluster && o.DevEnvContext.DevEnv != nil {
 				// let's default to the git repository of the dev environment as we are sharing the git repository across multiple namespaces
 				env.GitURL = o.DevEnvContext.DevEnv.Spec.Source.URL
+			} else {
+				env.GitURL = sourceURL
 			}
 			promoteEnvs = append(promoteEnvs, env)
 		}
