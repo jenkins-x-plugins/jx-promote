@@ -673,11 +673,7 @@ func (o *Options) Promote(envs []*jxcore.EnvironmentConfig, warnIfAuto, noPoll b
 			if !envIsPermanent(env) {
 				return nil, errors.Errorf("cannot promote to Environment which is not a permanent Environment")
 			}
-			if env.ReusePullRequest {
-				o.PullRequestFilter = &environments.PullRequestFilter{Labels: []string{"dependency/" + fullAppName}}
-			} else {
-				o.PullRequestFilter = nil
-			}
+			o.ReusePullRequest = env.ReusePullRequest
 
 			sourceURL := requirements.EnvironmentGitURL(o.DevEnvContext.Requirements, env.Key)
 			if sourceURL == "" && !env.RemoteCluster && o.DevEnvContext.DevEnv != nil {

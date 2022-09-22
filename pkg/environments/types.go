@@ -56,11 +56,11 @@ type EnvironmentPullRequestOptions struct {
 	BatchMode              bool
 	UseGitHubOAuth         bool
 	Fork                   bool
+	ReusePullRequest       bool
 	SparseCheckoutPatterns []string
 }
 
 // A PullRequestFilter defines a filter for finding pull requests
 type PullRequestFilter struct {
 	Labels []string
-	Number *int
 }

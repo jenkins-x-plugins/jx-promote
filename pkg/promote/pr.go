@@ -3,6 +3,7 @@ package promote
 import (
 	"fmt"
 
+	"github.com/jenkins-x-plugins/jx-promote/pkg/environments"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/requirements"
 
 	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
@@ -39,6 +40,16 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 		Name:        "dependency/" + releaseInfo.FullAppName,
 		Description: releaseInfo.FullAppName,
 	})
+
+	if o.ReusePullRequest && o.PullRequestFilter == nil {
+		var filterLabels []string
+		for i := range labels {
+			filterLabels = append(filterLabels, labels[i].Name)
+		}
+		o.PullRequestFilter = &environments.PullRequestFilter{Labels: filterLabels}
+		// Clearing so that it can be set for the correct environment on next call
+		defer func() { o.PullRequestFilter = nil }()
+	}
 
 	comment := fmt.Sprintf("chore: promote %s to version %s", app, versionName) + "\n\nthis commit will trigger a pipeline to [generate the actual kubernetes resources to perform the promotion](https://jenkins-x.io/docs/v3/about/how-it-works/#promotion) which will create a second commit on this Pull Request before it can merge"
 	details := scm.PullRequest{
