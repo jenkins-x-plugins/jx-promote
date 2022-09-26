@@ -6,14 +6,15 @@ import (
 	"os"
 	"sort"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/scmhelpers"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/stringhelpers"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/termcolor"
-	"github.com/pkg/errors"
-
 	"github.com/jenkins-x/jx-logging/v3/pkg/log"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -174,14 +175,21 @@ func (o *EnvironmentPullRequestOptions) FindExistingPullRequest(scmClient *scm.C
 		return nil, nil
 	}
 	ctx := context.Background()
-	labels := o.PullRequestFilter.Labels
+	filterLabels := o.PullRequestFilter.Labels
+	log.Logger().Debugf("Trying to find open PRs in %s with labels %v", repoFullName, filterLabels)
 	prs, _, err := scmClient.PullRequests.List(ctx, repoFullName, &scm.PullRequestListOptions{
 		Size:   100,
 		Open:   true,
-		Labels: labels,
+		Labels: filterLabels,
 	})
 	if scmhelpers.IsScmNotFound(err) || len(prs) == 0 {
 		return nil, nil
+	}
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error listing PRs")
+	}
+	if log.Logger().Logger.IsLevelEnabled(logrus.TraceLevel) {
+		log.Logger().Tracef("Found PRs: %s", spew.Sdump(prs))
 	}
 
 	// sort in descending order of PR numbers (assumes PRs numbers increment!)
@@ -191,22 +199,19 @@ func (o *EnvironmentPullRequestOptions) FindExistingPullRequest(scmClient *scm.C
 		return pi.Number > pj.Number
 	})
 
-	// lets find the latest PR which is not closed
+	// let's find the latest PR which is not closed
+Prs:
 	for i := range prs {
 		pr := prs[i]
-		if pr.Closed || pr.Merged || pr.Source != repoFullName {
+		if pr.Closed || pr.Merged || pr.Base.Repo.FullName != repoFullName {
 			continue
 		}
-		found := false
-		for _, label := range pr.Labels {
-			if stringhelpers.StringArrayIndex(labels, label.Name) >= 0 {
-				found = true
-				break
+		for _, label := range filterLabels {
+			if !scmhelpers.ContainsLabel(pr.Labels, label) {
+				continue Prs
 			}
 		}
-		if !found {
-			continue
-		}
+		log.Logger().Debugf("Found matching pr: %s", spew.Sdump(pr))
 		return pr, nil
 	}
 	return nil, nil

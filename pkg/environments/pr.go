@@ -129,7 +129,12 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 	head := headPrefix + o.BranchName
 
 	if existingPR != nil {
-		return o.addLabelsToPullRequest(ctx, scmClient, repoFullName, existingPR)
+		prInput := &scm.PullRequestInput{
+			Title: commitTitle,
+			Body:  commitBody,
+		}
+		existingPR, _, err = scmClient.PullRequests.Update(ctx, repoFullName, existingPR.Number, prInput)
+		return existingPR, errors.Wrapf(err, "failed to update PullRequest %+v with %+v", existingPR, prInput)
 	}
 	pri := &scm.PullRequestInput{
 		Title: commitTitle,
