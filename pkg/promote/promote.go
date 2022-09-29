@@ -954,7 +954,7 @@ func (o *Options) waitForGitOpsPullRequest(env *jxcore.EnvironmentConfig, releas
 							if !(o.NoMergePullRequest) {
 								tideMerge := false
 								// Now check if tide is running or not
-								commitStatues, _, err := scmClient.Repositories.ListStatus(ctx, fullName, prLastCommitSha, scm.ListOptions{})
+								commitStatues, _, err := scmClient.Repositories.ListStatus(ctx, fullName, prLastCommitSha, &scm.ListOptions{})
 								if err != nil {
 									log.Logger().Warnf("unable to get commit statuses for %s", pr.Link)
 								} else {
@@ -1035,7 +1035,7 @@ func (o *Options) PullRequestLastCommitStatus(pr *scm.PullRequest) (*scm.Status,
 	prLastCommitSha := o.pullRequestLastCommitSha(pr)
 
 	// lets try merge if the status is good
-	statuses, _, err := scmClient.Repositories.ListStatus(ctx, fullName, prLastCommitSha, scm.ListOptions{})
+	statuses, _, err := scmClient.Repositories.ListStatus(ctx, fullName, prLastCommitSha, &scm.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query repository %s for PR last commit status of %s", fullName, prLastCommitSha)
 	}
