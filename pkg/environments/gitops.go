@@ -73,7 +73,7 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 	} else {
 		dir, err = gitclient.CloneToDir(o.Gitter, cloneGitURL, "")
 		if o.BaseBranchName != "" {
-			log.Logger().Infof("checking our remote base branch %s from %s", o.BaseBranchName, gitURL)
+			log.Logger().Infof("checking out remote base branch %s from %s", o.BaseBranchName, gitURL)
 			err = gitclient.CheckoutRemoteBranch(o.Gitter, dir, o.BaseBranchName)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to checkout remote branch %s from %s", o.BaseBranchName, gitURL)
