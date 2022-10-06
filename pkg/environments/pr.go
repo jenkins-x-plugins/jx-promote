@@ -43,47 +43,59 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 		return nil, nil
 	}
 
-	const headBranchPrefix = "HEAD branch:"
-	baseBranch := o.BaseBranchName
-	if baseBranch == "" {
-		if o.RemoteName == "" {
-			o.RemoteName = "origin"
-		}
-		text, err := gitter.Command(dir, "rev-parse", "--abbrev-ref", o.RemoteName+"/HEAD")
-		if err != nil {
-			text, err = gitter.Command(dir, "remote", "show", o.RemoteName)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get the remote branch name for %s", o.RemoteName)
+	if existingPR != nil {
+		if existingPR.Source == "" {
+			log.Logger().Warnf("PullRequest %s does not have a source so we cannot use it", existingPR.Link)
+			existingPR = nil
+		} else {
+			if o.RemoteName == "" {
+				o.RemoteName = "origin"
 			}
+			o.BaseBranchName = existingPR.Base.Ref
+			o.BranchName = existingPR.Source
+			log.Logger().Infof("replacing commits of existing Pull Request %s", existingPR.Link)
+		}
+	}
+	baseBranch := o.BaseBranchName
 
-			lines := strings.Split(text, "\n")
-			for _, line := range lines {
-				line = strings.TrimSpace(line)
-				if strings.HasPrefix(line, headBranchPrefix) {
-					baseBranch = strings.TrimSpace(strings.TrimPrefix(line, headBranchPrefix))
-					if baseBranch != "" {
-						break
+	if existingPR == nil {
+		const headBranchPrefix = "HEAD branch:"
+		if baseBranch == "" {
+			if o.RemoteName == "" {
+				o.RemoteName = "origin"
+			}
+			text, err := gitter.Command(dir, "rev-parse", "--abbrev-ref", o.RemoteName+"/HEAD")
+			if err != nil {
+				text, err = gitter.Command(dir, "remote", "show", o.RemoteName)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get the remote branch name for %s", o.RemoteName)
+				}
+
+				lines := strings.Split(text, "\n")
+				for _, line := range lines {
+					line = strings.TrimSpace(line)
+					if strings.HasPrefix(line, headBranchPrefix) {
+						baseBranch = strings.TrimSpace(strings.TrimPrefix(line, headBranchPrefix))
+						if baseBranch != "" {
+							break
+						}
 					}
 				}
+				if baseBranch == "" {
+					return nil, errors.Errorf("output of git remote show %s has no prefix %s as was: %s", o.RemoteName, headBranchPrefix, text)
+				}
+			} else {
+				text = strings.TrimSpace(text)
+				text = strings.TrimPrefix(text, o.RemoteName)
+				baseBranch = strings.TrimPrefix(text, "/")
 			}
-			if baseBranch == "" {
-				return nil, errors.Errorf("output of git remote show %s has no prefix %s as was: %s", o.RemoteName, headBranchPrefix, text)
+		}
+		if baseBranch == "" {
+			baseBranch, err = gitclient.Branch(gitter, dir)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to find branch in dir %s", dir)
 			}
-		} else {
-			text = strings.TrimSpace(text)
-			text = strings.TrimPrefix(text, o.RemoteName)
-			baseBranch = strings.TrimPrefix(text, "/")
 		}
-	}
-	if baseBranch == "" {
-		baseBranch, err = gitclient.Branch(gitter, dir)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find branch in dir %s", dir)
-		}
-	}
-	if existingPR != nil {
-		log.Logger().Debugf("adding to Pull Request %s on branch %s", existingPR.Link, baseBranch)
-	} else {
 		log.Logger().Debugf("creating Pull Request from %s branch", baseBranch)
 	}
 
@@ -108,12 +120,21 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 		return nil, errors.Wrapf(err, "failed to commit changes in dir %s", dir)
 	}
 
-	err = gitclient.ForcePushBranch(gitter, dir, o.BranchName, o.BranchName)
+	err = gitclient.ForcePushBranch(gitter, dir, "HEAD", o.BranchName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to push to branch %s from dir %s", o.BranchName, dir)
 	}
 
 	ctx := context.Background()
+
+	if existingPR != nil {
+		prInput := &scm.PullRequestInput{
+			Title: commitTitle,
+			Body:  commitBody,
+		}
+		existingPR, _, err = scmClient.PullRequests.Update(ctx, repoFullName, existingPR.Number, prInput)
+		return existingPR, errors.Wrapf(err, "failed to update PullRequest %+v with %+v", existingPR, prInput)
+	}
 
 	headPrefix := ""
 	if o.Fork {
@@ -127,15 +148,6 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 	}
 
 	head := headPrefix + o.BranchName
-
-	if existingPR != nil {
-		prInput := &scm.PullRequestInput{
-			Title: commitTitle,
-			Body:  commitBody,
-		}
-		existingPR, _, err = scmClient.PullRequests.Update(ctx, repoFullName, existingPR.Number, prInput)
-		return existingPR, errors.Wrapf(err, "failed to update PullRequest %+v with %+v", existingPR, prInput)
-	}
 	pri := &scm.PullRequestInput{
 		Title: commitTitle,
 		Head:  head,
