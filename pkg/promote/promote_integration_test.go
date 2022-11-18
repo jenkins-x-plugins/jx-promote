@@ -5,6 +5,7 @@ package promote_test
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
@@ -54,7 +55,6 @@ func TestPromoteIntegrationMakefileKpt(t *testing.T) {
 }
 
 func TestPromoteToGitHubPagesChartRepository(t *testing.T) {
-	version := "1.2.3"
 	appName := "myapp"
 	ns := "jx"
 
@@ -62,11 +62,12 @@ func TestPromoteToGitHubPagesChartRepository(t *testing.T) {
 
 	_, po := promote.NewCmdPromote()
 	name := "promote-github-pages"
+	po.Version = "1.2.3"
 	po.Dir = filepath.Join("test_data", "ghpages")
 	po.DisableGitConfig = true
 	po.Application = appName
-	po.Version = version
 	po.All = true
+	po.AddChangelog = filepath.Join("test_data", "a_changelog.md")
 
 	po.NoPoll = true
 	po.BatchMode = true
@@ -120,6 +121,7 @@ func TestPromoteToGitHubPagesChartRepository(t *testing.T) {
 				Key:               "staging",
 				Namespace:         "jx-staging",
 				PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
+				ReusePullRequest:  true,
 			},
 		},
 	}
@@ -158,6 +160,9 @@ func TestPromoteToGitHubPagesChartRepository(t *testing.T) {
 	t.Logf("PR title: %s", pr.Title)
 	t.Logf("PR body: %s", pr.Body)
 
+	changelog, _ := os.ReadFile(po.AddChangelog)
+	assert.Regexp(t, po.ChangelogSeparator+"\n# "+appName+"\n\n"+string(changelog)+"$", pr.Body)
+
 	// lets assert we have a PipelineActivity...
 	paList, err := po.JXClient.JenkinsV1().PipelineActivities(ns).List(context.TODO(), metav1.ListOptions{})
 	require.NoError(t, err, "failed to load PipelineActivity resources in namespace %s", ns)
@@ -165,6 +170,53 @@ func TestPromoteToGitHubPagesChartRepository(t *testing.T) {
 	pa := paList.Items[0]
 
 	data, err := yaml.Marshal(pa)
+	require.NoError(t, err, "failed to marshal PipelineActivity")
+
+	t.Logf("got PipelineActivity %s\n", string(data))
+	assert.Equal(t, v1.ActivityStatusTypeSucceeded, pa.Spec.Status, "pipelineActivity.Spec.Status")
+
+	po.Version = "2.0.0"
+	po.AddChangelog = filepath.Join("test_data", "another_changelog.md")
+	err = po.Run()
+
+	require.NoError(t, err, "failed test %s s", name)
+
+	require.NotEmpty(t, po.OutDir, "should have populated an out dir")
+
+	helmfile = filepath.Join(po.OutDir, "helmfiles", "jx-staging", "helmfile.yaml")
+	require.FileExists(t, helmfile, "should be able to find helmfile")
+
+	helmState = &state.HelmState{}
+	err = yaml2s.LoadFile(helmfile, helmState)
+	require.NoError(t, err, "failed to load helmfile %s", helmfile)
+
+	devRepo = ""
+	for _, repo := range helmState.Repositories {
+		if repo.Name == "dev" {
+			devRepo = repo.URL
+			break
+		}
+	}
+	assert.Equal(t, "https://jenkins-x-bdd.github.io/mycharts/", devRepo, "promoted dev helm chart URL")
+
+	pr, _, err = scmClient.PullRequests.Find(ctx, targetFullName, prNumber)
+	require.NoError(t, err, "failed to find repository %s number %d", targetFullName, prNumber)
+	assert.NotNil(t, pr, "nil pr %s for %s", targetFullName, prNumber)
+
+	t.Logf("created PullRequest %s #%d", pr.Link, prNumber)
+	t.Logf("PR title: %s", pr.Title)
+	t.Logf("PR body: %s", pr.Body)
+
+	anotherChangelog, _ := os.ReadFile(po.AddChangelog)
+	assert.Regexp(t, po.ChangelogSeparator+"\n# "+appName+"\n\n"+string(changelog)+"\n"+string(anotherChangelog)+"$", pr.Body)
+
+	// lets assert we have a PipelineActivity...
+	paList, err = po.JXClient.JenkinsV1().PipelineActivities(ns).List(context.TODO(), metav1.ListOptions{})
+	require.NoError(t, err, "failed to load PipelineActivity resources in namespace %s", ns)
+	require.Len(t, paList.Items, 1, "should have a PipelineActivity in namespace %s", ns)
+	pa = paList.Items[0]
+
+	data, err = yaml.Marshal(pa)
 	require.NoError(t, err, "failed to marshal PipelineActivity")
 
 	t.Logf("got PipelineActivity %s\n", string(data))

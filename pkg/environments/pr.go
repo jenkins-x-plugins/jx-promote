@@ -42,6 +42,8 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 		log.Logger().Infof("no changes detected so not creating a Pull Request on %s", termcolor.ColorInfo(gitURL))
 		return nil, nil
 	}
+	changelogPrefix := fmt.Sprintf("\n# %s\n", o.Application)
+	existingChangelog := false
 
 	if existingPR != nil {
 		if existingPR.Source == "" {
@@ -54,6 +56,11 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 			o.BaseBranchName = existingPR.Base.Ref
 			o.BranchName = existingPR.Source
 			log.Logger().Infof("replacing commits of existing Pull Request %s", existingPR.Link)
+		}
+		parts := strings.SplitN(existingPR.Body, o.ChangelogSeparator, 2)
+		if len(parts) == 2 {
+			changelogPrefix = parts[1]
+			existingChangelog = true
 		}
 	}
 	baseBranch := o.BaseBranchName
@@ -108,12 +115,9 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 
 	commitTitle := strings.TrimSpace(o.CommitTitle)
 	commitBody := o.CommitMessage
-	if commitBody == "" {
-		commitBody = o.CommitMessageSuffix
-	} else {
-		commitBody += "\n" + o.CommitMessageSuffix
+	if existingChangelog || o.CommitChangelog != "" {
+		commitBody += "\n" + o.ChangelogSeparator + changelogPrefix + "\n" + o.CommitChangelog
 	}
-
 	commitMessage := fmt.Sprintf("%s\n\n%s", commitTitle, commitBody)
 	_, err = gitclient.AddAndCommitFiles(gitter, dir, strings.TrimSpace(commitMessage))
 	if err != nil {

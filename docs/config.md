@@ -339,18 +339,6 @@ For example if the &lsquo;config-root&rdquo; directory contains a Config Sync gi
 <code>config-root/namespaces/myapps</code> folder. If so set the path to <code>config-root/namespaces/myapps</code></p>
 </td>
 </tr>
-<tr>
-<td>
-<code>namespace</code></br>
-<em>
-string
-</em>
-</td>
-<td>
-<p>Namespace specifies the namespace to deploy applications if using kpt. If specified this value will be used instead
-of the Environment.Spec.Namespace in the Environment CRD</p>
-</td>
-</tr>
 </tbody>
 </table>
 <h3 id="promote.jenkins-x.io/v1alpha1.LineMatcher">LineMatcher
@@ -469,5 +457,5 @@ KptRule
 <hr/>
 <p><em>
 Generated with <code>gen-crd-api-reference-docs</code>
-on git commit <code>88df823</code>.
+on git commit <code>bd71f32</code>.
 </em></p>

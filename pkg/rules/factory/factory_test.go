@@ -1,7 +1,6 @@
 package factory_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,7 +25,7 @@ type TestOptions struct {
 }
 
 func TestRuleFactory(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "")
+	tmpDir, err := os.MkdirTemp("", "")
 	require.NoError(t, err, "could not make a temp dir")
 
 	t.Logf("creating tests at %s", tmpDir)

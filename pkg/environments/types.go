@@ -49,7 +49,8 @@ type EnvironmentPullRequestOptions struct {
 	BranchName             string
 	CommitTitle            string
 	CommitMessage          string
-	CommitMessageSuffix    string
+	CommitChangelog        string
+	ChangelogSeparator     string
 	Namespace              string
 	JXClient               versioned.Interface
 	ScmClient              *scm.Client
@@ -58,6 +59,7 @@ type EnvironmentPullRequestOptions struct {
 	Fork                   bool
 	ReusePullRequest       bool
 	SparseCheckoutPatterns []string
+	Application            string
 }
 
 // A PullRequestFilter defines a filter for finding pull requests

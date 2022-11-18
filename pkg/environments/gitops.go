@@ -2,15 +2,14 @@ package environments
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"sort"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/maps"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/scmhelpers"
-	"github.com/jenkins-x/jx-helpers/v3/pkg/stringhelpers"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/termcolor"
 	"github.com/jenkins-x/jx-logging/v3/pkg/log"
 	"github.com/pkg/errors"
@@ -30,7 +29,7 @@ const (
 // the message as the body for both the commit and the pull request,
 // and the pullRequestInfo for any existing PR that exists to modify the environment that we want to merge these
 // changes into.
-func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequestDetails *scm.PullRequest, autoMerge bool) (*scm.PullRequest, error) {
+func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, labels []string, autoMerge bool) (*scm.PullRequest, error) {
 	scmClient, repoFullName, err := o.GetScmClient(gitURL, o.GitKind)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create ScmClient")
@@ -45,7 +44,7 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 	}
 
 	if prDir == "" {
-		tempDir, err := ioutil.TempDir("", "create-pr")
+		tempDir, err := os.MkdirTemp("", "create-pr")
 		if err != nil {
 			return nil, err
 		}
@@ -108,18 +107,18 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, pullRequest
 	}
 
 	o.Labels = nil
+
 	// lets merge any labels together...
+	labelsSet := make(map[string]string)
 	if autoMerge {
-		o.Labels = append(o.Labels, LabelUpdatebot)
+		labelsSet[LabelUpdatebot] = ""
 	}
-	for _, l := range pullRequestDetails.Labels {
-		if l != nil {
-			label := l.Name
-			if label != "" && stringhelpers.StringArrayIndex(o.Labels, label) < 0 {
-				o.Labels = append(o.Labels, label)
-			}
+	for _, l := range labels {
+		if l != "" {
+			labelsSet[l] = ""
 		}
 	}
+	o.Labels = maps.MapKeys(labelsSet)
 
 	latestSha, err := gitclient.GetLatestCommitSha(o.Gitter, dir)
 	if err != nil {
