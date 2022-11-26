@@ -2,6 +2,7 @@ package promote
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/jenkins-x-plugins/jx-promote/pkg/environments"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/requirements"
@@ -11,7 +12,6 @@ import (
 	"github.com/jenkins-x-plugins/jx-promote/pkg/promoteconfig"
 	"github.com/jenkins-x-plugins/jx-promote/pkg/rules"
 	"github.com/jenkins-x-plugins/jx-promote/pkg/rules/factory"
-	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient/gitconfig"
 	"github.com/pkg/errors"
@@ -26,49 +26,36 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 	app := o.Application
 
 	source := "promote-" + app + "-" + versionName
-	var labels []*scm.Label
+	var labels []string
 
 	for _, env := range envs {
 		envName := env.Key
 		source += "-" + envName
-		labels = append(labels, &scm.Label{
-			Name:        "env/" + envName,
-			Description: envName,
-		})
+		labels = append(labels, "env/"+envName)
 	}
-	labels = append(labels, &scm.Label{
-		Name:        "dependency/" + releaseInfo.FullAppName,
-		Description: releaseInfo.FullAppName,
-	})
+	labels = append(labels, "dependency/"+releaseInfo.FullAppName)
 
 	if o.ReusePullRequest && o.PullRequestFilter == nil {
-		var filterLabels []string
-		for i := range labels {
-			filterLabels = append(filterLabels, labels[i].Name)
-		}
-		o.PullRequestFilter = &environments.PullRequestFilter{Labels: filterLabels}
+		o.PullRequestFilter = &environments.PullRequestFilter{Labels: labels}
 		// Clearing so that it can be set for the correct environment on next call
 		defer func() { o.PullRequestFilter = nil }()
 	}
 
 	comment := fmt.Sprintf("chore: promote %s to version %s", app, versionName) + "\n\nthis commit will trigger a pipeline to [generate the actual kubernetes resources to perform the promotion](https://jenkins-x.io/docs/v3/about/how-it-works/#promotion) which will create a second commit on this Pull Request before it can merge"
-	details := scm.PullRequest{
-		Source: source,
-		Title:  fmt.Sprintf("chore: promote %s to version %s", app, versionName),
-		Body:   comment,
-		Draft:  draftPR,
-		Labels: labels,
-	}
 
 	if draftPR {
-		details.Labels = append(details.Labels, &scm.Label{
-			Name:        "do-not-merge/hold",
-			Description: "do not merge yet",
-		})
+		labels = append(labels, "do-not-merge/hold")
 	}
 
-	o.EnvironmentPullRequestOptions.CommitTitle = details.Title
-	o.EnvironmentPullRequestOptions.CommitMessage = details.Body
+	o.EnvironmentPullRequestOptions.CommitTitle = fmt.Sprintf("chore: promote %s to version %s", app, versionName)
+	o.EnvironmentPullRequestOptions.CommitMessage = comment
+	if o.AddChangelog != "" {
+		changelog, err := os.ReadFile(o.AddChangelog)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read changelog file %s", o.AddChangelog)
+		}
+		o.EnvironmentPullRequestOptions.CommitChangelog = string(changelog)
+	}
 
 	envDir := ""
 	if o.CloneDir != "" {
@@ -150,7 +137,7 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 	if draftPR {
 		autoMerge = false
 	}
-	info, err := o.Create(gitURL, envDir, &details, autoMerge)
+	info, err := o.Create(gitURL, envDir, labels, autoMerge)
 	releaseInfo.PullRequestInfo = info
 	return err
 }
