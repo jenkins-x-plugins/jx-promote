@@ -116,7 +116,7 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 	commitTitle := strings.TrimSpace(o.CommitTitle)
 	commitBody := o.CommitMessage
 	if existingChangelog || o.CommitChangelog != "" {
-		commitBody += "\n" + o.ChangelogSeparator + changelogPrefix + "\n" + o.CommitChangelog
+		commitBody += "\n\n" + o.ChangelogSeparator + changelogPrefix + "\n" + o.CommitChangelog
 	}
 	commitMessage := fmt.Sprintf("%s\n\n%s", commitTitle, commitBody)
 	_, err = gitclient.AddAndCommitFiles(gitter, dir, strings.TrimSpace(commitMessage))
