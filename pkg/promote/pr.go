@@ -33,7 +33,13 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 		source += "-" + envName
 		labels = append(labels, "env/"+envName)
 	}
-	labels = append(labels, "dependency/"+releaseInfo.FullAppName)
+
+	var dependencyLabel = "dependency/" + releaseInfo.FullAppName
+
+	if len(dependencyLabel) > 49 {
+		dependencyLabel = dependencyLabel[:49]
+	}
+	labels = append(labels, dependencyLabel)
 
 	if o.ReusePullRequest && o.PullRequestFilter == nil {
 		o.PullRequestFilter = &environments.PullRequestFilter{Labels: labels}
