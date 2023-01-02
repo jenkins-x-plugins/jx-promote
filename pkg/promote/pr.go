@@ -33,7 +33,13 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 		source += "-" + envName
 		labels = append(labels, "env/"+envName)
 	}
-	labels = append(labels, "dependency/"+releaseInfo.FullAppName)
+
+	var dependencyLabel = "dependency/" + releaseInfo.FullAppName
+
+	if len(dependencyLabel) > 49 {
+		dependencyLabel = dependencyLabel[:49]
+	}
+	labels = append(labels, dependencyLabel)
 
 	if o.ReusePullRequest && o.PullRequestFilter == nil {
 		o.PullRequestFilter = &environments.PullRequestFilter{Labels: labels}
@@ -41,7 +47,7 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 		defer func() { o.PullRequestFilter = nil }()
 	}
 
-	comment := fmt.Sprintf("chore: promote %s to version %s", app, versionName) + "\n\nthis commit will trigger a pipeline to [generate the actual kubernetes resources to perform the promotion](https://jenkins-x.io/docs/v3/about/how-it-works/#promotion) which will create a second commit on this Pull Request before it can merge"
+	comment := "this commit will trigger a pipeline to [generate the actual kubernetes resources to perform the promotion](https://jenkins-x.io/docs/v3/about/how-it-works/#promotion) which will create a second commit on this Pull Request before it can merge"
 
 	if draftPR {
 		labels = append(labels, "do-not-merge/hold")
