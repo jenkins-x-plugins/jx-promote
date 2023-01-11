@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jenkins-x/jx-helpers/v3/pkg/requirements"
+	"golang.org/x/exp/slices"
 
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient/cli"
 
@@ -560,28 +561,21 @@ func (o *Options) PromoteAll(pred func(*jxcore.EnvironmentConfig) bool) error {
 
 	// lets group Auto env promotions together into the same git URL
 	var groups [][]*jxcore.EnvironmentConfig
-	var group []*jxcore.EnvironmentConfig
 	for _, env := range promoteEnvs {
-		if len(group) == 0 {
-			group = append(group, env)
-			continue
+		if !o.NoGroupPullRequest && env.PromotionStrategy == v1.PromotionStrategyTypeAutomatic {
+			// let's see if the env is has the same url as existing automatic group
+			i := slices.IndexFunc(groups,
+				func(group []*jxcore.EnvironmentConfig) bool {
+					return group[0].GitURL == env.GitURL && group[0].PromotionStrategy == v1.PromotionStrategyTypeAutomatic
+				})
+			if i >= 0 {
+				groups[i] = append(groups[i], env)
+				continue
+			}
 		}
-
-		sourceURL := requirements.EnvironmentGitURL(o.DevEnvContext.Requirements, env.Key)
-
-		// lets see if the env is the same
-		if o.NoGroupPullRequest || env.PromotionStrategy != v1.PromotionStrategyTypeAutomatic || sourceURL != group[0].GitURL {
-			// lets use a different group...
-			groups = append(groups, group)
-			group = []*jxcore.EnvironmentConfig{env}
-		} else {
-			group = append(group, env)
-		}
+		groups = append(groups, []*jxcore.EnvironmentConfig{env})
 	}
-	if len(group) > 0 {
-		groups = append(groups, group)
-	}
-	for _, group = range groups {
+	for _, group := range groups {
 		firstEnv := group[0]
 
 		// lets clear the branch name so that we create a new branch for each PR...

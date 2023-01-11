@@ -441,7 +441,7 @@ func TestPromoteHelmfileAllAutomaticsInOneOrMorePRs(t *testing.T) {
 		expectedPullRequestCount map[string]int
 	}{
 		{
-			name:               "separate-prs-for-urls",
+			name:               "group-prs-for-urls",
 			noGroupPullRequest: false,
 			envSourceURL:       "https://github.com/jx3-gitops-repositories/jx3-gke-vault",
 			expectedPullRequestCount: map[string]int{
@@ -457,10 +457,19 @@ func TestPromoteHelmfileAllAutomaticsInOneOrMorePRs(t *testing.T) {
 			},
 		},
 		{
+			name:               "separate-prs-for-urls",
+			noGroupPullRequest: true,
+			envSourceURL:       "https://github.com/jx3-gitops-repositories/jx3-gke-vault",
+			expectedPullRequestCount: map[string]int{
+				targetFullName:                          1,
+				"jx3-gitops-repositories/jx3-gke-vault": 2,
+			},
+		},
+		{
 			name:               "separate-prs",
 			noGroupPullRequest: true,
 			expectedPullRequestCount: map[string]int{
-				targetFullName: 2,
+				targetFullName: 3,
 			},
 		},
 	}
@@ -519,6 +528,12 @@ func TestPromoteHelmfileAllAutomaticsInOneOrMorePRs(t *testing.T) {
 					Namespace:         "jx",
 					PromotionStrategy: v1.PromotionStrategyTypeNever,
 					GitURL:            devGitURL,
+				},
+				{
+					Key:               "anotherenv",
+					Namespace:         "jx-production2",
+					PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
+					GitURL:            tc.envSourceURL,
 				},
 				{
 					Key:               "staging",
