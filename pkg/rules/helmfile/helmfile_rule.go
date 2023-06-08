@@ -239,6 +239,9 @@ func defaultPrefix(appsConfig *state.HelmState, envctx *envctx.EnvironmentContex
 	}
 	found := false
 	oci := false
+	//  we need to remove the oci:// prefix (in case it exists), because helmfile doesn't support the scheme in the repo url for oci based repositories.
+	//  for these repositories, only url without a scheme and the oci: true flag is needed.
+	d.Repository = strings.TrimPrefix(d.Repository, "oci://")
 	if envctx.Requirements != nil {
 		oci = envctx.Requirements.Cluster.ChartKind == jxcore.ChartRepositoryTypeOCI
 	}
