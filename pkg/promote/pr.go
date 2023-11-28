@@ -47,7 +47,7 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 		defer func() { o.PullRequestFilter = nil }()
 	}
 
-	comment := "this commit will trigger a pipeline to [generate the actual kubernetes resources to perform the promotion](https://jenkins-x.io/docs/v3/about/how-it-works/#promotion) which will create a second commit on this Pull Request before it can merge"
+	comment := "this commit will trigger a pipeline to [generate the actual kubernetes resources to perform the promotion](https://jenkins-x.io/v3/about/how-it-works/#promotion) which will create a second commit on this Pull Request before it can merge"
 
 	if draftPR {
 		labels = append(labels, "do-not-merge/hold")
