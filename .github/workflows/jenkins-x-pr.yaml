@@ -6,13 +6,6 @@ jobs:
       uses: actions/checkout@v2
     - env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      name: jx-variables
-      uses: docker://ghcr.io/jenkins-x/jx-boot:3.10.150
-      with:
-        args: gitops variables
-        entrypoint: jx
-    - env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       name: build-make-linux
       uses: docker://golang:1.22.3
       with:
