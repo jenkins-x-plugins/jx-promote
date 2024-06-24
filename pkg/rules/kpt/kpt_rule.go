@@ -9,24 +9,23 @@ import (
 	"github.com/jenkins-x/jx-helpers/v3/pkg/cmdrunner"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
 	"github.com/jenkins-x/jx-logging/v3/pkg/log"
-	"github.com/pkg/errors"
 )
 
 // KptRule performs kpt upgrades
 func Rule(r *rules.PromoteRule) error {
 	config := r.Config
 	if config.Spec.KptRule == nil {
-		return errors.Errorf("no appsRule configured")
+		return fmt.Errorf("no appsRule configured")
 	}
 	rule := config.Spec.KptRule
 
 	gitURL := r.GitURL
 	if gitURL == "" {
-		return errors.Errorf("no GitURL for the app so cannot promote via kpt")
+		return fmt.Errorf("no GitURL for the app so cannot promote via kpt")
 	}
 	app := r.AppName
 	if app == "" {
-		return errors.Errorf("no AppName so cannot promote via kpt")
+		return fmt.Errorf("no AppName so cannot promote via kpt")
 	}
 	version := r.Version
 
@@ -41,7 +40,7 @@ func Rule(r *rules.PromoteRule) error {
 	// if the dir exists lets upgrade otherwise lets add it
 	exists, err := files.DirExists(appDir)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check if the app dir exists %s", appDir)
+		return fmt.Errorf("failed to check if the app dir exists %s: %w", appDir, err)
 	}
 
 	if version != "" && !strings.HasPrefix(version, "v") {
@@ -64,11 +63,11 @@ func Rule(r *rules.PromoteRule) error {
 		log.Logger().Infof("running command: %s", c.String())
 		_, err = r.CommandRunner(c)
 		if err != nil {
-			return errors.Wrapf(err, "failed to update kpt app %s", app)
+			return fmt.Errorf("failed to update kpt app %s: %w", app, err)
 		}
 	} else {
 		if gitURL == "" {
-			return errors.Errorf("no gitURL")
+			return fmt.Errorf("no gitURL")
 		}
 		gitURL = strings.TrimSuffix(gitURL, "/")
 		if !strings.HasSuffix(gitURL, ".git") {
@@ -85,7 +84,7 @@ func Rule(r *rules.PromoteRule) error {
 		log.Logger().Infof("running command: %s", c.String())
 		_, err = r.CommandRunner(c)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get the app %s via kpt", app)
+			return fmt.Errorf("failed to get the app %s via kpt: %w", app, err)
 		}
 	}
 	return nil

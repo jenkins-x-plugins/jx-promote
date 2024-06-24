@@ -14,7 +14,6 @@ import (
 	"github.com/jenkins-x-plugins/jx-promote/pkg/rules/factory"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient/gitconfig"
-	"github.com/pkg/errors"
 )
 
 func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releaseInfo *ReleaseInfo, draftPR bool) error {
@@ -58,7 +57,7 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 	if o.AddChangelog != "" {
 		changelog, err := os.ReadFile(o.AddChangelog)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read changelog file %s", o.AddChangelog)
+			return fmt.Errorf("failed to read changelog file %s: %w", o.AddChangelog, err)
 		}
 		o.EnvironmentPullRequestOptions.CommitChangelog = string(changelog)
 	}
@@ -75,7 +74,7 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 			promoteNS := EnvironmentNamespace(env)
 			promoteConfig, _, err := promoteconfig.Discover(dir, promoteNS)
 			if err != nil {
-				return errors.Wrapf(err, "failed to discover the PromoteConfig in dir %s", dir)
+				return fmt.Errorf("failed to discover the PromoteConfig in dir %s: %w", dir, err)
 			}
 
 			r := &rules.PromoteRule{
@@ -98,14 +97,14 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 				if o.AppGitURL == "" {
 					_, gitConf, err := gitclient.FindGitConfigDir("")
 					if err != nil {
-						return errors.Wrapf(err, "failed to find git config dir")
+						return fmt.Errorf("failed to find git config dir: %w", err)
 					}
 					o.AppGitURL, err = gitconfig.DiscoverUpstreamGitURL(gitConf, true)
 					if err != nil {
-						return errors.Wrapf(err, "failed to discover application git URL")
+						return fmt.Errorf("failed to discover application git URL: %w", err)
 					}
 					if o.AppGitURL == "" {
-						return errors.Errorf("could not to discover application git URL")
+						return fmt.Errorf("could not to discover application git URL")
 					}
 				}
 				r.TemplateContext.GitURL = o.AppGitURL
@@ -113,11 +112,11 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 
 			fn := factory.NewFunction(r)
 			if fn == nil {
-				return errors.Errorf("could not create rule function ")
+				return fmt.Errorf("could not create rule function ")
 			}
 			err = fn(r)
 			if err != nil {
-				return errors.Wrapf(err, "failed to promote to %s", env.Key)
+				return fmt.Errorf("failed to promote to %s: %w", env.Key, err)
 			}
 		}
 		return nil
@@ -130,13 +129,13 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 	gitURL := requirements.EnvironmentGitURL(o.DevEnvContext.Requirements, env.Key)
 	if gitURL == "" {
 		if env.RemoteCluster {
-			return errors.Errorf("no git URL for remote cluster %s", env.Key)
+			return fmt.Errorf("no git URL for remote cluster %s", env.Key)
 		}
 
 		// lets default to the git repository for the dev environment for local clusters
 		gitURL = requirements.EnvironmentGitURL(o.DevEnvContext.Requirements, "dev")
 		if gitURL == "" {
-			return errors.Errorf("no git URL for dev environment")
+			return fmt.Errorf("no git URL for dev environment")
 		}
 	}
 	autoMerge := o.AutoMerge

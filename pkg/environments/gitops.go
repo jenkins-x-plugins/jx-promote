@@ -2,6 +2,7 @@ package environments
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sort"
 
@@ -12,7 +13,7 @@ import (
 	"github.com/jenkins-x/jx-helpers/v3/pkg/scmhelpers"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/termcolor"
 	"github.com/jenkins-x/jx-logging/v3/pkg/log"
-	"github.com/pkg/errors"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,7 +33,7 @@ const (
 func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, labels []string, autoMerge bool) (*scm.PullRequest, error) {
 	scmClient, repoFullName, err := o.GetScmClient(gitURL, o.GitKind)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create ScmClient")
+		return nil, fmt.Errorf("failed to create ScmClient: %w", err)
 	}
 	if scmClient == nil {
 		return nil, nil
@@ -40,7 +41,7 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, labels []st
 
 	existingPr, err := o.FindExistingPullRequest(scmClient, repoFullName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find existing PullRequest")
+		return nil, fmt.Errorf("failed to find existing PullRequest: %w", err)
 	}
 
 	if prDir == "" {
@@ -55,14 +56,14 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, labels []st
 	if o.Fork {
 		cloneGitURL, err = o.EnsureForked(scmClient, repoFullName)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to ensure repository is forked %s", gitURL)
+			return nil, fmt.Errorf("failed to ensure repository is forked %s: %w", gitURL, err)
 		}
 	}
 	cloneGitURLSafe := cloneGitURL
 	if o.ScmClientFactory.GitToken != "" && o.ScmClientFactory.GitUsername != "" {
 		cloneGitURL, err = o.ScmClientFactory.CreateAuthenticatedURL(cloneGitURL)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create authenticated git URL to clone with for private repositories")
+			return nil, fmt.Errorf("failed to create authenticated git URL to clone with for private repositories: %w", err)
 		}
 	}
 
@@ -75,18 +76,18 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, labels []st
 			log.Logger().Infof("checking out remote base branch %s from %s", o.BaseBranchName, gitURL)
 			err = gitclient.CheckoutRemoteBranch(o.Gitter, dir, o.BaseBranchName)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to checkout remote branch %s from %s", o.BaseBranchName, gitURL)
+				return nil, fmt.Errorf("failed to checkout remote branch %s from %s: %w", o.BaseBranchName, gitURL, err)
 			}
 		}
 	}
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to clone git URL %s", cloneGitURLSafe)
+		return nil, fmt.Errorf("failed to clone git URL %s: %w", cloneGitURLSafe, err)
 	}
 
 	if o.Fork {
 		err = o.rebaseForkFromUpstream(dir, gitURL)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to rebase forked repository")
+			return nil, fmt.Errorf("failed to rebase forked repository: %w", err)
 		}
 	}
 
@@ -95,15 +96,15 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, labels []st
 
 	currentSha, err := gitclient.GetLatestCommitSha(o.Gitter, dir)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get current commit sha")
+		return nil, fmt.Errorf("could not get current commit sha: %w", err)
 	}
 
 	if o.Function == nil {
-		return nil, errors.Errorf("no change function configured")
+		return nil, fmt.Errorf("no change function configured")
 	}
 	err = o.Function()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to invoke change function in dir %s", dir)
+		return nil, fmt.Errorf("failed to invoke change function in dir %s: %w", dir, err)
 	}
 
 	o.Labels = nil
@@ -122,14 +123,14 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, labels []st
 
 	latestSha, err := gitclient.GetLatestCommitSha(o.Gitter, dir)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get current latest commit sha")
+		return nil, fmt.Errorf("could not get current latest commit sha: %w", err)
 	}
 
 	doneCommit := true
 	if latestSha == currentSha {
 		changed, err := gitclient.HasChanges(o.Gitter, dir)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to detect changes in dir %s", dir)
+			return nil, fmt.Errorf("failed to detect changes in dir %s: %w", dir, err)
 		}
 		if !changed {
 			// lets avoid failing to create the PR as we really have made changes
@@ -139,7 +140,7 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, labels []st
 
 	prInfo, err := o.CreatePullRequest(scmClient, gitURL, repoFullName, dir, doneCommit, existingPr)
 	if err != nil {
-		return prInfo, errors.Wrapf(err, "failed to create pull request in dir %s", dir)
+		return prInfo, fmt.Errorf("failed to create pull request in dir %s: %w", dir, err)
 	}
 	return prInfo, nil
 }
@@ -160,7 +161,7 @@ func (o *EnvironmentPullRequestOptions) FindExistingPullRequest(scmClient *scm.C
 		return nil, nil
 	}
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error listing PRs")
+		return nil, fmt.Errorf("Error listing PRs: %w", err)
 	}
 	if log.Logger().Logger.IsLevelEnabled(logrus.TraceLevel) {
 		log.Logger().Tracef("Found PRs: %s", spew.Sdump(prs))

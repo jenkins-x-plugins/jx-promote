@@ -8,20 +8,19 @@ import (
 
 	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
 
+	"github.com/helmfile/helmfile/pkg/state"
 	"github.com/jenkins-x-plugins/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x-plugins/jx-promote/pkg/envctx"
 	"github.com/jenkins-x-plugins/jx-promote/pkg/rules"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/yaml2s"
-	"github.com/pkg/errors"
-	"github.com/roboll/helmfile/pkg/state"
 )
 
 // HelmfileRule uses a jx-apps.yml file
 func Rule(r *rules.PromoteRule) error {
 	config := r.Config
 	if config.Spec.HelmfileRule == nil {
-		return errors.Errorf("no helmfileRule configured")
+		return fmt.Errorf("no helmfileRule configured")
 	}
 	rule := config.Spec.HelmfileRule
 	if rule.Path == "" {
@@ -30,7 +29,7 @@ func Rule(r *rules.PromoteRule) error {
 
 	err := modifyHelmfile(r, rule, filepath.Join(r.Dir, rule.Path), rule.Namespace)
 	if err != nil {
-		return errors.Wrapf(err, "failed to modify chart files in dir %s", r.Dir)
+		return fmt.Errorf("failed to modify chart files in dir %s: %w", r.Dir, err)
 	}
 	return nil
 }
@@ -39,14 +38,14 @@ func Rule(r *rules.PromoteRule) error {
 func modifyHelmfile(r *rules.PromoteRule, rule *v1alpha1.HelmfileRule, file, promoteNs string) error {
 	exists, err := files.FileExists(file)
 	if err != nil {
-		return errors.Wrapf(err, "failed to detect if file exists %s", file)
+		return fmt.Errorf("failed to detect if file exists %s: %w", file, err)
 	}
 
 	st := &state.HelmState{}
 	if exists {
 		err = yaml2s.LoadFile(file, st)
 		if err != nil {
-			return errors.Wrapf(err, "failed to load file %s", file)
+			return fmt.Errorf("failed to load file %s: %w", file, err)
 		}
 	}
 
@@ -60,12 +59,12 @@ func modifyHelmfile(r *rules.PromoteRule, rule *v1alpha1.HelmfileRule, file, pro
 	dir := filepath.Dir(file)
 	err = os.MkdirAll(dir, files.DefaultDirWritePermissions)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create directory for helmfile %s", dir)
+		return fmt.Errorf("failed to create directory for helmfile %s: %w", dir, err)
 	}
 
 	err = yaml2s.SaveFile(st, file)
 	if err != nil {
-		return errors.Wrapf(err, "failed to save file %s", file)
+		return fmt.Errorf("failed to save file %s: %w", file, err)
 	}
 
 	if !nestedHelmfile {
@@ -77,7 +76,7 @@ func modifyHelmfile(r *rules.PromoteRule, rule *v1alpha1.HelmfileRule, file, pro
 	rootState := &state.HelmState{}
 	err = yaml2s.LoadFile(rootFile, rootState)
 	if err != nil {
-		return errors.Wrapf(err, "failed to load file %s", rootFile)
+		return fmt.Errorf("failed to load file %s: %w", rootFile, err)
 	}
 	nestedPath := rule.Path
 	for _, s := range rootState.Helmfiles {
@@ -92,14 +91,14 @@ func modifyHelmfile(r *rules.PromoteRule, rule *v1alpha1.HelmfileRule, file, pro
 	})
 	err = yaml2s.SaveFile(rootState, rootFile)
 	if err != nil {
-		return errors.Wrapf(err, "failed to save root helmfile after adding nested helmfile to %s", rootFile)
+		return fmt.Errorf("failed to save root helmfile after adding nested helmfile to %s: %w", rootFile, err)
 	}
 	return nil
 }
 
 func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promoteNs string, nestedHelmfile bool) error {
 	if r.DevEnvContext == nil {
-		return errors.Errorf("no devEnvContext")
+		return fmt.Errorf("no devEnvContext")
 	}
 	app := r.AppName
 	version := r.Version
@@ -108,7 +107,7 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 	}
 	details, err := r.DevEnvContext.ChartDetails(app, r.HelmRepositoryURL)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get chart details for %s repo %s", app, r.HelmRepositoryURL)
+		return fmt.Errorf("failed to get chart details for %s repo %s: %w", app, r.HelmRepositoryURL, err)
 	}
 	defaultPrefix(helmfile, r.DevEnvContext, details, "dev")
 

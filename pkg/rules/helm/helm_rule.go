@@ -1,19 +1,19 @@
 package helm
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/jenkins-x-plugins/jx-promote/pkg/rules"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/helmer"
-	"github.com/pkg/errors"
 )
 
 // HelmRule uses a helm rule to create promote pull requests
 func Rule(r *rules.PromoteRule) error {
 	config := r.Config
 	if config.Spec.HelmRule == nil {
-		return errors.Errorf("no helmRule configured")
+		return fmt.Errorf("no helmRule configured")
 	}
 	rule := config.Spec.HelmRule
 
@@ -24,7 +24,7 @@ func Rule(r *rules.PromoteRule) error {
 
 	err := modifyChartFiles(r, dir)
 	if err != nil {
-		return errors.Wrapf(err, "failed to modify chart files in dir %s", dir)
+		return fmt.Errorf("failed to modify chart files in dir %s: %w", dir, err)
 	}
 	return nil
 }
@@ -38,7 +38,7 @@ func modifyChartFiles(r *rules.PromoteRule, dir string) error {
 
 	exists, err := files.FileExists(requirementsFile)
 	if err != nil {
-		return errors.Wrapf(err, "failed to detect file %s", requirementsFile)
+		return fmt.Errorf("failed to detect file %s: %w", requirementsFile, err)
 	}
 
 	requirements := &helmer.Requirements{}

@@ -2,6 +2,7 @@ package promote
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -37,8 +38,6 @@ import (
 
 	"github.com/jenkins-x/jx-helpers/v3/pkg/cobras/helper"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/kube/naming"
-
-	"github.com/pkg/errors"
 
 	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
 	v1 "github.com/jenkins-x/jx-api/v4/pkg/apis/jenkins.io/v1"
@@ -161,7 +160,7 @@ func NewCmdPromote() (*cobra.Command, *Options) {
 		Short:   "Promotes a version of an application to an Environment",
 		Long:    promoteLong,
 		Example: promoteExample,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, args []string) {
 			opts.Args = args
 			err := opts.Run()
 			helper.CheckErr(err)
@@ -230,7 +229,7 @@ type searchForChartFn func(filter string) (string, error)
 func (o *Options) setApplicationNameFromFilter(searchForChart searchForChartFn) error {
 	app, err := searchForChart(o.Filter)
 	if err != nil {
-		return errors.Wrap(err, "searching app name in chart failed")
+		return fmt.Errorf("searching app name in chart failed: %w", err)
 	}
 
 	o.Application = app
@@ -243,7 +242,7 @@ type discoverAppNameFn func() (string, error)
 func (o *Options) setApplicationNameFromDiscoveredAppName(discoverAppName discoverAppNameFn) error {
 	app, err := discoverAppName()
 	if err != nil {
-		return errors.Wrap(err, "discovering app name failed")
+		return fmt.Errorf("discovering app name failed: %w", err)
 	}
 
 	if !o.BatchMode {
@@ -253,7 +252,7 @@ func (o *Options) setApplicationNameFromDiscoveredAppName(discoverAppName discov
 
 		continueWithAppName, err := o.Input.Confirm(question, true, "please confirm you wish to promote this app")
 		if err != nil {
-			return errors.Wrapf(err, "failed to confirm promotion")
+			return fmt.Errorf("failed to confirm promotion: %w", err)
 		}
 
 		if !continueWithAppName {
@@ -271,7 +270,7 @@ type interactiveFn func() (string, error)
 func (o *Options) setApplicationNameFromInteractive(interactive interactiveFn) error {
 	app, err := interactive()
 	if err != nil {
-		return errors.Wrap(err, "choosing app name from interactive window failed")
+		return fmt.Errorf("choosing app name from interactive window failed: %w", err)
 	}
 
 	o.Application = app
@@ -308,11 +307,11 @@ func (o *Options) Validate() error {
 	var err error
 	o.KubeClient, o.Namespace, err = kube.LazyCreateKubeClientAndNamespace(o.KubeClient, o.Namespace)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create the kube client")
+		return fmt.Errorf("failed to create the kube client: %w", err)
 	}
 	o.JXClient, err = jxclient.LazyCreateJXClient(o.JXClient)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create the jx client")
+		return fmt.Errorf("failed to create the jx client: %w", err)
 	}
 	if o.VersionFile == "" {
 		o.VersionFile = filepath.Join(o.Dir, "VERSION")
@@ -327,7 +326,7 @@ func (o *Options) Validate() error {
 func (o *Options) Run() error {
 	err := o.Validate()
 	if err != nil {
-		return errors.Wrapf(err, "failed to validate options")
+		return fmt.Errorf("failed to validate options: %w", err)
 	}
 
 	// TODO move to validate
@@ -339,12 +338,12 @@ func (o *Options) Run() error {
 	if o.Version == "" {
 		exists, err := files.FileExists(o.VersionFile)
 		if err != nil {
-			return errors.Wrapf(err, "failed to check for file %s", o.VersionFile)
+			return fmt.Errorf("failed to check for file %s: %w", o.VersionFile, err)
 		}
 		if exists {
 			data, err := os.ReadFile(o.VersionFile)
 			if err != nil {
-				return errors.Wrapf(err, "failed to read version file %s", o.VersionFile)
+				return fmt.Errorf("failed to read version file %s: %w", o.VersionFile, err)
 			}
 			o.Version = strings.TrimSpace(string(data))
 		}
@@ -362,23 +361,23 @@ func (o *Options) Run() error {
 		if o.Interactive {
 			versions, err := o.getAllVersions(o.Application)
 			if err != nil {
-				return errors.Wrap(err, "failed to get app versions")
+				return fmt.Errorf("failed to get app versions: %w", err)
 			}
 			o.Version, err = o.Input.PickNameWithDefault(versions, "Pick version:", "", "please select a version")
 			if err != nil {
-				return errors.Wrapf(err, "failed to pick a version")
+				return fmt.Errorf("failed to pick a version: %w", err)
 			}
 		} else {
 			o.Version, err = o.findLatestVersion(o.Application)
 			if err != nil {
-				return errors.Wrapf(err, "failed to find latest version of app %s", o.Application)
+				return fmt.Errorf("failed to find latest version of app %s: %w", o.Application, err)
 			}
 		}
 	}
 
 	ns := o.Namespace
 	if ns == "" {
-		return errors.Errorf("no namespace defined")
+		return fmt.Errorf("no namespace defined")
 	}
 	jxClient := o.JXClient
 	if o.GitClient == nil {
@@ -387,20 +386,20 @@ func (o *Options) Run() error {
 
 	err = o.DevEnvContext.LazyLoad(o.GitClient, o.JXClient, o.Namespace, o.Git(), o.Dir)
 	if err != nil {
-		return errors.Wrap(err, "failed to lazy load the EnvironmentContext")
+		return fmt.Errorf("failed to lazy load the EnvironmentContext: %w", err)
 	}
 
 	if kube.IsInCluster() && !o.DisableGitConfig {
 		err = o.InitGitConfigAndUser()
 		if err != nil {
-			return errors.Wrapf(err, "failed to init git")
+			return fmt.Errorf("failed to init git: %w", err)
 		}
 	}
 
 	if o.HelmRepositoryURL == "" {
 		o.HelmRepositoryURL, err = o.ResolveChartRepositoryURL()
 		if err != nil {
-			return errors.Wrapf(err, "failed to resolve helm repository URL")
+			return fmt.Errorf("failed to resolve helm repository URL: %w", err)
 		}
 	}
 	if o.Interactive || !(len(o.Environments) != 0 || o.All || o.AllAutomatic || o.BatchMode) {
@@ -414,7 +413,7 @@ func (o *Options) Run() error {
 		}
 		o.Environments, err = o.Input.SelectNames(names, "Pick environment(s):", o.All, "please select one or many environments")
 		if err != nil {
-			return errors.Wrapf(err, "failed to pick an Environment name")
+			return fmt.Errorf("failed to pick an Environment name: %w", err)
 		}
 	}
 
@@ -503,7 +502,7 @@ func (o *Options) FindHelmChartInDir(dir string) (string, error) {
 		var err error
 		dir, err = os.Getwd()
 		if err != nil {
-			return "", errors.Wrap(err, "failed to get the current working directory")
+			return "", fmt.Errorf("failed to get the current working directory: %w", err)
 		}
 	}
 	h := o.Helm()
@@ -658,7 +657,7 @@ func (o *Options) Promote(envs []*jxcore.EnvironmentConfig, warnIfAuto, noPoll b
 			log.Logger().Infof("%s", termcolor.ColorWarning(fmt.Sprintf("WARNING: The Environment %s is setup to promote automatically as part of the CI/CD Pipelines.\n", env.Key)))
 			flag, err := o.Input.Confirm("Do you wish to promote anyway? :", false, "usually we do not manually promote to Auto promotion environments")
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to confirm promotion")
+				return nil, fmt.Errorf("failed to confirm promotion: %w", err)
 			}
 			if !flag {
 				return releaseInfo, nil
@@ -670,7 +669,7 @@ func (o *Options) Promote(envs []*jxcore.EnvironmentConfig, warnIfAuto, noPoll b
 		promoteKey := o.CreatePromoteKey(env)
 		if env != nil {
 			if !envIsPermanent(env) {
-				return nil, errors.Errorf("cannot promote to Environment which is not a permanent Environment")
+				return nil, fmt.Errorf("cannot promote to Environment which is not a permanent Environment")
 			}
 			o.ReusePullRequest = env.ReusePullRequest
 
@@ -714,7 +713,7 @@ func (o *Options) Promote(envs []*jxcore.EnvironmentConfig, warnIfAuto, noPoll b
 			}
 		}
 	}
-	return nil, errors.Errorf("no source repository URL available on  environment %s", o.Environments)
+	return nil, fmt.Errorf("no source repository URL available on  environment %s", o.Environments)
 }
 
 // ResolveChartRepositoryURL resolves the current chart repository URL so we can pass it into a remote Environments's
@@ -726,7 +725,7 @@ func (o *Options) ResolveChartRepositoryURL() (string, error) {
 			var err error
 			chartRepo, err = ConvertToGitHubPagesURL(chartRepo)
 			if err != nil {
-				return "", errors.Wrapf(err, "failed to convert %s to github pages URL", chartRepo)
+				return "", fmt.Errorf("failed to convert %s to github pages URL: %w", chartRepo, err)
 			}
 			return chartRepo, nil
 		}
@@ -871,16 +870,16 @@ func (o *Options) waitForGitOpsPullRequest(env *jxcore.EnvironmentConfig, releas
 	logNoMergeCommitSha := false
 	jxClient := o.JXClient
 	if jxClient == nil {
-		return errors.Errorf("no jx client")
+		return fmt.Errorf("no jx client")
 	}
 	kubeClient := o.KubeClient
 	if kubeClient == nil {
-		return errors.Errorf("no kube client")
+		return fmt.Errorf("no kube client")
 	}
 
 	scmClient := o.ScmClient
 	if scmClient == nil {
-		return errors.Errorf("no ScmClient")
+		return fmt.Errorf("no ScmClient")
 	}
 
 	ctx := context.Background()
@@ -891,7 +890,7 @@ func (o *Options) waitForGitOpsPullRequest(env *jxcore.EnvironmentConfig, releas
 		for {
 			pr, _, err := scmClient.PullRequests.Find(ctx, fullName, prNumber)
 			if err != nil {
-				return errors.Wrapf(err, "failed to find PR %s %d", fullName, prNumber)
+				return fmt.Errorf("failed to find PR %s %d: %w", fullName, prNumber, err)
 			}
 			if err != nil {
 				log.Logger().Warnf("failed to find PR %s %d: %s", fullName, prNumber, err.Error())
@@ -1024,7 +1023,7 @@ func StateIsPending(status *scm.Status) bool {
 func (o *Options) PullRequestLastCommitStatus(pr *scm.PullRequest) (*scm.Status, error) {
 	scmClient := o.ScmClient
 	if scmClient == nil {
-		return nil, errors.Errorf("no ScmClient")
+		return nil, fmt.Errorf("no ScmClient")
 	}
 
 	ctx := context.Background()
@@ -1036,10 +1035,10 @@ func (o *Options) PullRequestLastCommitStatus(pr *scm.PullRequest) (*scm.Status,
 	// lets try merge if the status is good
 	statuses, _, err := scmClient.Repositories.ListStatus(ctx, fullName, prLastCommitSha, &scm.ListOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to query repository %s for PR last commit status of %s", fullName, prLastCommitSha)
+		return nil, fmt.Errorf("failed to query repository %s for PR last commit status of %s: %w", fullName, prLastCommitSha, err)
 	}
 	if len(statuses) == 0 {
-		return nil, errors.Errorf("no commit statuses returned for repository %s for PR last commit status of %s", fullName, prLastCommitSha)
+		return nil, fmt.Errorf("no commit statuses returned for repository %s for PR last commit status of %s", fullName, prLastCommitSha)
 	}
 	// TODO how to find the last status - assume the first?
 	return statuses[0], nil
@@ -1269,7 +1268,7 @@ func (o *Options) GetLatestPipelineBuild(pipeline string) (string, string, error
 	kubeClient := o.KubeClient
 	devEnv, err := jxenv.GetEnrichedDevEnvironment(kubeClient, jxClient, ns)
 	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to find dev env")
+		return "", "", fmt.Errorf("failed to find dev env: %w", err)
 	}
 	webhookEngine := devEnv.Spec.WebHookEngine
 	if webhookEngine == v1.WebHookEngineLighthouse {
@@ -1459,7 +1458,7 @@ func (o *Options) InitGitConfigAndUser() error {
 	}
 	err := so.Run()
 	if err != nil {
-		return errors.Wrapf(err, "failed to setup git config")
+		return fmt.Errorf("failed to setup git config: %w", err)
 	}
 	return nil
 
@@ -1507,11 +1506,11 @@ func (o *Options) GetEnvChartValues(targetNS string, env *jxcore.EnvironmentConf
 func ConvertToGitHubPagesURL(repo string) (string, error) {
 	gitInfo, err := giturl.ParseGitURL(repo)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse git repository URL %s", repo)
+		return "", fmt.Errorf("failed to parse git repository URL %s: %w", repo, err)
 	}
 
 	if !gitInfo.IsGitHub() {
-		return "", errors.Errorf("could not create github pages URL for URL which is not github based %s", repo)
+		return "", fmt.Errorf("could not create github pages URL for URL which is not github based %s", repo)
 	}
 	return fmt.Sprintf("https://%s.github.io/%s/", gitInfo.Organisation, gitInfo.Name), nil
 }

@@ -1,6 +1,7 @@
 package file
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -12,39 +13,38 @@ import (
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/termcolor"
 	"github.com/jenkins-x/jx-logging/v3/pkg/log"
-	"github.com/pkg/errors"
 )
 
 // FileRule uses a file rule to create promote pull requests
 func Rule(r *rules.PromoteRule) error {
 	config := r.Config
 	if config.Spec.FileRule == nil {
-		return errors.Errorf("no fileRule configured")
+		return fmt.Errorf("no fileRule configured")
 	}
 	rule := config.Spec.FileRule
 	path := rule.Path
 	if path == "" {
-		return errors.Errorf("no path property in FileRule %#v", rule)
+		return fmt.Errorf("no path property in FileRule %#v", rule)
 	}
 	path = filepath.Join(r.Dir, path)
 	exists, err := files.FileExists(path)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check if file exists %s", path)
+		return fmt.Errorf("failed to check if file exists %s: %w", path, err)
 	}
 	if !exists {
-		return errors.Errorf("file does not exist: %s", path)
+		return fmt.Errorf("file does not exist: %s", path)
 	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return errors.Wrapf(err, "failed to read file %s", path)
+		return fmt.Errorf("failed to read file %s: %w", path, err)
 	}
 
 	lines := strings.Split(string(data), "\n")
 
 	commandLine, err := evaluateTemplate(r, rule.CommandTemplate, rule.LinePrefix)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create Makefile statement")
+		return fmt.Errorf("failed to create Makefile statement: %w", err)
 	}
 
 	updated := false
@@ -53,16 +53,16 @@ func Rule(r *rules.PromoteRule) error {
 		lineMatcher := v1alpha1.LineMatcher{}
 		lineMatcher.Prefix, err = evaluateTemplate(r, updateTemplate.Prefix, "")
 		if err != nil {
-			return errors.Wrapf(err, "failed to evaluate updateTemplate.prefix")
+			return fmt.Errorf("failed to evaluate updateTemplate.prefix: %w", err)
 		}
 		lineMatcher.Regex, err = evaluateTemplate(r, updateTemplate.Regex, "")
 		if err != nil {
-			return errors.Wrapf(err, "failed to evaluate updateTemplate.regex")
+			return fmt.Errorf("failed to evaluate updateTemplate.regex: %w", err)
 		}
 
 		m, err := createMatcher(rule, lineMatcher)
 		if err != nil {
-			return errors.Wrapf(err, "failed to create line matcher for updateTemplate")
+			return fmt.Errorf("failed to create line matcher for updateTemplate: %w", err)
 		}
 
 		for i, line := range lines {
@@ -78,7 +78,7 @@ func Rule(r *rules.PromoteRule) error {
 		for _, insertAfter := range rule.InsertAfter {
 			m, err := createMatcher(rule, insertAfter)
 			if err != nil {
-				return errors.Wrapf(err, "failed to create line matcher for insertAfter")
+				return fmt.Errorf("failed to create line matcher for insertAfter: %w", err)
 			}
 			for i, line := range lines {
 				if m(line) {
@@ -101,7 +101,7 @@ func Rule(r *rules.PromoteRule) error {
 	data = []byte(strings.Join(lines, "\n"))
 	err = os.WriteFile(path, data, files.DefaultFileWritePermissions)
 	if err != nil {
-		return errors.Wrapf(err, "failed to write file %s", path)
+		return fmt.Errorf("failed to write file %s: %w", path, err)
 	}
 	log.Logger().Infof("modified file %s", termcolor.ColorInfo(path))
 	return nil
@@ -136,13 +136,13 @@ func createMatcher(rule *v1alpha1.FileRule, lineMatcher v1alpha1.LineMatcher) (f
 	if regText != "" {
 		r, err := regexp.Compile(regText)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse line match regex: %s", regText)
+			return nil, fmt.Errorf("failed to parse line match regex: %s: %w", regText, err)
 		}
 		return func(line string) bool {
 			return r.MatchString(line)
 		}, nil
 	}
-	return nil, errors.Errorf("not supported lime matcher %#v", lineMatcher)
+	return nil, fmt.Errorf("not supported lime matcher %#v", lineMatcher)
 }
 
 func evaluateTemplate(r *rules.PromoteRule, templateText, linePrefix string) (string, error) {
@@ -151,7 +151,7 @@ func evaluateTemplate(r *rules.PromoteRule, templateText, linePrefix string) (st
 	}
 	tmpl, err := template.New("test").Parse(templateText)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse go template: %s", templateText)
+		return "", fmt.Errorf("failed to parse go template: %s: %w", templateText, err)
 	}
 	ctx := r.TemplateContext
 	buf := &strings.Builder{}
@@ -160,7 +160,7 @@ func evaluateTemplate(r *rules.PromoteRule, templateText, linePrefix string) (st
 	}
 	err = tmpl.Execute(buf, &ctx)
 	if err != nil {
-		return buf.String(), errors.Wrapf(err, "failed to evaluate template with %#v", ctx)
+		return buf.String(), fmt.Errorf("failed to evaluate template with %#v: %w", ctx, err)
 	}
 	return buf.String(), nil
 }

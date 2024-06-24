@@ -2,11 +2,11 @@ package environments
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/scmhelpers"
-	"github.com/pkg/errors"
 )
 
 // EnsureForked ensures that the git repository is forked
@@ -14,7 +14,7 @@ func (o *EnvironmentPullRequestOptions) EnsureForked(client *scm.Client, repoNam
 	ctx := context.TODO()
 	_, localName := scm.Split(repoName)
 	if localName == "" {
-		return "", errors.Errorf("no local name for repository %s", repoName)
+		return "", fmt.Errorf("no local name for repository %s", repoName)
 	}
 	createFork := false
 
@@ -25,7 +25,7 @@ func (o *EnvironmentPullRequestOptions) EnsureForked(client *scm.Client, repoNam
 		createFork = true
 	}
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to find repository %s", forkFullName)
+		return "", fmt.Errorf("failed to find repository %s: %w", forkFullName, err)
 	}
 	if !createFork && repo != nil {
 		return repo.Clone, nil
@@ -36,7 +36,7 @@ func (o *EnvironmentPullRequestOptions) EnsureForked(client *scm.Client, repoNam
 	}
 	repo, _, err = client.Repositories.Fork(ctx, input, repoName)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to fork repository %s", repoName)
+		return "", fmt.Errorf("failed to fork repository %s: %w", repoName, err)
 	}
 	return repo.Clone, nil
 }
@@ -45,17 +45,17 @@ func (o *EnvironmentPullRequestOptions) rebaseForkFromUpstream(dir, gitURL strin
 	g := o.Git()
 	branch, err := gitclient.Branch(g, dir)
 	if err != nil {
-		return errors.Wrapf(err, "failed to find current branch")
+		return fmt.Errorf("failed to find current branch: %w", err)
 	}
 	remoteName := "upstream"
 	err = gitclient.AddRemote(g, dir, remoteName, gitURL)
 	if err != nil {
-		return errors.Wrapf(err, "failed to add remote %s to %s", remoteName, gitURL)
+		return fmt.Errorf("failed to add remote %s to %s: %w", remoteName, gitURL, err)
 	}
 
 	_, err = g.Command(dir, "pull", "-r", remoteName, branch)
 	if err != nil {
-		return errors.Wrapf(err, "failed to rebase from %s", gitURL)
+		return fmt.Errorf("failed to rebase from %s: %w", gitURL, err)
 	}
 	return nil
 }

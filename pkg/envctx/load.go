@@ -1,6 +1,7 @@
 package envctx
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -17,7 +18,6 @@ import (
 	"github.com/jenkins-x/jx-logging/v3/pkg/log"
 
 	"github.com/jenkins-x/jx-api/v4/pkg/client/clientset/versioned"
-	"github.com/pkg/errors"
 )
 
 // LazyLoad lazy loads any missing values
@@ -26,21 +26,21 @@ func (e *EnvironmentContext) LazyLoad(gclient gitclient.Interface, jxClient vers
 	if e.DevEnv == nil {
 		e.DevEnv, err = jxenv.GetDevEnvironment(jxClient, ns)
 		if err != nil {
-			return errors.Wrapf(err, "failed to find dev environment in namespace %s", ns)
+			return fmt.Errorf("failed to find dev environment in namespace %s: %w", ns, err)
 		}
 	}
 	if e.DevEnv == nil {
-		return errors.Errorf("no dev environment in namespace %s", ns)
+		return fmt.Errorf("no dev environment in namespace %s", ns)
 	}
 	if e.Requirements == nil {
 		e.Requirements, err = variablefinders.FindRequirements(gclient, jxClient, ns, dir, e.GitOwner, e.GitRepository)
 		if err != nil {
-			return errors.Wrapf(err, "failed to load requirements from dev environment")
+			return fmt.Errorf("failed to load requirements from dev environment: %w", err)
 		}
 
 	}
 	if e.Requirements == nil {
-		return errors.Errorf("no Requirements in TeamSettings of dev environment in namespace %s", ns)
+		return fmt.Errorf("no Requirements in TeamSettings of dev environment in namespace %s", ns)
 	}
 
 	// lets override the dev git URL if its changed in the requirements via the .jx/settings.yaml file
@@ -53,17 +53,17 @@ func (e *EnvironmentContext) LazyLoad(gclient gitclient.Interface, jxClient vers
 		// lets use the dev environment git repository
 		url := e.DevEnv.Spec.Source.URL
 		if url == "" {
-			return errors.Errorf("environment %s does not have a source URL", e.DevEnv.Name)
+			return fmt.Errorf("environment %s does not have a source URL", e.DevEnv.Name)
 		}
 		if e.GitUsername == "" || e.GitToken == "" {
 			creds, err := loadcreds.LoadGitCredential()
 			if err != nil {
-				return errors.Wrapf(err, "failed to load git credentials")
+				return fmt.Errorf("failed to load git credentials: %w", err)
 			}
 
 			gitInfo, err := giturl.ParseGitURL(url)
 			if err != nil {
-				return errors.Wrapf(err, "failed to parse git URL %s", url)
+				return fmt.Errorf("failed to parse git URL %s: %w", url, err)
 			}
 			gitServerURL := gitInfo.HostURL()
 			serverCreds := loadcreds.GetServerCredentials(creds, gitServerURL)
@@ -79,33 +79,33 @@ func (e *EnvironmentContext) LazyLoad(gclient gitclient.Interface, jxClient vers
 			}
 
 			if e.GitUsername == "" {
-				return errors.Errorf("could not find git user for git server %s", gitServerURL)
+				return fmt.Errorf("could not find git user for git server %s", gitServerURL)
 			}
 			if e.GitToken == "" {
-				return errors.Errorf("could not find git token for git server %s", gitServerURL)
+				return fmt.Errorf("could not find git token for git server %s", gitServerURL)
 			}
 		}
 
 		gitCloneURL, err := stringhelpers.URLSetUserPassword(url, e.GitUsername, e.GitToken)
 		if err != nil {
-			return errors.Wrapf(err, "failed to add user and token to git url %s", url)
+			return fmt.Errorf("failed to add user and token to git url %s: %w", url, err)
 		}
 
 		cloneDir, err := gitclient.CloneToDir(gitter, gitCloneURL, "")
 		if err != nil {
-			return errors.Wrapf(err, "failed to clone URL %s", gitCloneURL)
+			return fmt.Errorf("failed to clone URL %s: %w", gitCloneURL, err)
 		}
 
 		versionsDir := filepath.Join(cloneDir, "versionStream")
 		exists, err := files.DirExists(versionsDir)
 		if err != nil {
-			return errors.Wrapf(err, "failed to check if version stream exists %s", versionsDir)
+			return fmt.Errorf("failed to check if version stream exists %s: %w", versionsDir, err)
 		}
 		if !exists {
 			log.Logger().Warnf("dev environment git repository %s does not have a versionStream dir", url)
 			err = os.MkdirAll(versionsDir, files.DefaultDirWritePermissions)
 			if err != nil {
-				return errors.Wrapf(err, "failed to create version stream dir %s", versionsDir)
+				return fmt.Errorf("failed to create version stream dir %s: %w", versionsDir, err)
 			}
 		}
 
