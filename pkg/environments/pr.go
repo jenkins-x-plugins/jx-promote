@@ -16,7 +16,6 @@ import (
 	"github.com/jenkins-x/jx-helpers/v3/pkg/scmhelpers"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/termcolor"
 	"github.com/jenkins-x/jx-logging/v3/pkg/log"
-	"github.com/pkg/errors"
 )
 
 // Git lazily create a gitter if its not specified
@@ -36,7 +35,7 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 	gitter := o.Git()
 	changes, err := gitclient.HasChanges(gitter, dir)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to detect if there were git changes in dir %s", dir)
+		return nil, fmt.Errorf("failed to detect if there were git changes in dir %s: %w", dir, err)
 	}
 	if !changes && !doneCommit {
 		log.Logger().Infof("no changes detected so not creating a Pull Request on %s", termcolor.ColorInfo(gitURL))
@@ -75,7 +74,7 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 			if err != nil {
 				text, err = gitter.Command(dir, "remote", "show", o.RemoteName)
 				if err != nil {
-					return nil, errors.Wrapf(err, "failed to get the remote branch name for %s", o.RemoteName)
+					return nil, fmt.Errorf("failed to get the remote branch name for %s: %w", o.RemoteName, err)
 				}
 
 				lines := strings.Split(text, "\n")
@@ -89,7 +88,7 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 					}
 				}
 				if baseBranch == "" {
-					return nil, errors.Errorf("output of git remote show %s has no prefix %s as was: %s", o.RemoteName, headBranchPrefix, text)
+					return nil, fmt.Errorf("output of git remote show %s has no prefix %s as was: %s", o.RemoteName, headBranchPrefix, text)
 				}
 			} else {
 				text = strings.TrimSpace(text)
@@ -100,7 +99,7 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 		if baseBranch == "" {
 			baseBranch, err = gitclient.Branch(gitter, dir)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to find branch in dir %s", dir)
+				return nil, fmt.Errorf("failed to find branch in dir %s: %w", dir, err)
 			}
 		}
 		log.Logger().Debugf("creating Pull Request from %s branch", baseBranch)
@@ -109,7 +108,7 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 	if o.BranchName == "" {
 		o.BranchName, err = gitclient.CreateBranch(gitter, dir)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create git branch in %s", dir)
+			return nil, fmt.Errorf("failed to create git branch in %s: %w", dir, err)
 		}
 	}
 
@@ -121,12 +120,12 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 	commitMessage := fmt.Sprintf("%s\n\n%s", commitTitle, commitBody)
 	_, err = gitclient.AddAndCommitFiles(gitter, dir, strings.TrimSpace(commitMessage))
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to commit changes in dir %s", dir)
+		return nil, fmt.Errorf("failed to commit changes in dir %s: %w", dir, err)
 	}
 
 	err = gitclient.ForcePushBranch(gitter, dir, "HEAD", o.BranchName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to push to branch %s from dir %s", o.BranchName, dir)
+		return nil, fmt.Errorf("failed to push to branch %s from dir %s: %w", o.BranchName, dir, err)
 	}
 
 	ctx := context.Background()
@@ -137,14 +136,17 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 			Body:  commitBody,
 		}
 		existingPR, _, err = scmClient.PullRequests.Update(ctx, repoFullName, existingPR.Number, prInput)
-		return existingPR, errors.Wrapf(err, "failed to update PullRequest %+v with %+v", existingPR, prInput)
+		if err != nil {
+			return nil, fmt.Errorf("failed to update PullRequest %+v with %+v: %w", existingPR, prInput, err)
+		}
+		return existingPR, nil
 	}
 
 	headPrefix := ""
 	if o.Fork {
 		user, _, err := scmClient.Users.Find(ctx)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to find current SCM user")
+			return nil, fmt.Errorf("failed to find current SCM user: %w", err)
 		}
 
 		username := user.Login
@@ -160,7 +162,7 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 	}
 	pr, _, err := scmClient.PullRequests.Create(ctx, repoFullName, pri)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create PullRequest on %s", gitURL)
+		return nil, fmt.Errorf("failed to create PullRequest on %s: %w", gitURL, err)
 	}
 
 	// the URL should not really end in .diff - fix in go-scm
@@ -178,7 +180,7 @@ func (o *EnvironmentPullRequestOptions) GetScmClient(gitURL, kind string) (*scm.
 	}
 	gitInfo, err := giturl.ParseGitURL(gitURL)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to parse git URL")
+		return nil, "", fmt.Errorf("failed to parse git URL: %w", err)
 	}
 
 	serverURL := gitInfo.HostURLWithoutUser()
@@ -186,7 +188,7 @@ func (o *EnvironmentPullRequestOptions) GetScmClient(gitURL, kind string) (*scm.
 
 	scmClient, _, err := o.CreateScmClient(serverURL, owner, kind)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to create SCM client for %s", gitURL)
+		return nil, "", fmt.Errorf("failed to create SCM client for %s: %w", gitURL, err)
 	}
 	o.ScmClient = scmClient
 	repoFullName := scm.Join(gitInfo.Organisation, gitInfo.Name)
@@ -201,7 +203,7 @@ func (o *EnvironmentPullRequestOptions) addLabelsToPullRequest(ctx context.Conte
 		if !scmhelpers.ContainsLabel(pr.Labels, label) {
 			_, err := scmClient.PullRequests.AddLabel(ctx, repoFullName, prNumber, label)
 			if err != nil {
-				return pr, errors.Wrapf(err, "failed to add label %s to PR #%d on repo %s", label, prNumber, repoFullName)
+				return pr, fmt.Errorf("failed to add label %s to PR #%d on repo %s: %w", label, prNumber, repoFullName, err)
 			}
 			modified = true
 		}
@@ -215,7 +217,7 @@ func (o *EnvironmentPullRequestOptions) addLabelsToPullRequest(ctx context.Conte
 	f := func() error {
 		pr, _, err = scmClient.PullRequests.Find(ctx, repoFullName, prNumber)
 		if err != nil {
-			return errors.Wrapf(err, "failed to lookup PullRequest #%d on repo %s", prNumber, repoFullName)
+			return fmt.Errorf("failed to lookup PullRequest #%d on repo %s: %w", prNumber, repoFullName, err)
 		}
 		return nil
 	}
@@ -238,7 +240,7 @@ func (o *EnvironmentPullRequestOptions) CreateScmClient(gitServer, _, gitKind st
 		var err error
 		gitKind, err = scmhelpers.DiscoverGitKind(o.JXClient, o.Namespace, gitServer)
 		if err != nil {
-			return nil, "", errors.Wrapf(err, "failed to discover the git kind for git server %s", gitServer)
+			return nil, "", fmt.Errorf("failed to discover the git kind for git server %s: %w", gitServer, err)
 		}
 	}
 
@@ -251,7 +253,7 @@ func (o *EnvironmentPullRequestOptions) CreateScmClient(gitServer, _, gitKind st
 	o.ScmClientFactory.GitServerURL = gitServer
 	scmClient, err := o.ScmClientFactory.Create()
 	if err != nil {
-		return scmClient, "", errors.Wrapf(err, "failed to create SCM client for server %s", gitServer)
+		return scmClient, "", fmt.Errorf("failed to create SCM client for server %s: %w", gitServer, err)
 	}
 	return scmClient, o.ScmClientFactory.GitToken, nil
 }

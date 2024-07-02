@@ -1,7 +1,7 @@
 package environments
 
-import "github.com/pkg/errors"
+import "fmt"
 
 func (o *EnvironmentPullRequestOptions) ResolveChartRepositoryURL() (string, error) {
-	return "", errors.Errorf("TODO")
+	return "", fmt.Errorf("TODO")
 }

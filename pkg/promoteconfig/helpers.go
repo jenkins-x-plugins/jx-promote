@@ -7,7 +7,7 @@ import (
 
 	"github.com/jenkins-x-plugins/jx-promote/pkg/apis/promote/v1alpha1"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
-	"github.com/pkg/errors"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 )
@@ -19,7 +19,7 @@ import (
 func Discover(dir, promoteNamespace string) (*v1alpha1.Promote, string, error) {
 	config, fileName, err := LoadPromote(dir, false)
 	if err != nil {
-		return config, fileName, errors.Wrapf(err, "failed to load Promote configuration from %s", dir)
+		return config, fileName, fmt.Errorf("failed to load Promote configuration from %s: %w", dir, err)
 	}
 	if config != nil {
 		return config, fileName, nil
@@ -28,7 +28,7 @@ func Discover(dir, promoteNamespace string) (*v1alpha1.Promote, string, error) {
 	envChart := filepath.Join(dir, "env", "Chart.yaml")
 	exists, err := files.FileExists(envChart)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to check if file exists %s", envChart)
+		return nil, "", fmt.Errorf("failed to check if file exists %s: %w", envChart, err)
 	}
 	if exists {
 		config := v1alpha1.Promote{
@@ -46,7 +46,7 @@ func Discover(dir, promoteNamespace string) (*v1alpha1.Promote, string, error) {
 
 	path, err := findHelmfile(dir, promoteNamespace)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to find helmfile")
+		return nil, "", fmt.Errorf("failed to find helmfile: %w", err)
 	}
 	config = &v1alpha1.Promote{
 		ObjectMeta: metav1.ObjectMeta{
@@ -66,7 +66,7 @@ func findHelmfile(dir, promoteNamespace string) (string, error) {
 	helmfilesDir := filepath.Join(dir, "helmfiles")
 	exists, err := files.DirExists(helmfilesDir)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to detect if dir exists %s", helmfilesDir)
+		return "", fmt.Errorf("failed to detect if dir exists %s: %w", helmfilesDir, err)
 	}
 	if !exists || promoteNamespace == "" {
 		return "helmfile.yaml", nil
@@ -79,7 +79,7 @@ func findHelmfile(dir, promoteNamespace string) (string, error) {
 func LoadPromote(dir string, failIfMissing bool) (*v1alpha1.Promote, string, error) {
 	absolute, err := filepath.Abs(dir)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "creating absolute path")
+		return nil, "", fmt.Errorf("creating absolute path: %w", err)
 	}
 	relPath := filepath.Join(".jx", "promote.yaml")
 
@@ -100,7 +100,7 @@ func LoadPromote(dir string, failIfMissing bool) (*v1alpha1.Promote, string, err
 		return config, fileName, err
 	}
 	if failIfMissing {
-		return nil, "", errors.Errorf("%s file not found", relPath)
+		return nil, "", fmt.Errorf("%s file not found", relPath)
 	}
 	return nil, "", nil
 }
