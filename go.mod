@@ -7,10 +7,10 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/helmfile/helmfile v0.165.0
 	github.com/jenkins-x-plugins/jx-gitops v0.20.2
-	github.com/jenkins-x/go-scm v1.14.37
+	github.com/jenkins-x/go-scm v1.14.43
 	github.com/jenkins-x/jx-api/v4 v4.7.6
-	github.com/jenkins-x/jx-helpers/v3 v3.7.1
-	github.com/jenkins-x/jx-logging/v3 v3.0.16
+	github.com/jenkins-x/jx-helpers/v3 v3.8.1
+	github.com/jenkins-x/jx-logging/v3 v3.0.17
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
@@ -18,7 +18,7 @@ require (
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	helm.sh/helm/v3 v3.15.2
 	k8s.io/api v0.30.2
-	k8s.io/apimachinery v0.30.2
+	k8s.io/apimachinery v0.30.3
 	k8s.io/client-go v0.30.2
 	sigs.k8s.io/yaml v1.4.0
 )
@@ -95,7 +95,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
-	github.com/bluekeyes/go-gitdiff v0.7.1 // indirect
+	github.com/bluekeyes/go-gitdiff v0.8.0 // indirect
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/circl v1.3.9 // indirect
