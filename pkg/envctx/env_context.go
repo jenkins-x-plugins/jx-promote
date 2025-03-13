@@ -6,7 +6,6 @@ import (
 
 	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
 	v1 "github.com/jenkins-x/jx-api/v4/pkg/apis/jenkins.io/v1"
-	"github.com/jenkins-x/jx-helpers/v3/pkg/kube"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/versionstream"
 )
 
@@ -77,9 +76,6 @@ func (c *EnvironmentContext) ChartDetails(chartName, repo string) (*ChartDetails
 	teamSettings := c.TeamSettings()
 	if repo == "" && teamSettings != nil {
 		repo = teamSettings.AppsRepository
-	}
-	if repo == "" {
-		repo = kube.DefaultChartMuseumURL
 	}
 	if prefix == "" {
 		prefixes, err := c.VersionResolver.GetRepositoryPrefixes()
