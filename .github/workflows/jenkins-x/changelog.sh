@@ -1,4 +1,4 @@
-#!/usr/bin/bash -x
+#!/bin/bash -x
 
 export PULL_BASE_SHA=$(git rev-parse HEAD)
 
