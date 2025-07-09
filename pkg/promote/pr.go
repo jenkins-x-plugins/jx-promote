@@ -27,6 +27,7 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 	source := "promote-" + app + "-" + versionName
 	var labels []string
 
+	// TODO: Support more labels. I'm thinking owner...
 	for _, env := range envs {
 		envName := env.Key
 		source += "-" + envName
