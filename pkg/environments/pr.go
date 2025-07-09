@@ -3,6 +3,7 @@ package environments
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"strings"
 	"time"
 
@@ -110,6 +111,11 @@ func (o *EnvironmentPullRequestOptions) CreatePullRequest(scmClient *scm.Client,
 		if err != nil {
 			return nil, fmt.Errorf("failed to create git branch in %s: %w", dir, err)
 		}
+	}
+
+	_, _, err = gitclient.EnsureUserAndEmailSetup(gitter, dir, "", "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to setup git user and email")
 	}
 
 	commitTitle := strings.TrimSpace(o.CommitTitle)
