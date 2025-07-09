@@ -160,7 +160,7 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 			newReleaseName = r.ReleaseName
 		}
 		if keepOldReleases {
-			newReleaseName = fmt.Sprintf("%s-%s", newReleaseName, strings.Replace(version, ".", "-", -1))
+			newReleaseName = fmt.Sprintf("%s-%s", newReleaseName, strings.ReplaceAll(version, ".", "-"))
 		}
 		helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
 			Name:      newReleaseName,
@@ -219,7 +219,7 @@ func promoteNestedHelmfileReleases(r *rules.PromoteRule, details *envctx.ChartDe
 			newReleaseName = r.ReleaseName
 		}
 		if keepOldReleases {
-			newReleaseName = fmt.Sprintf("%s-%s", newReleaseName, strings.Replace(r.Version, ".", "-", -1))
+			newReleaseName = fmt.Sprintf("%s-%s", newReleaseName, strings.ReplaceAll(r.Version, ".", "-"))
 		}
 		helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
 			Name:      newReleaseName,

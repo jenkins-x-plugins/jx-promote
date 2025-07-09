@@ -85,7 +85,7 @@ func TestRuleFactory(t *testing.T) {
 		testhelpers.AssertTextFilesEqual(t, filepath.Join(src, fileName+".1.expected"), target, fileName)
 
 		// now lets modify to new version
-		r.TemplateContext.Version = "1.2.4"
+		r.Version = "1.2.4"
 
 		err = fn(r)
 		require.NoError(t, err, "failed to run FileRule at dir %s", dir)

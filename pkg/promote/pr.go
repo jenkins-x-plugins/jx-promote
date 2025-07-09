@@ -52,14 +52,14 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 		labels = append(labels, "do-not-merge/hold")
 	}
 
-	o.EnvironmentPullRequestOptions.CommitTitle = fmt.Sprintf("chore: promote %s to version %s", app, versionName)
-	o.EnvironmentPullRequestOptions.CommitMessage = comment
+	o.CommitTitle = fmt.Sprintf("chore: promote %s to version %s", app, versionName)
+	o.CommitMessage = comment
 	if o.AddChangelog != "" {
 		changelog, err := os.ReadFile(o.AddChangelog)
 		if err != nil {
 			return fmt.Errorf("failed to read changelog file %s: %w", o.AddChangelog, err)
 		}
-		o.EnvironmentPullRequestOptions.CommitChangelog = string(changelog)
+		o.CommitChangelog = string(changelog)
 	}
 
 	envDir := ""
@@ -107,7 +107,7 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 						return fmt.Errorf("could not to discover application git URL")
 					}
 				}
-				r.TemplateContext.GitURL = o.AppGitURL
+				r.GitURL = o.AppGitURL
 			}
 
 			fn := factory.NewFunction(r)

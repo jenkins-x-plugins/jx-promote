@@ -402,7 +402,7 @@ func (o *Options) Run() error {
 			return fmt.Errorf("failed to resolve helm repository URL: %w", err)
 		}
 	}
-	if o.Interactive || !(len(o.Environments) != 0 || o.All || o.AllAutomatic || o.BatchMode) {
+	if o.Interactive || !(len(o.Environments) != 0 || o.All || o.AllAutomatic || o.BatchMode) { //nolint:staticcheck
 		var names []string
 		envs := o.DevEnvContext.Requirements.Environments
 		for i := range envs {
@@ -458,7 +458,7 @@ func (o *Options) Run() error {
 			return env.PromotionStrategy == v1.PromotionStrategyTypeAutomatic && envIsPermanent(env)
 		})
 	}
-	return fmt.Errorf("In bach mode one option needs to specified of: --%s, --all and --all-auto", optionEnvironment)
+	return fmt.Errorf("in bach mode one option needs to specified of: --%s, --all and --all-auto", optionEnvironment)
 }
 
 func envIsPermanent(env *jxcore.EnvironmentConfig) bool {
@@ -941,14 +941,14 @@ func (o *Options) waitForGitOpsPullRequest(env *jxcore.EnvironmentConfig, releas
 					prLastCommitSha := o.pullRequestLastCommitSha(pr)
 
 					status, err := o.PullRequestLastCommitStatus(pr)
-					if err != nil || status == nil {
+					switch {
+					case err != nil || status == nil:
 						log.Logger().Warnf("Failed to query the Pull Request last commit status for %s ref %s %s", pr.Link, prLastCommitSha, err)
-						// return fmt.Errorf("Failed to query the Pull Request last commit status for %s ref %s %s", pr.Link, prLastCommitSha, err)
-						// } else if status.State == "in-progress" {
-					} else if StateIsPending(status) {
+					case StateIsPending(status):
 						log.Logger().Info("The build for the Pull Request last commit is currently in progress.")
-					} else {
-						if status.State == scm.StateSuccess {
+					default:
+						switch {
+						case status.State == scm.StateSuccess:
 							if !(o.NoMergePullRequest) {
 								tideMerge := false
 								// Now check if tide is running or not
@@ -977,9 +977,9 @@ func (o *Options) waitForGitOpsPullRequest(env *jxcore.EnvironmentConfig, releas
 									}
 								}
 							}
-						} else if StateIsErrorOrFailure(status) {
+						case StateIsErrorOrFailure(status):
 							return fmt.Errorf("pull request %s last commit has status %s for ref %s", pr.Link, status.State.String(), prLastCommitSha)
-						} else {
+						default:
 							log.Logger().Infof("got git provider status %s from PR %s", status.State.String(), pr.Link)
 						}
 					}

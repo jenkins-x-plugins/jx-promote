@@ -49,7 +49,7 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, labels []st
 		if err != nil {
 			return nil, err
 		}
-		defer os.RemoveAll(tempDir)
+		defer os.RemoveAll(tempDir) //nolint:errcheck
 	}
 
 	cloneGitURL := gitURL
@@ -161,7 +161,7 @@ func (o *EnvironmentPullRequestOptions) FindExistingPullRequest(scmClient *scm.C
 		return nil, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("Error listing PRs: %w", err)
+		return nil, fmt.Errorf("error listing PRs: %w", err)
 	}
 	if log.Logger().Logger.IsLevelEnabled(logrus.TraceLevel) {
 		log.Logger().Tracef("Found PRs: %s", spew.Sdump(prs))
