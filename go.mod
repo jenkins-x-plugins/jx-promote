@@ -7,10 +7,10 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/helmfile/helmfile v0.165.0
 	github.com/jenkins-x-plugins/jx-gitops v1.0.21
-	github.com/jenkins-x/go-scm v1.14.59
+	github.com/jenkins-x/go-scm v1.15.1
 	github.com/jenkins-x/jx-api/v4 v4.8.1
-	github.com/jenkins-x/jx-helpers/v3 v3.9.6
-	github.com/jenkins-x/jx-logging/v3 v3.0.17
+	github.com/jenkins-x/jx-helpers/v3 v3.9.7
+	github.com/jenkins-x/jx-logging/v3 v3.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.9.1
