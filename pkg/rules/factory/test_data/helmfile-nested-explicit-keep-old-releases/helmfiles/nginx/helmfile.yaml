@@ -1,9 +1,9 @@
-filepath: ""
 environments:
   default:
     values:
     - ../../jx-values.yaml
     - ../../versionStream/src/fake-secrets.yaml.gotmpl
+---
 namespace: nginx
 repositories:
 - name: stable

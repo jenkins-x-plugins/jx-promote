@@ -1,4 +1,3 @@
-filepath: ""
 repositories:
 - name: yourorg
   url: https://yourorg.example.com/charts
@@ -13,5 +12,3 @@ releases:
   version: 1.2.3
   name: myapp
   namespace: jx
-templates: {}
-renderedvalues: {}
