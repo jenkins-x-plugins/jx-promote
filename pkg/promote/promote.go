@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/jenkins-x/jx-helpers/v3/pkg/requirements"
@@ -574,6 +575,8 @@ func (o *Options) PromoteAll(pred func(*jxcore.EnvironmentConfig) bool) error {
 		}
 		groups = append(groups, []*jxcore.EnvironmentConfig{env})
 	}
+	var errorChannel = make(chan error, len(groups))
+	var wg sync.WaitGroup
 	for _, group := range groups {
 		firstEnv := group[0]
 
@@ -584,14 +587,24 @@ func (o *Options) PromoteAll(pred func(*jxcore.EnvironmentConfig) bool) error {
 			return err
 		}
 		o.ReleaseInfo = releaseInfo
-		if !o.NoPoll {
-			err = o.WaitForPromotion(firstEnv, releaseInfo)
-			if err != nil {
-				return err
-			}
+		// TODO: Add test
+		if !o.NoPoll && group[0].PromotionStrategy == v1.PromotionStrategyTypeAutomatic {
+			wg.Add(1)
+			// Wait for multiple PRs in parallel
+			go o.WaitForPromotion(firstEnv, releaseInfo, errorChannel, &wg)
 		}
 	}
-	return nil
+	wg.Wait()
+	close(errorChannel)
+	var err error
+	for err2 := range errorChannel {
+		if err == nil {
+			err = err2
+		} else {
+			err = fmt.Errorf("%w; %v", err, err2)
+		}
+	}
+	return err
 }
 
 // EnvironmentNamespace returns the namespace for the environment
@@ -832,14 +845,15 @@ func (o *Options) GetTargetNamespace(ns, env string) (string, *jxcore.Environmen
 	return targetNS, envResource, nil
 }
 
-func (o *Options) WaitForPromotion(env *jxcore.EnvironmentConfig, releaseInfo *ReleaseInfo) error {
+func (o *Options) WaitForPromotion(env *jxcore.EnvironmentConfig, releaseInfo *ReleaseInfo, errorChannel chan<- error, wg *sync.WaitGroup) {
+	defer wg.Done()
 	if o.TimeoutDuration == nil {
 		log.Logger().Infof("No --%s option specified on the 'jx promote' command so not waiting for the promotion to succeed", optionTimeout)
-		return nil
+		return
 	}
 	if o.PullRequestPollDuration == nil {
 		log.Logger().Infof("No --%s option specified on the 'jx promote' command so not waiting for the promotion to succeed", optionPullRequestPollTime)
-		return nil
+		return
 	}
 	duration := *o.TimeoutDuration
 	end := time.Now().Add(duration)
@@ -855,12 +869,11 @@ func (o *Options) WaitForPromotion(env *jxcore.EnvironmentConfig, releaseInfo *R
 			// TODO based on if the PR completed or not fail the PR or the Promote?
 			err2 := promoteKey.OnPromotePullRequest(kubeClient, jxClient, o.Namespace, activities.FailedPromotionPullRequest)
 			if err2 != nil {
-				return err2
+				errorChannel <- err2
 			}
-			return err
+			errorChannel <- err
 		}
 	}
-	return nil
 }
 
 // TODO This could do with a refactor and some tests...
@@ -984,7 +997,7 @@ func (o *Options) waitForGitOpsPullRequest(env *jxcore.EnvironmentConfig, releas
 						}
 					}
 				}
-				if !pr.Mergeable {
+				if pr.MergeableState == scm.MergeableStateConflicting {
 					log.Logger().Info("Rebasing PullRequest due to conflict")
 
 					err = o.PromoteViaPullRequest([]*jxcore.EnvironmentConfig{env}, releaseInfo, false)
