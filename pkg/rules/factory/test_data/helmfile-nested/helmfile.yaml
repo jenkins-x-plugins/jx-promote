@@ -1,4 +1,3 @@
-filepath: ""
 helmfiles:
 - path: helmfiles/nginx/helmfile.yaml
   environment: {}

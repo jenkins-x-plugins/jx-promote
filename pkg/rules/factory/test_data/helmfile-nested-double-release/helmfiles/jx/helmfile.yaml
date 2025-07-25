@@ -1,3 +1,8 @@
+environments:
+  default:
+    values:
+    - jx-values.yaml
+---
 namespace: jx
 repositories:
   - name: dev

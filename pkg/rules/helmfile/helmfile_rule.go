@@ -2,9 +2,10 @@ package helmfile
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/jenkins-x-plugins/jx-gitops/pkg/helmfiles"
 
 	jxcore "github.com/jenkins-x/jx-api/v4/pkg/apis/core/v4beta1"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/jenkins-x-plugins/jx-promote/pkg/envctx"
 	"github.com/jenkins-x-plugins/jx-promote/pkg/rules"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
-	"github.com/jenkins-x/jx-helpers/v3/pkg/yaml2s"
 )
 
 // HelmfileRule uses a jx-apps.yml file
@@ -41,9 +41,9 @@ func modifyHelmfile(r *rules.PromoteRule, rule *v1alpha1.HelmfileRule, file, pro
 		return fmt.Errorf("failed to detect if file exists %s: %w", file, err)
 	}
 
-	st := &state.HelmState{}
+	helmstates := []*state.HelmState{{}}
 	if exists {
-		err = yaml2s.LoadFile(file, st)
+		helmstates, err = helmfiles.LoadHelmfile(file)
 		if err != nil {
 			return fmt.Errorf("failed to load file %s: %w", file, err)
 		}
@@ -51,18 +51,12 @@ func modifyHelmfile(r *rules.PromoteRule, rule *v1alpha1.HelmfileRule, file, pro
 
 	dirName, _ := filepath.Split(rule.Path)
 	nestedHelmfile := dirName != ""
-	err = modifyHelmfileApps(r, st, promoteNs, nestedHelmfile)
+	err = modifyHelmfileApps(r, helmstates, promoteNs, nestedHelmfile)
 	if err != nil {
 		return err
 	}
 
-	dir := filepath.Dir(file)
-	err = os.MkdirAll(dir, files.DefaultDirWritePermissions)
-	if err != nil {
-		return fmt.Errorf("failed to create directory for helmfile %s: %w", dir, err)
-	}
-
-	err = yaml2s.SaveFile(st, file)
+	err = helmfiles.SaveHelmfile(file, helmstates)
 	if err != nil {
 		return fmt.Errorf("failed to save file %s: %w", file, err)
 	}
@@ -73,30 +67,32 @@ func modifyHelmfile(r *rules.PromoteRule, rule *v1alpha1.HelmfileRule, file, pro
 
 	// lets make sure we reference the nested helmfile in the root helmfile
 	rootFile := filepath.Join(r.Dir, "helmfile.yaml")
-	rootState := &state.HelmState{}
-	err = yaml2s.LoadFile(rootFile, rootState)
+	rootStates, err := helmfiles.LoadHelmfile(rootFile)
 	if err != nil {
 		return fmt.Errorf("failed to load file %s: %w", rootFile, err)
 	}
 	nestedPath := rule.Path
-	for _, s := range rootState.Helmfiles {
-		matches, err := filepath.Match(s.Path, nestedPath)
-		if err == nil && matches {
-			return nil
+	for _, rootState := range rootStates {
+		for _, s := range rootState.Helmfiles {
+			matches, err := filepath.Match(s.Path, nestedPath)
+			if err == nil && matches {
+				return nil
+			}
 		}
 	}
 	// lets add the path
-	rootState.Helmfiles = append(rootState.Helmfiles, state.SubHelmfileSpec{
+	lastRootState := rootStates[len(rootStates)-1]
+	lastRootState.Helmfiles = append(lastRootState.Helmfiles, state.SubHelmfileSpec{
 		Path: nestedPath,
 	})
-	err = yaml2s.SaveFile(rootState, rootFile)
+	err = helmfiles.SaveHelmfile(rootFile, rootStates)
 	if err != nil {
 		return fmt.Errorf("failed to save root helmfile after adding nested helmfile to %s: %w", rootFile, err)
 	}
 	return nil
 }
 
-func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promoteNs string, nestedHelmfile bool) error {
+func modifyHelmfileApps(r *rules.PromoteRule, helmStates []*state.HelmState, promoteNs string, nestedHelmfile bool) error {
 	if r.DevEnvContext == nil {
 		return fmt.Errorf("no devEnvContext")
 	}
@@ -109,7 +105,7 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 	if err != nil {
 		return fmt.Errorf("failed to get chart details for %s repo %s: %w", app, r.HelmRepositoryURL, err)
 	}
-	defaultPrefix(helmfile, r.DevEnvContext, details, "dev")
+	defaultPrefix(helmStates, r.DevEnvContext, details, "dev")
 
 	if promoteNs == "" {
 		promoteNs = r.Namespace
@@ -124,30 +120,33 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 
 	if nestedHelmfile {
 		// This is edge case so moved to a separate function
-		promoteNestedHelmfileReleases(r, details, promoteNs, helmfile, keepOldReleases)
+		promoteNestedHelmfileReleases(r, details, promoteNs, helmStates, keepOldReleases)
 		return nil
 	}
 
 	// Time to use scoring instead of just a simple found.
 	highestScorer := new(state.ReleaseSpec)
 	highestScore := 0
+
 	if !keepOldReleases {
-		for i := range helmfile.Releases {
-			score := 0
-			release := &helmfile.Releases[i]
+		for _, helmfile := range helmStates {
+			for i := range helmfile.Releases {
+				score := 0
+				release := &helmfile.Releases[i]
 
-			if release.Name == r.AppName && (release.Namespace == promoteNs || isRemoteEnv) {
-				score++
-			}
+				if release.Name == r.AppName && (release.Namespace == promoteNs || isRemoteEnv) {
+					score++
+				}
 
-			if (r.ReleaseName != "" && release.Name == r.ReleaseName) && (release.Namespace == promoteNs || isRemoteEnv) {
-				// This scores higher as it's a direct match
-				score += 2
-			}
+				if (r.ReleaseName != "" && release.Name == r.ReleaseName) && (release.Namespace == promoteNs || isRemoteEnv) {
+					// This scores higher as it's a direct match
+					score += 2
+				}
 
-			if score > highestScore {
-				highestScorer = release
-				highestScore = score
+				if score > highestScore {
+					highestScorer = release
+					highestScore = score
+				}
 			}
 		}
 	}
@@ -162,7 +161,8 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 		if keepOldReleases {
 			newReleaseName = fmt.Sprintf("%s-%s", newReleaseName, strings.ReplaceAll(version, ".", "-"))
 		}
-		helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
+		lastHelmState := helmStates[len(helmStates)-1]
+		lastHelmState.Releases = append(lastHelmState.Releases, state.ReleaseSpec{
 			Name:      newReleaseName,
 			Chart:     details.Name,
 			Version:   version,
@@ -173,14 +173,20 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmfile *state.HelmState, promote
 	return nil
 }
 
-func promoteNestedHelmfileReleases(r *rules.PromoteRule, details *envctx.ChartDetails, promoteNs string, helmfile *state.HelmState, keepOldReleases bool) {
-	if len(helmfile.Releases) == 0 {
+func promoteNestedHelmfileReleases(r *rules.PromoteRule, details *envctx.ChartDetails, promoteNs string, helmStates []*state.HelmState, keepOldReleases bool) {
+
+	noReleases := false
+	for _, helmfile := range helmStates {
+		noReleases = noReleases || len(helmfile.Releases) == 0
+	}
+	lastHelmState := helmStates[len(helmStates)-1]
+	if noReleases {
 		// for nested helmfiles when adding the first release, set it up as the override
 		// then when future releases are added they can omit the namespace if their namespace matches this override
 		// if different namespaces are required for releases, manual edits should be done to
 		// set the namespace of EVERY release and make OverrideNamespace blank
-		if promoteNs != "" && helmfile.OverrideNamespace == "" {
-			helmfile.OverrideNamespace = promoteNs
+		if promoteNs != "" && lastHelmState.OverrideNamespace == "" {
+			lastHelmState.OverrideNamespace = promoteNs
 		}
 	}
 
@@ -188,21 +194,23 @@ func promoteNestedHelmfileReleases(r *rules.PromoteRule, details *envctx.ChartDe
 	highestScorer := new(state.ReleaseSpec)
 	highestScore := 0
 	if !keepOldReleases {
-		for i := range helmfile.Releases {
-			score := 0
-			release := &helmfile.Releases[i]
+		for _, helmfile := range helmStates {
+			for i := range helmfile.Releases {
+				score := 0
+				release := &helmfile.Releases[i]
 
-			if release.Name == r.AppName {
-				score++
-			}
+				if release.Name == r.AppName {
+					score++
+				}
 
-			if r.ReleaseName != "" && release.Name == r.ReleaseName {
-				score += 2
-			}
+				if r.ReleaseName != "" && release.Name == r.ReleaseName {
+					score += 2
+				}
 
-			if score > highestScore {
-				highestScorer = release
-				highestScore = score
+				if score > highestScore {
+					highestScorer = release
+					highestScore = score
+				}
 			}
 		}
 	}
@@ -211,7 +219,7 @@ func promoteNestedHelmfileReleases(r *rules.PromoteRule, details *envctx.ChartDe
 		highestScorer.Version = r.Version
 	} else {
 		ns := ""
-		if promoteNs != helmfile.OverrideNamespace {
+		if promoteNs != lastHelmState.OverrideNamespace {
 			ns = promoteNs
 		}
 		newReleaseName := details.LocalName
@@ -221,7 +229,7 @@ func promoteNestedHelmfileReleases(r *rules.PromoteRule, details *envctx.ChartDe
 		if keepOldReleases {
 			newReleaseName = fmt.Sprintf("%s-%s", newReleaseName, strings.ReplaceAll(r.Version, ".", "-"))
 		}
-		helmfile.Releases = append(helmfile.Releases, state.ReleaseSpec{
+		lastHelmState.Releases = append(lastHelmState.Releases, state.ReleaseSpec{
 			Name:      newReleaseName,
 			Chart:     details.Name,
 			Namespace: ns,
@@ -232,7 +240,7 @@ func promoteNestedHelmfileReleases(r *rules.PromoteRule, details *envctx.ChartDe
 
 // defaultPrefix lets find a chart prefix / repository name for the URL that does not clash with
 // any other existing repositories in the helmfile
-func defaultPrefix(appsConfig *state.HelmState, envctx *envctx.EnvironmentContext, d *envctx.ChartDetails, defaultPrefix string) {
+func defaultPrefix(helmStates []*state.HelmState, envctx *envctx.EnvironmentContext, d *envctx.ChartDetails, defaultPrefix string) {
 	if d.Prefix != "" {
 		return
 	}
@@ -246,15 +254,17 @@ func defaultPrefix(appsConfig *state.HelmState, envctx *envctx.EnvironmentContex
 	}
 	prefixes := map[string]string{}
 	urls := map[string]string{}
-	for k := range appsConfig.Repositories {
-		r := appsConfig.Repositories[k]
-		if r.URL == d.Repository {
-			found = true
-			r.OCI = oci
-		}
-		if r.Name != "" {
-			urls[r.URL] = r.Name
-			prefixes[r.Name] = r.URL
+	for _, appsConfig := range helmStates {
+		for k := range appsConfig.Repositories {
+			r := appsConfig.Repositories[k]
+			if r.URL == d.Repository {
+				found = true
+				r.OCI = oci
+			}
+			if r.Name != "" {
+				urls[r.URL] = r.Name
+				prefixes[r.Name] = r.URL
+			}
 		}
 	}
 
@@ -276,6 +286,7 @@ func defaultPrefix(appsConfig *state.HelmState, envctx *envctx.EnvironmentContex
 		}
 	}
 	if !found {
+		appsConfig := helmStates[len(helmStates)-1]
 		appsConfig.Repositories = append(appsConfig.Repositories, state.RepositorySpec{
 			Name: prefix,
 			URL:  d.Repository,
