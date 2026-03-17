@@ -152,7 +152,9 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmStates []*state.HelmState, pro
 	}
 
 	if highestScore > 0 {
-		highestScorer.Version = r.Version
+		highestScorer.Version = version
+		// The repository might have changed, so updating Chart
+		highestScorer.Chart = details.Name
 	} else {
 		newReleaseName := details.LocalName
 		if r.ReleaseName != "" {
