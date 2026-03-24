@@ -152,7 +152,9 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmStates []*state.HelmState, pro
 	}
 
 	if highestScore > 0 {
-		highestScorer.Version = r.Version
+		highestScorer.Version = version
+		// The repository might have changed, so updating Chart
+		highestScorer.Chart = details.Name
 	} else {
 		newReleaseName := details.LocalName
 		if r.ReleaseName != "" {
@@ -248,8 +250,8 @@ func defaultPrefix(helmStates []*state.HelmState, envctx *envctx.EnvironmentCont
 	oci := false
 	//  we need to remove the oci:// prefix (in case it exists), because helmfile doesn't support the scheme in the repo url for oci based repositories.
 	//  for these repositories, only url without a scheme and the oci: true flag is needed.
-	d.Repository = strings.TrimPrefix(d.Repository, "oci://")
-	if envctx.Requirements != nil {
+	d.Repository, oci = strings.CutPrefix(d.Repository, "oci://")
+	if !oci && envctx.Requirements != nil {
 		oci = envctx.Requirements.Cluster.ChartKind == jxcore.ChartRepositoryTypeOCI
 	}
 	prefixes := map[string]string{}
