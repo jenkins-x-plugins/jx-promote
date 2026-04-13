@@ -97,7 +97,6 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmStates []*state.HelmState, pro
 		return fmt.Errorf("no devEnvContext")
 	}
 	app := r.AppName
-	version := r.Version
 	if r.HelmRepositoryURL == "" {
 		r.HelmRepositoryURL = "http://jenkins-x-chartmuseum:8080"
 	}
@@ -125,7 +124,7 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmStates []*state.HelmState, pro
 	}
 
 	// Time to use scoring instead of just a simple found.
-	highestScorer := new(state.ReleaseSpec)
+	var highestScorer *state.ReleaseSpec
 	highestScore := 0
 
 	if !keepOldReleases {
@@ -151,26 +150,9 @@ func modifyHelmfileApps(r *rules.PromoteRule, helmStates []*state.HelmState, pro
 		}
 	}
 
-	if highestScore > 0 {
-		highestScorer.Version = version
-		// The repository might have changed, so updating Chart
-		highestScorer.Chart = details.Name
-	} else {
-		newReleaseName := details.LocalName
-		if r.ReleaseName != "" {
-			newReleaseName = r.ReleaseName
-		}
-		if keepOldReleases {
-			newReleaseName = fmt.Sprintf("%s-%s", newReleaseName, strings.ReplaceAll(version, ".", "-"))
-		}
-		lastHelmState := helmStates[len(helmStates)-1]
-		lastHelmState.Releases = append(lastHelmState.Releases, state.ReleaseSpec{
-			Name:      newReleaseName,
-			Chart:     details.Name,
-			Version:   version,
-			Namespace: promoteNs,
-		})
-	}
+	lastHelmState := helmStates[len(helmStates)-1]
+
+	updateHelmState(r, details, promoteNs, highestScorer, lastHelmState, keepOldReleases)
 
 	return nil
 }
@@ -193,7 +175,7 @@ func promoteNestedHelmfileReleases(r *rules.PromoteRule, details *envctx.ChartDe
 	}
 
 	// Time to use scoring instead of just a simple found.
-	highestScorer := new(state.ReleaseSpec)
+	var highestScorer *state.ReleaseSpec
 	highestScore := 0
 	if !keepOldReleases {
 		for _, helmfile := range helmStates {
@@ -217,11 +199,17 @@ func promoteNestedHelmfileReleases(r *rules.PromoteRule, details *envctx.ChartDe
 		}
 	}
 
-	if highestScore > 0 {
-		highestScorer.Version = r.Version
+	updateHelmState(r, details, promoteNs, highestScorer, lastHelmState, keepOldReleases)
+}
+
+func updateHelmState(r *rules.PromoteRule, details *envctx.ChartDetails, promoteNs string, foundRelease *state.ReleaseSpec, helmState *state.HelmState, keepOldReleases bool) {
+	if foundRelease != nil {
+		foundRelease.Version = r.Version
+		// The repository might have changed, so updating Chart
+		foundRelease.Chart = details.Name
 	} else {
 		ns := ""
-		if promoteNs != lastHelmState.OverrideNamespace {
+		if promoteNs != helmState.OverrideNamespace {
 			ns = promoteNs
 		}
 		newReleaseName := details.LocalName
@@ -231,7 +219,7 @@ func promoteNestedHelmfileReleases(r *rules.PromoteRule, details *envctx.ChartDe
 		if keepOldReleases {
 			newReleaseName = fmt.Sprintf("%s-%s", newReleaseName, strings.ReplaceAll(r.Version, ".", "-"))
 		}
-		lastHelmState.Releases = append(lastHelmState.Releases, state.ReleaseSpec{
+		helmState.Releases = append(helmState.Releases, state.ReleaseSpec{
 			Name:      newReleaseName,
 			Chart:     details.Name,
 			Namespace: ns,
