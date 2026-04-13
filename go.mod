@@ -107,7 +107,7 @@ require (
 	github.com/chai2010/gettext-go v1.0.2 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/cncf/xds/go v0.0.0-20250121191232-2f005788dc42 // indirect
-	github.com/containerd/containerd v1.7.27 // indirect
+	github.com/containerd/containerd v1.7.29 // indirect
 	github.com/containerd/errdefs v0.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
@@ -294,14 +294,14 @@ require (
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.3 // indirect
 	golang.org/x/crypto v0.40.0 // indirect
-	golang.org/x/mod v0.25.0 // indirect
-	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/mod v0.26.0 // indirect
+	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
 	golang.org/x/term v0.33.0 // indirect
 	golang.org/x/text v0.27.0 // indirect
-	golang.org/x/time v0.11.0 // indirect
+	golang.org/x/time v0.12.0 // indirect
 	golang.org/x/tools v0.34.0 // indirect
 	google.golang.org/api v0.229.0 // indirect
 	google.golang.org/genproto v0.0.0-20250303144028-a0af3efb3deb // indirect
