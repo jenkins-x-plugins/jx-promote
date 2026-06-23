@@ -99,6 +99,7 @@ func Rule(r *rules.PromoteRule) error {
 	}
 
 	data = []byte(strings.Join(lines, "\n"))
+	// #nosec G703 -- path is constructed from trusted promote rule configuration
 	err = os.WriteFile(path, data, files.DefaultFileWritePermissions)
 	if err != nil {
 		return fmt.Errorf("failed to write file %s: %w", path, err)
