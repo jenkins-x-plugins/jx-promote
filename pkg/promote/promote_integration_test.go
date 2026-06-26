@@ -23,6 +23,7 @@ import (
 	v1fake "github.com/jenkins-x/jx-api/v4/pkg/client/clientset/versioned/fake"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/cmdrunner"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/cmdrunner/fakerunner"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/files"
 	"github.com/jenkins-x/jx-helpers/v3/pkg/stringhelpers"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -1088,4 +1089,120 @@ func NewFakeRunnerWithGitClone() *fakerunner.FakeRunner {
 		return "", nil
 	}
 	return runner
+}
+
+// NewFakeRunnerWithSparseGitClone is like NewFakeRunnerWithGitClone but also performs the
+// sparse-checkout and checkout commands for real so that sparse clones populate the working tree
+func NewFakeRunnerWithSparseGitClone() *fakerunner.FakeRunner {
+	runner := &fakerunner.FakeRunner{}
+
+	validGitCommands := []string{"clone", "rev-parse", "status", "sparse-checkout"}
+
+	runner.CommandRunner = func(c *cmdrunner.Command) (string, error) {
+		if c.Name == "git" && len(c.Args) > 0 {
+			cmd := c.Args[0]
+			// the bare `git checkout` issued by the sparse clone must run for real to populate the
+			// working tree, but the later PR-branch checkout (which has a branch arg) stays faked
+			realCheckout := cmd == "checkout" && len(c.Args) == 1
+			if stringhelpers.StringArrayIndex(validGitCommands, cmd) >= 0 || realCheckout {
+				// lets really perform the git command
+				return cmdrunner.DefaultCommandRunner(c)
+			}
+		}
+
+		// lets fake out other commands
+		return "", nil
+	}
+	return runner
+}
+
+// TestPromoteIntegrationHelmfileSparseCheckout asserts that promoting via a sparse clone (using the
+// default sparse-checkout patterns) produces exactly the same promoted helmfile as a full clone
+func TestPromoteIntegrationHelmfileSparseCheckout(t *testing.T) {
+	gitURL := "https://github.com/jx3-gitops-repositories/jx3-gke-vault"
+
+	fullClone := runHelmfileSparsePromotion(t, gitURL, false)
+	sparseClone := runHelmfileSparsePromotion(t, gitURL, true)
+
+	assert.Equal(t, fullClone, sparseClone, "promoted helmfile should be identical for a full clone vs a sparse clone")
+	assert.Contains(t, sparseClone, "myapp", "promoted helmfile should reference the promoted app")
+}
+
+// runHelmfileSparsePromotion runs a helmfile promotion against gitURL, optionally enabling sparse
+// checkout, and returns the content of the promoted nested helmfile so callers can compare it
+func runHelmfileSparsePromotion(t *testing.T, gitURL string, sparse bool) string {
+	version := "1.2.3"
+	appName := "myapp"
+	envName := "staging"
+	ns := "jx"
+
+	runner := NewFakeRunnerWithSparseGitClone()
+
+	_, po := promote.NewCmdPromote()
+	po.DisableGitConfig = true
+	po.Application = appName
+	po.Version = version
+	po.Environments = []string{envName}
+	po.NoPoll = true
+	po.BatchMode = true
+	po.GitKind = "fake"
+	po.CommandRunner = runner.Run
+	po.AppGitURL = "https://github.com/myorg/myapp.git"
+	po.SparseCheckout = sparse
+
+	devEnv := jxtesthelpers.CreateTestDevEnvironment(ns)
+
+	kubeObjects := []runtime.Object{
+		&corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: ns,
+				Labels: map[string]string{
+					"tag":  "",
+					"team": "jx",
+					"env":  "dev",
+				},
+			},
+		},
+	}
+	jxObjects := []runtime.Object{
+		devEnv,
+	}
+	po.DevEnvContext.Requirements = &jxcore.RequirementsConfig{
+		Environments: []jxcore.EnvironmentConfig{
+			{
+				Key:               envName,
+				Namespace:         "jx-" + envName,
+				PromotionStrategy: v1.PromotionStrategyTypeAutomatic,
+				GitURL:            gitURL,
+			},
+		},
+	}
+	po.DevEnvContext.VersionResolver = jxtesthelpers.CreateTestVersionResolver(t)
+
+	po.KubeClient = fake.NewSimpleClientset(kubeObjects...)
+	po.JXClient = v1fake.NewSimpleClientset(jxObjects...)
+	po.Namespace = ns
+	po.Build = "1"
+	po.Pipeline = "myorg/myapp/master"
+
+	err := po.Run()
+	require.NoError(t, err, "failed to run promotion (sparse=%v)", sparse)
+
+	require.NotEmpty(t, po.OutDir, "should have populated an out dir (sparse=%v)", sparse)
+
+	// verify the sparse clone really did reduce the footprint: versionStream/ is present in a full
+	// clone but excluded by the default sparse-checkout patterns, while the promoted dirs remain
+	versionStreamExists, err := files.DirExists(filepath.Join(po.OutDir, "versionStream"))
+	require.NoError(t, err, "failed to check versionStream dir (sparse=%v)", sparse)
+	if sparse {
+		assert.False(t, versionStreamExists, "sparse clone should not check out versionStream/")
+	} else {
+		assert.True(t, versionStreamExists, "full clone should check out versionStream/")
+	}
+
+	helmfile := filepath.Join(po.OutDir, "helmfiles", "jx-"+envName, "helmfile.yaml")
+	require.FileExists(t, helmfile, "should have created the promoted helmfile (sparse=%v)", sparse)
+	data, err := os.ReadFile(helmfile)
+	require.NoError(t, err, "failed to read promoted helmfile %s (sparse=%v)", helmfile, sparse)
+	return string(data)
 }

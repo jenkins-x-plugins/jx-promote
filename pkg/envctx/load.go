@@ -91,7 +91,12 @@ func (e *EnvironmentContext) LazyLoad(gclient gitclient.Interface, jxClient vers
 			return fmt.Errorf("failed to add user and token to git url %s: %w", url, err)
 		}
 
-		cloneDir, err := gitclient.CloneToDir(gitter, gitCloneURL, "")
+		var cloneDir string
+		if e.SparseCheckout {
+			cloneDir, err = gitclient.SparseCloneToDir(gitter, gitCloneURL, "", true, "/versionStream/")
+		} else {
+			cloneDir, err = gitclient.CloneToDir(gitter, gitCloneURL, "")
+		}
 		if err != nil {
 			return fmt.Errorf("failed to clone URL %s: %w", gitCloneURL, err)
 		}
