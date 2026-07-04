@@ -81,6 +81,12 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, labels []st
 		}
 		// forks rebase against the full upstream history, so a shallow clone is unsafe for them
 		dir, err = gitclient.SparseCloneToDir(o.Gitter, cloneGitURL, "", !o.Fork, patterns...)
+		if err != nil {
+			// sparse-checkout is not supported by every git server
+			// fall-back to a full clone if that fails
+			log.Logger().Warnf("sparse clone of %s failed (%s); falling back to a full clone", cloneGitURLSafe, err)
+			dir, err = gitclient.CloneToDir(o.Gitter, cloneGitURL, "")
+		}
 	} else {
 		dir, err = gitclient.CloneToDir(o.Gitter, cloneGitURL, "")
 	}

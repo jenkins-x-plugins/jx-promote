@@ -1128,9 +1128,26 @@ func TestPromoteIntegrationHelmfileSparseCheckout(t *testing.T) {
 	assert.Contains(t, sparseClone, "myapp", "promoted helmfile should reference the promoted app")
 }
 
+// TestPromoteIntegrationHelmfileSparseCheckoutExplicitPatterns asserts that supplying explicit
+// --sparse-checkout-pattern values (a) implies a sparse checkout even without --sparse-checkout and
+// (b) overrides the default pattern set while still producing the same promoted helmfile as a full
+// clone. The patterns here are the minimal set a helmfile promotion needs.
+func TestPromoteIntegrationHelmfileSparseCheckoutExplicitPatterns(t *testing.T) {
+	gitURL := "https://github.com/jx3-gitops-repositories/jx3-gke-vault"
+
+	fullClone := runHelmfileSparsePromotion(t, gitURL, false)
+	// note: SparseCheckout is left false - the explicit patterns alone must enable the sparse clone
+	explicitClone := runHelmfileSparsePromotion(t, gitURL, false, "/helmfile.yaml", "/helmfiles/")
+
+	assert.Equal(t, fullClone, explicitClone, "promoted helmfile should be identical for a full clone vs an explicit-pattern sparse clone")
+	assert.Contains(t, explicitClone, "myapp", "promoted helmfile should reference the promoted app")
+}
+
 // runHelmfileSparsePromotion runs a helmfile promotion against gitURL, optionally enabling sparse
-// checkout, and returns the content of the promoted nested helmfile so callers can compare it
-func runHelmfileSparsePromotion(t *testing.T, gitURL string, sparse bool) string {
+// checkout (and optionally with explicit sparse-checkout patterns), and returns the content of the
+// promoted nested helmfile so callers can compare it. A sparse checkout is performed when sparse is
+// true or when explicit patterns are supplied.
+func runHelmfileSparsePromotion(t *testing.T, gitURL string, sparse bool, patterns ...string) string {
 	version := "1.2.3"
 	appName := "myapp"
 	envName := "staging"
@@ -1149,6 +1166,7 @@ func runHelmfileSparsePromotion(t *testing.T, gitURL string, sparse bool) string
 	po.CommandRunner = runner.Run
 	po.AppGitURL = "https://github.com/myorg/myapp.git"
 	po.SparseCheckout = sparse
+	po.SparseCheckoutPatterns = patterns
 
 	devEnv := jxtesthelpers.CreateTestDevEnvironment(ns)
 
@@ -1190,11 +1208,15 @@ func runHelmfileSparsePromotion(t *testing.T, gitURL string, sparse bool) string
 
 	require.NotEmpty(t, po.OutDir, "should have populated an out dir (sparse=%v)", sparse)
 
+	// a sparse checkout happens when explicitly enabled or when explicit patterns are supplied
+	isSparse := sparse || len(patterns) > 0
+
 	// verify the sparse clone really did reduce the footprint: versionStream/ is present in a full
-	// clone but excluded by the default sparse-checkout patterns, while the promoted dirs remain
+	// clone but excluded by both the default and the explicit sparse-checkout patterns, while the
+	// promoted dirs remain
 	versionStreamExists, err := files.DirExists(filepath.Join(po.OutDir, "versionStream"))
-	require.NoError(t, err, "failed to check versionStream dir (sparse=%v)", sparse)
-	if sparse {
+	require.NoError(t, err, "failed to check versionStream dir (sparse=%v)", isSparse)
+	if isSparse {
 		assert.False(t, versionStreamExists, "sparse clone should not check out versionStream/")
 	} else {
 		assert.True(t, versionStreamExists, "full clone should check out versionStream/")

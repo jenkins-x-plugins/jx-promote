@@ -95,6 +95,11 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 
 			// lets check if we need the apps git URL
 			if promoteConfig.Spec.FileRule != nil || promoteConfig.Spec.KptRule != nil {
+				// file/kpt rules write to arbitrary paths, so default sparse clone silently produces an incomplete PR.
+				// Fail fast and tell the user to supply explicit patterns.
+				if o.SparseCheckout && len(o.SparseCheckoutPatterns) == 0 {
+					return fmt.Errorf("promote config in dir %s uses a file/kpt rule which touches arbitrary paths; the default sparse-checkout patterns are insufficient - please pass explicit --sparse-checkout-pattern values (or omit --sparse-checkout)", dir)
+				}
 				if o.AppGitURL == "" {
 					_, gitConf, err := gitclient.FindGitConfigDir("")
 					if err != nil {

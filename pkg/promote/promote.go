@@ -386,10 +386,8 @@ func (o *Options) Run() error {
 		o.GitClient = cli.NewCLIClient("", o.CommandRunner)
 	}
 
+	// file/kpt promote rules touch arbitrary paths so default sparse patterns are insufficient
 	o.DevEnvContext.SparseCheckout = o.SparseCheckout || len(o.SparseCheckoutPatterns) > 0
-	if o.DevEnvContext.SparseCheckout && len(o.SparseCheckoutPatterns) == 0 && o.AppGitURL != "" {
-		log.Logger().Warnf("sparse checkout is enabled with default patterns; file/kpt promote rules may need explicit --sparse-checkout-pattern values")
-	}
 
 	err = o.DevEnvContext.LazyLoad(o.GitClient, o.JXClient, o.Namespace, o.Git(), o.Dir)
 	if err != nil {
