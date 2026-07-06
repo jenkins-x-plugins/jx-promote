@@ -1121,11 +1121,16 @@ func NewFakeRunnerWithSparseGitClone() *fakerunner.FakeRunner {
 func TestPromoteIntegrationHelmfileSparseCheckout(t *testing.T) {
 	gitURL := "https://github.com/jx3-gitops-repositories/jx3-gke-vault"
 
-	fullClone := runHelmfileSparsePromotion(t, gitURL, false)
-	sparseClone := runHelmfileSparsePromotion(t, gitURL, true)
+	fullClone, _ := runHelmfileSparsePromotion(t, gitURL, "", false)
+	sparseClone, sparseRunner := runHelmfileSparsePromotion(t, gitURL, "", true)
 
 	assert.Equal(t, fullClone, sparseClone, "promoted helmfile should be identical for a full clone vs a sparse clone")
 	assert.Contains(t, sparseClone, "myapp", "promoted helmfile should reference the promoted app")
+
+	// with no base branch the sparse clone should be shallow to minimise the fetch
+	cloneArgs := findGitCommandArgs(sparseRunner, "clone")
+	require.NotNil(t, cloneArgs, "expected a git clone command to have been issued")
+	assert.Contains(t, cloneArgs, "--depth=1", "sparse clone should be shallow when no base branch is requested")
 }
 
 // TestPromoteIntegrationHelmfileSparseCheckoutExplicitPatterns asserts that supplying explicit
@@ -1135,19 +1140,49 @@ func TestPromoteIntegrationHelmfileSparseCheckout(t *testing.T) {
 func TestPromoteIntegrationHelmfileSparseCheckoutExplicitPatterns(t *testing.T) {
 	gitURL := "https://github.com/jx3-gitops-repositories/jx3-gke-vault"
 
-	fullClone := runHelmfileSparsePromotion(t, gitURL, false)
+	fullClone, _ := runHelmfileSparsePromotion(t, gitURL, "", false)
 	// note: SparseCheckout is left false - the explicit patterns alone must enable the sparse clone
-	explicitClone := runHelmfileSparsePromotion(t, gitURL, false, "/helmfile.yaml", "/helmfiles/")
+	explicitClone, _ := runHelmfileSparsePromotion(t, gitURL, "", false, "/helmfile.yaml", "/helmfiles/")
 
 	assert.Equal(t, fullClone, explicitClone, "promoted helmfile should be identical for a full clone vs an explicit-pattern sparse clone")
 	assert.Contains(t, explicitClone, "myapp", "promoted helmfile should reference the promoted app")
 }
 
+// TestPromoteIntegrationHelmfileSparseCheckoutBaseBranch asserts that when a non-default base branch
+// is requested the sparse clone is NOT shallow. A shallow (--depth=1) clone implies --single-branch,
+// so it only fetches the default branch and the subsequent base-branch checkout would fail to find
+// the ref. The promoted helmfile must still match a full clone.
+func TestPromoteIntegrationHelmfileSparseCheckoutBaseBranch(t *testing.T) {
+	gitURL := "https://github.com/jx3-gitops-repositories/jx3-gke-vault"
+
+	fullClone, _ := runHelmfileSparsePromotion(t, gitURL, "", false)
+	baseBranchClone, runner := runHelmfileSparsePromotion(t, gitURL, "my-base-branch", true)
+
+	assert.Equal(t, fullClone, baseBranchClone, "promoted helmfile should be identical for a full clone vs a base-branch sparse clone")
+
+	cloneArgs := findGitCommandArgs(runner, "clone")
+	require.NotNil(t, cloneArgs, "expected a git clone command to have been issued")
+	assert.NotContains(t, cloneArgs, "--depth=1", "sparse clone must not be shallow when a base branch is requested, as --depth=1 implies --single-branch and would omit the base branch ref")
+}
+
+// findGitCommandArgs returns the args of the first recorded git command whose subcommand matches, or
+// nil if none was issued.
+func findGitCommandArgs(runner *fakerunner.FakeRunner, subcommand string) []string {
+	for _, c := range runner.OrderedCommands {
+		if c.Name == "git" && len(c.Args) > 0 && c.Args[0] == subcommand {
+			return c.Args
+		}
+	}
+	return nil
+}
+
 // runHelmfileSparsePromotion runs a helmfile promotion against gitURL, optionally enabling sparse
 // checkout (and optionally with explicit sparse-checkout patterns), and returns the content of the
-// promoted nested helmfile so callers can compare it. A sparse checkout is performed when sparse is
-// true or when explicit patterns are supplied.
-func runHelmfileSparsePromotion(t *testing.T, gitURL string, sparse bool, patterns ...string) string {
+// promoted nested helmfile so callers can compare it along with the fake runner so callers can
+// assert on the git commands that were issued. A sparse checkout is performed when sparse is true or
+// when explicit patterns are supplied. When baseBranch is non-empty the promotion targets that base
+// branch rather than the default branch.
+func runHelmfileSparsePromotion(t *testing.T, gitURL, baseBranch string, sparse bool, patterns ...string) (string, *fakerunner.FakeRunner) {
 	version := "1.2.3"
 	appName := "myapp"
 	envName := "staging"
@@ -1167,6 +1202,7 @@ func runHelmfileSparsePromotion(t *testing.T, gitURL string, sparse bool, patter
 	po.AppGitURL = "https://github.com/myorg/myapp.git"
 	po.SparseCheckout = sparse
 	po.SparseCheckoutPatterns = patterns
+	po.BaseBranchName = baseBranch
 
 	devEnv := jxtesthelpers.CreateTestDevEnvironment(ns)
 
@@ -1226,5 +1262,5 @@ func runHelmfileSparsePromotion(t *testing.T, gitURL string, sparse bool, patter
 	require.FileExists(t, helmfile, "should have created the promoted helmfile (sparse=%v)", sparse)
 	data, err := os.ReadFile(helmfile)
 	require.NoError(t, err, "failed to read promoted helmfile %s (sparse=%v)", helmfile, sparse)
-	return string(data)
+	return string(data), runner
 }

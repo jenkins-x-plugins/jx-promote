@@ -79,8 +79,12 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, labels []st
 		if len(patterns) == 0 {
 			patterns = DefaultSparseCheckoutPatterns
 		}
-		// forks rebase against the full upstream history, so a shallow clone is unsafe for them
-		dir, err = gitclient.SparseCloneToDir(o.Gitter, cloneGitURL, "", !o.Fork, patterns...)
+		// a shallow (--depth=1) clone implies --single-branch, so it only fetches the default
+		// branch. That is unsafe when: (a) this is a fork, which rebases against the full upstream
+		// history; or (b) we need to check out a non-default base branch below, whose ref would not
+		// be fetched. In those cases fall back to a full-history clone.
+		shallow := !o.Fork && o.BaseBranchName == ""
+		dir, err = gitclient.SparseCloneToDir(o.Gitter, cloneGitURL, "", shallow, patterns...)
 		if err != nil {
 			// sparse-checkout is not supported by every git server
 			// fall-back to a full clone if that fails
