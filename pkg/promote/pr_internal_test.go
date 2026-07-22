@@ -7,7 +7,10 @@ import (
 	"testing"
 
 	"github.com/jenkins-x-plugins/jx-promote/pkg/apis/promote/v1alpha1"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/cmdrunner"
+	"github.com/jenkins-x/jx-helpers/v3/pkg/gitclient/cli"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSparsePatternForRule(t *testing.T) {
@@ -72,4 +75,20 @@ func TestSparsePatternForRule(t *testing.T) {
 			assert.Equal(t, tc.expected, sparsePatternForRule(tc.spec, tc.appName), tc.name)
 		})
 	}
+}
+
+func TestIsSparseCheckout(t *testing.T) {
+	dir := t.TempDir()
+	gitter := cli.NewCLIClient("", cmdrunner.QuietCommandRunner)
+
+	_, err := gitter.Command(dir, "init")
+	require.NoError(t, err, "git init")
+
+	// a plain clone/init is not in sparse-checkout mode (mirrors Create()'s full-clone fallback)
+	assert.False(t, isSparseCheckout(gitter, dir), "fresh repo should not be sparse")
+
+	// enabling sparse checkout is exactly what SparseCloneToDir does via `sparse-checkout set`
+	_, err = gitter.Command(dir, "sparse-checkout", "set", "--no-cone", "/x")
+	require.NoError(t, err, "git sparse-checkout set")
+	assert.True(t, isSparseCheckout(gitter, dir), "repo should be sparse after sparse-checkout set")
 }

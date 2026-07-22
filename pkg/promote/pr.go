@@ -42,6 +42,20 @@ func sparsePatternForRule(spec v1alpha1.PromoteSpec, appName string) string {
 	return ""
 }
 
+// isSparseCheckout reports whether the git working tree in dir is in sparse-checkout
+// mode. SparseCloneToDir enables it via `git sparse-checkout set`, which sets
+// core.sparseCheckout=true; the full-clone fallback in Create() leaves it unset. We
+// key the sparse expansion off this actual repo state rather than the request flags,
+// so a fallback full clone (which already contains every path) is not treated as
+// sparse.
+func isSparseCheckout(gitter gitclient.Interface, dir string) bool {
+	out, err := gitter.Command(dir, "config", "--get", "core.sparseCheckout")
+	if err != nil {
+		return false // key unset -> git exits non-zero -> not sparse
+	}
+	return strings.TrimSpace(out) == "true"
+}
+
 func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releaseInfo *ReleaseInfo, draftPR bool) error {
 	version := o.Version
 	versionName := version
@@ -124,8 +138,10 @@ func (o *Options) PromoteViaPullRequest(envs []*jxcore.EnvironmentConfig, releas
 				// file/kpt rules write to paths not covered by the default sparse-checkout pattern
 				// set. The promote config itself is available (the default patterns include .jx/), so
 				// we can derive the rule's target path and expand the sparse checkout to include it
-				// rather than failing.
-				if o.SparseCheckout || len(o.SparseCheckoutPatterns) > 0 {
+				// rather than failing. Gate on the repo's actual sparse-checkout state, not the
+				// request flags: Create() may have fallen back to a full clone when sparse checkout
+				// was unsupported, and that clone already contains the rule's target path.
+				if isSparseCheckout(o.Gitter, dir) {
 					pattern := sparsePatternForRule(promoteConfig.Spec, o.Application)
 					if pattern == "" {
 						return fmt.Errorf("promote config in dir %s uses a file/kpt rule whose target path cannot be derived; please pass explicit --sparse-checkout-pattern values (or omit --sparse-checkout)", dir)
