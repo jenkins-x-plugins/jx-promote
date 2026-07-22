@@ -22,6 +22,11 @@ const (
 	LabelUpdatebot = "updatebot"
 )
 
+// DefaultSparseCheckoutPatterns is the default git sparse-checkout pattern set used when sparse
+// checkout is enabled without explicit patterns. It covers the helmfile and helm promotion rules:
+// the root helmfile, nested helmfiles, the promote config under .jx/ and the helm chart under env/.
+var DefaultSparseCheckoutPatterns = []string{"/helmfile.yaml", "/helmfiles/", "/.jx/", "/env/"}
+
 // Create a pull request against the environment repository for env.
 // The EnvironmentPullRequestOptions are used to provide a Gitter client for performing git operations,
 // a GitProvider client for talking to the git provider,
@@ -68,16 +73,32 @@ func (o *EnvironmentPullRequestOptions) Create(gitURL, prDir string, labels []st
 	}
 
 	var dir string
-	if len(o.SparseCheckoutPatterns) > 0 {
-		dir, err = gitclient.SparseCloneToDir(o.Gitter, cloneGitURL, "", true, o.SparseCheckoutPatterns...)
+	sparse := o.SparseCheckout || len(o.SparseCheckoutPatterns) > 0
+	if sparse {
+		patterns := o.SparseCheckoutPatterns
+		if len(patterns) == 0 {
+			patterns = DefaultSparseCheckoutPatterns
+		}
+		// a shallow (--depth=1) clone implies --single-branch, so it only fetches the default
+		// branch. That is unsafe when: (a) this is a fork, which rebases against the full upstream
+		// history; or (b) we need to check out a non-default base branch below, whose ref would not
+		// be fetched. In those cases fall back to a full-history clone.
+		shallow := !o.Fork && o.BaseBranchName == ""
+		dir, err = gitclient.SparseCloneToDir(o.Gitter, cloneGitURL, "", shallow, patterns...)
+		if err != nil {
+			// sparse-checkout is not supported by every git server
+			// fall-back to a full clone if that fails
+			log.Logger().Warnf("sparse clone of %s failed (%s); falling back to a full clone", cloneGitURLSafe, err)
+			dir, err = gitclient.CloneToDir(o.Gitter, cloneGitURL, "")
+		}
 	} else {
 		dir, err = gitclient.CloneToDir(o.Gitter, cloneGitURL, "")
-		if o.BaseBranchName != "" {
-			log.Logger().Infof("checking out remote base branch %s from %s", o.BaseBranchName, gitURL)
-			err = gitclient.CheckoutRemoteBranch(o.Gitter, dir, o.BaseBranchName)
-			if err != nil {
-				return nil, fmt.Errorf("failed to checkout remote branch %s from %s: %w", o.BaseBranchName, gitURL, err)
-			}
+	}
+	if err == nil && o.BaseBranchName != "" {
+		log.Logger().Infof("checking out remote base branch %s from %s", o.BaseBranchName, gitURL)
+		err = gitclient.CheckoutRemoteBranch(o.Gitter, dir, o.BaseBranchName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to checkout remote branch %s from %s: %w", o.BaseBranchName, gitURL, err)
 		}
 	}
 	if err != nil {

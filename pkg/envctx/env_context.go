@@ -34,6 +34,10 @@ type EnvironmentContext struct {
 
 	// GitRepository the current name  of the current git repository we are in
 	GitRepository string
+
+	// SparseCheckout when true the dev environment clone used to load the version stream uses a
+	// sparse checkout of the versionStream/ directory rather than cloning the whole repository
+	SparseCheckout bool
 }
 
 // TeamSettings returns the team settings for the current environment
