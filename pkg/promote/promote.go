@@ -128,7 +128,7 @@ var (
 	promoteLong = templates.LongDesc(`
 		Promotes a version of an application to zero to many permanent environments.
 
-		For more documentation see: [https://jenkins-x.io/v3/develop/environments/](https://jenkins-x.io/v3/develop/environments/)
+		For more documentation see: [https://jayex.io/v3/develop/environments/](https://jayex.io/v3/develop/environments/)
 
 `)
 
@@ -695,7 +695,9 @@ func (o *Options) Promote(envs []*jxcore.EnvironmentConfig, warnIfAuto, noPoll b
 						}
 						if noPoll {
 							p.Status = v1.ActivityStatusTypeSucceeded
+							p.CompletedTimestamp = &metav1.Time{Time: time.Now()}
 							ps.Status = v1.ActivityStatusTypeSucceeded
+							ps.CompletedTimestamp = &metav1.Time{Time: time.Now()}
 						}
 
 						// if all steps are completed lets mark succeeded/failed

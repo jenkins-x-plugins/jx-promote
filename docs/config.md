@@ -457,5 +457,5 @@ KptRule
 <hr/>
 <p><em>
 Generated with <code>gen-crd-api-reference-docs</code>
-on git commit <code>bd71f32</code>.
+on git commit <code>4e50d20</code>.
 </em></p>
