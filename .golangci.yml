@@ -83,6 +83,10 @@ linters:
       confidence: 0
   exclusions:
     generated: lax
+    rules:
+      - linters:
+          - govet
+        text: "cannot inline"
     presets:
       - comments
       - common-false-positives
