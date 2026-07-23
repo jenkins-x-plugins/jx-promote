@@ -6,7 +6,7 @@
 [![LICENSE](https://img.shields.io/github/license/jenkins-x/helmboot.svg)](https://github.com/jenkins-x-plugins/jx-promote/blob/master/LICENSE)
 [![Slack Status](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://slack.k8s.io/)
 
-`jx promote` is a binary plugin to promote applications to one or more [Jenkins X](https://jenkins-x.io/) environments
+`jx promote` is a binary plugin to promote applications to one or more [JayeX](https://jayex.io/) environments
 
 ## Getting Started
 
@@ -26,7 +26,7 @@ Just run the `jx promote` command line and follow the instructions as if it were
 
 ### Helm
 
-The helm rule uses a helm chart's `requirements.yaml` file to manage dependent applications. This is the  default source layout of a Jenkins X Staging or Production repository; there is usually a helm chart in the `env` folder and `jx-promote` will create a Pull Request adding or updating the applications version in `env/requirements.yaml`.
+The helm rule uses a helm chart's `requirements.yaml` file to manage dependent applications. This is the  default source layout of a JayeX Staging or Production repository; there is usually a helm chart in the `env` folder and `jx-promote` will create a Pull Request adding or updating the applications version in `env/requirements.yaml`.
 
 
 `jx promote` will detect the `env/requirements.yaml` file automatically without any explict configuration.
