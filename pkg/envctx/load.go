@@ -20,12 +20,12 @@ import (
 	"github.com/jenkins-x/jx-api/v4/pkg/client/clientset/versioned"
 )
 
-func (c *EnvironmentContext) LazyLoad(gclient gitclient.Interface, jxClient versioned.Interface, ns string, gitter gitclient.Interface, dir string) error {
+func (c *EnvironmentContext) LazyLoad(gitClient gitclient.Interface, jxClient versioned.Interface, ns string, gitter gitclient.Interface, dir string) error {
 	err := c.loadDevEnv(jxClient, ns)
 	if err != nil {
 		return err
 	}
-	err = c.loadRequirements(gclient, jxClient, ns, dir)
+	err = c.loadRequirements(gitClient, jxClient, ns, dir)
 	if err != nil {
 		return err
 	}
@@ -150,14 +150,16 @@ func (c *EnvironmentContext) resolveGitCredentials(gitURL string) error {
 	return nil
 }
 
-// cloneDevEnvRepo clones the dev environment git repository to a temporary directory and returns the path to the cloned directory
+// cloneDevEnvRepo clones the dev environment git repository to a temporary directory and returns the path to the cloned directory.
+// It sparsely and shallowly clones just the versionStream dir, falling back to a partial then full clone if the git server
+// does not support sparse/partial checkout.
 func (c *EnvironmentContext) cloneDevEnvRepo(gitter gitclient.Interface, gitURL string) (string, error) {
 	gitCloneURL, err := stringhelpers.URLSetUserPassword(gitURL, c.GitUsername, c.GitToken)
 	if err != nil {
 		return "", fmt.Errorf("failed to add user and token to git url %s: %w", gitURL, err)
 	}
 
-	cloneDir, err := gitclient.CloneToDir(gitter, gitCloneURL, "")
+	cloneDir, err := requirements.PartialCloneClusterRepo(gitter, gitCloneURL, true, "versionStream")
 	if err != nil {
 		return "", fmt.Errorf("failed to clone URL %s: %w", gitCloneURL, err)
 	}
