@@ -58,6 +58,7 @@ type EnvironmentPullRequestOptions struct {
 	UseGitHubOAuth         bool
 	Fork                   bool
 	ReusePullRequest       bool
+	SparseCheckout         bool
 	SparseCheckoutPatterns []string
 	Application            string
 }
